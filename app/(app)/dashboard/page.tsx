@@ -3,6 +3,7 @@
 import { AlertTriangle, ExternalLink, X } from "lucide-react"
 import Link from "next/link"
 
+import { DocSlots } from "@/components/doc-slots"
 import { buttonVariants } from "@/components/ui/button"
 import { buildCalendar, buildChecklist, defaultExpiry, healthScore } from "@/lib/engine"
 import { getForm } from "@/lib/forms"
@@ -27,7 +28,7 @@ const STATUS_TONE: Record<Status, string> = {
 }
 
 export default function Dashboard() {
-  const { profile, items: states, lastDiff } = useProfile()
+  const { profile, items: states, lastDiff, docs } = useProfile()
   if (!profile) return null
 
   const items = buildChecklist(profile, states)
@@ -157,6 +158,7 @@ export default function Dashboard() {
                       <dt className="text-muted-foreground">Renewal</dt>
                       <dd>{item.renewal}</dd>
                     </dl>
+                    <DocSlots requirementId={item.id} docs={docs} />
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <AlertTriangle className="size-3.5" aria-hidden />
                       {item.lastVerified
@@ -194,7 +196,7 @@ export default function Dashboard() {
                       )}
                       {item.formIds.map((f) => (
                         <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
-                          Pre-fill {getForm(f)?.name.split(" — ")[0]}
+                          Pre-fill {getForm(f)?.short}
                         </Link>
                       ))}
                       <Link

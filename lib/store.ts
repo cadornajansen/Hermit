@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useSyncExternalStore } from "react"
 
-import type { ItemState, Profile } from "./types"
+import { clearFiles } from "./files"
+import type { ItemState, Profile, VaultDoc, VaultEvent } from "./types"
 
 // Owner's data lives on their device for now (works offline, nothing leaves
 // without the owner acting). ponytail: localStorage only; move to PostgreSQL
@@ -24,10 +25,12 @@ export type Saved = {
   items: Record<string, ItemState>
   chat: ChatMessage[]
   lastDiff: { added: string[]; removed: string[] } | null
+  docs: VaultDoc[]
+  vaultLog: VaultEvent[] // append-only record of uploads, checks, edits, deletions
 }
 
 const KEY = "hermit:v1"
-const SERVER: Saved = { ready: false, profile: null, items: {}, chat: [], lastDiff: null }
+const SERVER: Saved = { ready: false, profile: null, items: {}, chat: [], lastDiff: null, docs: [], vaultLog: [] }
 const listeners = new Set<() => void>()
 let cache: Saved | null = null
 
@@ -55,6 +58,7 @@ export function clearAll() {
   try {
     localStorage.removeItem(KEY)
   } catch {}
+  clearFiles().catch(() => {})
   cache = { ...SERVER, ready: true }
   listeners.forEach((l) => l())
 }

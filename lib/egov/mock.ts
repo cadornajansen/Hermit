@@ -1,3 +1,5 @@
+import { EMPTY_EXTRACTED, guessDocType } from "@/lib/vault"
+
 import type { Classification, Egov, Identity } from "./index"
 
 // Offline stand-ins so the whole flow works before credentials arrive.
@@ -58,6 +60,9 @@ export const mock: Egov = {
   ai: {
     classify: async (d) => classifyByKeywords(d),
     explain: async (_q, context) => context,
+    // Can't read file contents offline: guess the type from the filename and
+    // let the owner type the details, which go through the same checks.
+    extractDocument: async (file) => ({ ...EMPTY_EXTRACTED, docType: guessDocType(file.name), source: "filename" }),
   },
   pay: {
     createPayment: async ({ txnid, redirectUrl }) => ({

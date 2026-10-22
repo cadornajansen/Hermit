@@ -67,7 +67,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
             <p className="whitespace-pre-wrap">{m.text.replaceAll("**", "").replaceAll("_", "")}</p>
             {m.formIds?.map((f) => (
               <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
-                Pre-fill {getForm(f)?.name.split(" — ")[0]}
+                Pre-fill {getForm(f)?.short}
               </Link>
             ))}
             {!!m.sources?.length && (

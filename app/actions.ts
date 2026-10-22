@@ -2,6 +2,7 @@
 
 import { egov, isLive, serviceModes } from "@/lib/egov"
 import { buildChecklist, EMPTY_PROFILE } from "@/lib/engine"
+import { mock } from "@/lib/egov/mock"
 import { clearSession, readSession } from "@/lib/session"
 import type { Profile, Requirement } from "@/lib/types"
 
@@ -130,4 +131,24 @@ export async function signOut() {
 
 export async function integrationStatus() {
   return serviceModes()
+}
+
+// --- Document vault ---------------------------------------------------------
+
+const MAX_UPLOAD = 10 * 1024 * 1024
+const UPLOAD_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]
+
+// The AI reads the file; lib/vault.ts decides if it's correct (on the client,
+// so the owner's profile never has to leave the device for this).
+export async function readDocument(formData: FormData) {
+  const file = formData.get("file")
+  if (!(file instanceof File) || file.size === 0) return { ok: false as const, error: "Walang file" }
+  if (file.size > MAX_UPLOAD) return { ok: false as const, error: "Masyadong malaki — hanggang 10MB lang" }
+  if (!UPLOAD_TYPES.includes(file.type)) return { ok: false as const, error: "PDF o larawan (JPG, PNG) lang" }
+  try {
+    return { ok: true as const, extracted: await egov("ai").extractDocument(file), mode: serviceModes().ai }
+  } catch (e) {
+    console.error("Document extraction failed; falling back to filename", e)
+    return { ok: true as const, extracted: await mock.ai.extractDocument(file), mode: "mock" }
+  }
 }

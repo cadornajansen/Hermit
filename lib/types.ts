@@ -132,3 +132,59 @@ export const STATUS_LABEL: Record<Status, string> = {
   expiring: "Malapit nang mag-expire · Expiring",
   expired: "Expired",
 }
+
+// --- Document vault ---------------------------------------------------------
+
+export type DocType =
+  | "valid_id"
+  | "dti_cert"
+  | "sec_cert"
+  | "cda_cert"
+  | "brgy_clearance"
+  | "cedula"
+  | "lease"
+  | "mayors_permit"
+  | "fsic"
+  | "sanitary_permit"
+  | "health_cert"
+  | "bir_cor"
+  | "bmbe_cert"
+  | "fda_lto"
+  | "sss_er"
+  | "philhealth_er"
+  | "pagibig_er"
+  | "other"
+
+// What the AI (or the owner) read off the document. Empty string = not found.
+export type Extracted = {
+  docType: DocType | Unknown
+  ownerName: string
+  businessName: string
+  address: string
+  number: string // certificate / registration / ID number
+  tin: string
+  issuedOn: string // YYYY-MM-DD
+  expiresOn: string // YYYY-MM-DD
+  source: "ai" | "filename" | "owner"
+}
+
+export type Check = { id: string; label: string; result: "pass" | "warn" | "fail"; detail: string }
+
+export type Verdict = "verified" | "needs_review" | "rejected"
+
+export type VaultDoc = {
+  id: string
+  fileName: string
+  mime: string
+  size: number
+  sha256: string
+  uploadedAt: string
+  requirementId?: string
+  expectedTypes: DocType[] // what the owner said it is / the slot it was uploaded for
+  extracted: Extracted
+  checks: Check[]
+  verdict: Verdict
+  ownerConfirmed: boolean
+}
+
+export type VaultEvent = { at: string; docId: string; docName: string; event: string }

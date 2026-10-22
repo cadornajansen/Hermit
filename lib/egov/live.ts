@@ -10,7 +10,8 @@ import {
   faceLiveness,
 } from "egov.js"
 
-import type { Category } from "@/lib/types"
+import type { Category, Extracted } from "@/lib/types"
+import { DOC_TYPES, EMPTY_EXTRACTED, guessDocType } from "@/lib/vault"
 import type { Egov } from "./index"
 import { classifyByKeywords } from "./mock"
 
@@ -152,6 +153,36 @@ export const live: Egov = {
         )
         const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1))
         return CATEGORIES.includes(parsed.category) ? parsed : fallback
+      } catch {
+        return fallback
+      }
+    },
+    extractDocument: async (file) => {
+      const doc = await egovAi.extractDocument({
+        client: client("ai"),
+        auth: await aiToken(),
+        body: { file },
+        throwOnError: true,
+      })
+      const text = doc.data
+      const fallback: Extracted = { ...EMPTY_EXTRACTED, docType: guessDocType(`${file.name} ${text}`), source: "ai" }
+      try {
+        const raw = await aiPrompt(
+          `Read this Philippine business document text and reply with JSON only, using "" for anything not printed on it:\n{"docType": one of ${JSON.stringify(Object.keys(DOC_TYPES))} or "unknown", "ownerName": "", "businessName": "", "address": "", "number": "certificate/registration/ID number", "tin": "", "issuedOn": "YYYY-MM-DD", "expiresOn": "YYYY-MM-DD"}\nDo not guess or infer values.\n\nTEXT:\n${text.slice(0, 6000)}`
+        )
+        const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1))
+        const pick = (k: keyof Extracted) => (typeof parsed[k] === "string" ? parsed[k].trim() : "")
+        return {
+          docType: parsed.docType in DOC_TYPES ? parsed.docType : fallback.docType,
+          ownerName: pick("ownerName"),
+          businessName: pick("businessName"),
+          address: pick("address"),
+          number: pick("number"),
+          tin: pick("tin"),
+          issuedOn: pick("issuedOn"),
+          expiresOn: pick("expiresOn"),
+          source: "ai",
+        }
       } catch {
         return fallback
       }
