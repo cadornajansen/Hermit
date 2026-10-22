@@ -12,10 +12,36 @@ an adapter and runs on a mock until its credentials are set, then switches to th
 pnpm install
 npx vercel link && npx vercel env pull   # Supabase + Kuya Hermit keys into .env.local
 pnpm dev     # http://localhost:3000
-pnpm test    # engine, calendar, vault and forms checks
+pnpm test    # engine, calendar, vault, forms and location checks
 ```
 
 Without `.env.local` the app still runs: device-only storage and keyword answers instead of Kuya Hermit.
+
+## Profile locations
+
+Onboarding and profile editing use searchable **Region → City / Municipality** dropdowns.
+Type in either control to filter; use the arrow keys and Enter to choose, Escape to close,
+or the labelled clear button to remove a selection. City choices include province names
+to distinguish places with the same name; a separate province step is unnecessary.
+Changing a region clears an incompatible city, its province context and barangay;
+changing a city clears the previous barangay. Typing a search does not change saved data.
+
+Selections save canonical `region`, `city` and `province` names through the existing
+profile save flow. `region` and `province` are optional for older profiles. A unique
+saved city (including names such as `Taguig` / `Taguig City`) restores its canonical
+name and region. Unmatched or ambiguous saved text stays visible with an explanation
+until the owner replaces or clears it; no city is guessed from an ambiguous name.
+
+`lib/locations.json` bundles 18 regions and 1,643 cities/municipalities, including
+province context, for use offline. It is derived from the **2026-10-12 PSGC masterlist**
+in [barangay, revision 16ce5315](https://github.com/bendlikeabamboo/barangay/blob/16ce5315dad13cf3df80d43edc15053646ae61a5/barangay/data/barangay_flat.json).
+The snapshot retains region records and municipality/component-city/independent-city/
+highly-urbanized-city records, follows each city's parent chain to its region, and
+retains its province parent when present; barangays and Manila submunicipalities are
+excluded. Update the snapshot and source revision together when refreshing the list.
+The source's MIT notice is preserved in `lib/locations.LICENSE`.
+`lib/locations.test.ts` covers filtering, dependent choices, resets, restoration,
+duplicate names and compatibility with Taguig's pilot office list.
 
 ## Backend (Supabase)
 

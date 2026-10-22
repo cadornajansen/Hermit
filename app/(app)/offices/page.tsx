@@ -6,7 +6,7 @@ import { useState, useTransition } from "react"
 import { reportProblem } from "@/app/actions"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { buildChecklist } from "@/lib/engine"
-import { mapsLink, officesFor, PILOT_CITY } from "@/lib/offices"
+import { isPilotCity, mapsLink, officesFor, PILOT_CITY } from "@/lib/offices"
 import { useProfile } from "@/lib/store"
 
 export default function OfficesPage() {
@@ -16,7 +16,7 @@ export default function OfficesPage() {
   const types = new Set(buildChecklist(profile, items).map((i) => i.officeType))
   types.add("negosyo_center")
   const offices = officesFor(profile.city, profile.barangay, types)
-  const pilot = profile.city.trim().toLowerCase() === PILOT_CITY.toLowerCase()
+  const pilot = isPilotCity(profile.city)
 
   return (
     <div className="flex flex-col gap-4">

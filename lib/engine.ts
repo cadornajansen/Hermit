@@ -810,6 +810,8 @@ export const EMPTY_PROFILE: Profile = {
   structure: "unknown",
   businessAddress: "",
   barangay: "",
+  region: "",
+  province: "",
   city: "",
   premises: "unknown",
   channel: "unknown",

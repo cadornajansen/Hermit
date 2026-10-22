@@ -36,6 +36,8 @@ export type Profile = {
   structure: "sole" | "partnership" | "corporation" | "cooperative" | Unknown
   businessAddress: string
   barangay: string
+  region?: string // Optional for profiles saved before the location dropdowns.
+  province?: string // Province context distinguishes cities/municipalities with the same name.
   city: string
   premises: "home" | "rented" | "owned" | Unknown
   channel: "physical" | "online" | "both" | "mobile" | Unknown

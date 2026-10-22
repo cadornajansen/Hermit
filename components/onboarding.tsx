@@ -6,9 +6,11 @@ import { useState, useTransition } from "react"
 
 import { classifyBusiness } from "@/app/actions"
 import { EgovLogin, NationalIdCheck } from "@/components/egov-auth"
+import { LocationFields } from "@/components/location-fields"
 import { Button } from "@/components/ui/button"
 import { buildChecklist, diffChecklists, EMPTY_PROFILE } from "@/lib/engine"
 import { PILOT_CITY } from "@/lib/offices"
+import { restoreLocation } from "@/lib/locations"
 import { update, useHermit } from "@/lib/store"
 import type { Flag, Profile } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -96,13 +98,13 @@ function Wizard({
   const router = useRouter()
   const [p, setP] = useState<Profile>(() => {
     const base = saved ?? { ...EMPTY_PROFILE, city: PILOT_CITY }
-    if (!identity) return base
-    return {
+    if (!identity) return restoreLocation(base)
+    return restoreLocation({
       ...base,
       ...identity,
       barangay: base.barangay || identity.barangay,
       city: (saved && base.city) || identity.city || base.city,
-    }
+    })
   })
   const [step, setStep] = useState<Step>(saved && !(sso && !saved.identityVerified) ? "review" : "identity")
   const [guess, setGuess] = useState<string>()
@@ -112,7 +114,8 @@ function Wizard({
   const go = (d: number) => setStep(STEPS[Math.min(STEPS.length - 1, Math.max(0, i + d))])
 
   function save() {
-    update(() => ({ profile: p, lastDiff: saved ? diffChecklists(saved, p) : null }))
+    const profile = restoreLocation(p)
+    update(() => ({ profile, lastDiff: saved ? diffChecklists(saved, profile) : null }))
     router.push("/dashboard")
   }
 
@@ -216,14 +219,10 @@ function Wizard({
         <Field label="Address ng negosyo · Business address">
           <input className={input} value={p.businessAddress} onChange={(e) => set({ businessAddress: e.target.value })} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Barangay">
-            <input className={input} value={p.barangay} onChange={(e) => set({ barangay: e.target.value })} />
-          </Field>
-          <Field label="City / municipality">
-            <input className={input} value={p.city} onChange={(e) => set({ city: e.target.value })} />
-          </Field>
-        </div>
+        <LocationFields value={p} onChange={set} />
+        <Field label="Barangay">
+          <input className={input} value={p.barangay} onChange={(e) => set({ barangay: e.target.value })} />
+        </Field>
         <p className="text-sm font-medium">Ang puwesto ay… · The place is…</p>
         <Choice value={p.premises} onChange={(premises) => set({ premises })} options={LABELS.premises} />
       </Screen>
@@ -315,7 +314,7 @@ function Wizard({
               ["business", "Negosyo", `${p.businessName || "—"} · ${label("category", p.category)}`],
               ["stage", "Stage", label("stage", p.stage)],
               ["structure", "Ownership", label("structure", p.structure)],
-              ["where", "Lugar", [p.businessAddress, p.barangay && `Brgy. ${p.barangay}`, p.city].filter(Boolean).join(", ") || "—"],
+              ["where", "Lugar", [p.businessAddress, p.barangay && `Brgy. ${p.barangay}`, p.city, p.province, p.region].filter(Boolean).join(", ") || "—"],
               ["channel", "Pagbebenta", label("channel", p.channel)],
               ["size", "Laki", `${label("assets", p.assets)} · ${label("sales", p.sales)}`],
               ["people", "Empleyado", label("employees", p.employees)],

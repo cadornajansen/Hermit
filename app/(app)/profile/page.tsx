@@ -44,7 +44,7 @@ export default function ProfilePage() {
     ["Ginagawa", p.description || "—"],
     ["Category", `${label("category", p.category)}${p.psic ? ` · PSIC ${p.psic}` : ""}`],
     ["Ownership", label("structure", p.structure)],
-    ["Lugar", [p.businessAddress, p.barangay, p.city].filter(Boolean).join(", ") || "—"],
+    ["Lugar", [p.businessAddress, p.barangay, p.city, p.province, p.region].filter(Boolean).join(", ") || "—"],
     ["Empleyado", label("employees", p.employees)],
     ...Object.entries(p.extra).map(([k, v]): [string, string] => [k, v]),
   ]
