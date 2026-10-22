@@ -1,21 +1,50 @@
-# Next.js template
+# HERMIT
 
-This is a Next.js template with shadcn/ui.
+**Your business, remembered.** A compliance home base for Philippine MSME owners: one checklist of the permits,
+registrations and tax filings a business needs, what's done, what's due, and an assistant that pre-fills the forms.
 
-## Adding components
-
-To add components to your app, run the following command:
+This is the early-phase build of the PRD MVP. Every eGov API is wired behind an adapter and runs on a mock, so the whole
+flow works today; drop credentials into `.env.local` and each service switches to the real
+[egov.js](https://github.com/omsimos/egov.js) client on its own.
 
 ```bash
-npx shadcn@latest add button
+pnpm install
+pnpm dev     # http://localhost:3000
+pnpm test    # requirements engine + calendar checks
 ```
 
-This will place the ui components in the `components` directory.
+## What's in it
 
-## Using components
+| PRD module | Where |
+| --- | --- |
+| Onboarding (≤12 questions, "Hindi ko alam" everywhere, review + edit diff) | `app/onboarding`, `components/onboarding.tsx` |
+| Requirements engine: rules table, universal + employer path + 4 MVP business types | `lib/engine.ts` |
+| F1 Compliance dashboard: health score, Start / Operate / Hire / Renew, statuses, expiries | `app/(app)/dashboard` |
+| F2 Kuya Hermit: retrieval-grounded answers with sources, form pre-fill field sheets | `app/(app)/assistant`, `app/(app)/forms/[id]`, `lib/forms.ts` |
+| F3 Office locator (pilot city: Taguig) + eReport red-tape reports | `app/(app)/offices`, `lib/offices.ts` |
+| F4 Calendar: generated deadlines, weekend shift, 14/3/0-day reminders, SMS, Google Calendar | `app/(app)/calendar` |
+| "What Hermit knows": view, export, delete everything | `app/(app)/profile` |
 
-To use the components in your app, import them as follows:
+## eGov API sockets
 
-```tsx
-import { Button } from "@/components/ui/button";
-```
+`lib/egov/index.ts` defines one adapter per API; `egov("sso")`, `egov("emessage")`, … return the live client when that
+service's env vars are set (see `.env.example`), otherwise the mock in `lib/egov/mock.ts`. Live implementations are in
+`lib/egov/live.ts`. The current mode of each service shows on the Profile page.
+
+| API | Used for | Live status |
+| --- | --- | --- |
+| eGovPH SSO | Sign-in (`/api/auth/sso` → `/callback`) | Wired; login URL contract still to confirm |
+| Face Liveness | Before eVerify (`/api/auth/liveness`) | Wired |
+| National ID eVerify | Pull verified name, birthday, address | Wired |
+| eMessage | SMS reminders | Wired (sends only to the signed-in owner's number) |
+| eGov AI | Business classification, Taglish explanations | Wired, keyword classifier as fallback |
+| eGovPay | Fees (P2) | Adapter wired, no UI yet |
+| eReport | Report red tape at an office | Wired |
+| eGovChain | Vault anchoring (stretch) | Socket only |
+| Compass | — | Not used: in egov.js it's budget data, not an office locator |
+
+## Not built yet
+
+Database (owner data is in `localStorage`), server-side reminder scheduling, document vault/OCR, filled official PDFs,
+holiday-aware deadlines, full Filipino/English toggle, other LGUs, employer payroll module. Every rule in the seed table
+is unverified until a pilot LGU and RDO sign it off.
