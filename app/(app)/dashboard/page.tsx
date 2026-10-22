@@ -6,7 +6,7 @@ import Link from "next/link"
 import { DocSlots } from "@/components/doc-slots"
 import { buttonVariants } from "@/components/ui/button"
 import { buildCalendar, buildChecklist, defaultExpiry, healthScore } from "@/lib/engine"
-import { getForm } from "@/lib/forms"
+import { formsFor } from "@/lib/forms"
 import { update, useProfile } from "@/lib/store"
 import { STATUS_LABEL, type ComplianceItem, type Group, type Status } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -194,9 +194,9 @@ export default function Dashboard() {
                           />
                         </label>
                       )}
-                      {item.formIds.map((f) => (
-                        <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
-                          Pre-fill {getForm(f)?.short}
+                      {formsFor(item.id, profile).map((f) => (
+                        <Link key={f.id} href={`/forms/${f.id}`} className={buttonVariants({ size: "sm" })}>
+                          Pre-fill {f.short}
                         </Link>
                       ))}
                       <Link

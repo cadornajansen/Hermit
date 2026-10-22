@@ -1,9 +1,20 @@
 "use server"
 
 import { egov, isLive, serviceModes } from "@/lib/egov"
+import { BUCKET, db } from "@/lib/db"
 import { buildChecklist, EMPTY_PROFILE } from "@/lib/engine"
 import { mock } from "@/lib/egov/mock"
-import { clearSession, readSession } from "@/lib/session"
+import { formsFor } from "@/lib/forms"
+import {
+  askKuyaHermit,
+  classifyWithHermit,
+  extractPdfWithHermit,
+  HERMIT_MODEL,
+  hermitEnabled,
+  type HermitContext,
+  type HermitReply,
+} from "@/lib/hermit"
+import { ownerId, readSession } from "@/lib/session"
 import type { Profile, Requirement } from "@/lib/types"
 
 // Server Functions are public POST endpoints: validate every input here.
@@ -12,23 +23,31 @@ const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slic
 export async function classifyBusiness(description: string) {
   const d = text(description, 500)
   if (!d) return null
+  if (hermitEnabled()) {
+    try {
+      return await classifyWithHermit(d)
+    } catch (e) {
+      console.error("Kuya Hermit classify failed; falling back", e)
+    }
+  }
   return egov("ai").classify(d)
 }
 
 // --- Kuya Hermit ------------------------------------------------------------
-// Retrieval-grounded: the engine picks which requirements are relevant; the
-// model (eGov AI when live) only rewrites those facts in plain Taglish.
+// With ASSEMBLYAI_API_KEY set, Kuya Hermit is an LLM with tools over the rules
+// engine, forms catalog and the owner's records (lib/hermit.ts). Without it,
+// a keyword retrieval over the rules table answers instead.
 
 const STOP = new Set(["ang", "ako", "ano", "mga", "the", "and", "for", "what", "how", "need", "kailangan", "paano", "do", "ba", "ko", "ng", "sa", "na"])
 
 function score(r: Requirement, words: string[]) {
-  const hay = `${r.id} ${r.name} ${r.agency} ${r.explainer} ${r.documents.join(" ")} ${r.formIds.join(" ")}`.toLowerCase()
+  const hay = `${r.id} ${r.name} ${r.agency} ${r.explainer} ${r.documents.join(" ")}`.toLowerCase()
   return words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0)
 }
 
 function facts(r: Requirement) {
   return [
-    `**${r.name}** (${r.agency})`,
+    `${r.name} (${r.agency})`,
     r.explainer,
     `Dalhin / what to bring: ${r.documents.join("; ")}`,
     `Bayad / fee: ${r.fee}`,
@@ -38,10 +57,7 @@ function facts(r: Requirement) {
   ].join("\n")
 }
 
-export async function askHermit(question: string, clientProfile: Profile) {
-  const q = text(question, 500)
-  if (!q) return null
-  const profile = { ...EMPTY_PROFILE, ...clientProfile, flags: { ...clientProfile?.flags } }
+function keywordAnswer(q: string, profile: Profile): HermitReply {
   const words = q.toLowerCase().split(/[^a-z0-9ñ]+/).filter((w) => w.length > 2 && !STOP.has(w))
   const matches = buildChecklist(profile, {})
     .map((r) => ({ r, s: score(r, words) }))
@@ -49,29 +65,62 @@ export async function askHermit(question: string, clientProfile: Profile) {
     .sort((a, b) => b.s - a.s)
     .slice(0, 2)
     .map((m) => m.r)
-
-  if (!matches.length) {
+  if (!matches.length)
     return {
-      answer:
-        "Pasensya, hindi ako sigurado diyan. Para hindi tayo magkamali, magtanong sa pinakamalapit na DTI Negosyo Center o sa RDO mo. (I only answer from official sources I've indexed.)",
+      answer: "Pasensya, hindi ako sigurado diyan. Para hindi tayo magkamali, magtanong sa pinakamalapit na DTI Negosyo Center o sa RDO mo.",
       sources: [],
       formIds: [],
+      saved: {},
     }
+  return {
+    answer: matches.map(facts).join("\n\n"),
+    sources: matches.map((r) => ({ name: r.name, url: r.sourceUrl, lastVerified: r.lastVerified })),
+    formIds: [...new Set(matches.flatMap((r) => formsFor(r.id, profile).map((f) => f.id)))].slice(0, 3),
+    saved: {},
+  }
+}
+
+export async function askHermit(input: {
+  question: string
+  history: { role: "owner" | "hermit"; text: string }[]
+  profile: Profile
+  items: HermitContext["items"]
+  docs: HermitContext["docs"]
+}): Promise<HermitReply | null> {
+  const q = text(input?.question, 1000)
+  if (!q) return null
+  const profile = { ...EMPTY_PROFILE, ...input.profile, flags: { ...input.profile?.flags }, extra: { ...input.profile?.extra } }
+  const history = (Array.isArray(input.history) ? input.history : [])
+    .slice(-10)
+    .map((m) => ({ role: m?.role === "owner" ? ("owner" as const) : ("hermit" as const), text: text(m?.text, 2000) }))
+    .filter((m) => m.text)
+  const ctx: HermitContext = {
+    profile,
+    items: input.items && typeof input.items === "object" ? input.items : {},
+    docs: (Array.isArray(input.docs) ? input.docs : []).slice(0, 100),
   }
 
-  const context = matches.map(facts).join("\n\n")
-  let answer: string
-  try {
-    answer = await egov("ai").explain(q, context)
-  } catch (e) {
-    console.error("eGov AI explain failed; showing grounded facts", e)
-    answer = context
+  let reply: HermitReply
+  if (hermitEnabled()) {
+    try {
+      reply = await askKuyaHermit(q, history, ctx)
+    } catch (e) {
+      console.error("Kuya Hermit failed; using keyword answer", e)
+      reply = keywordAnswer(q, profile)
+    }
+  } else reply = keywordAnswer(q, profile)
+
+  // Conversation memory on the server (deletable from the Profile page).
+  const sb = db()
+  const id = sb && (await ownerId(true))
+  if (sb && id) {
+    await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
+    await sb.from("chat_messages").insert([
+      { owner_id: id, role: "owner", text: q },
+      { owner_id: id, role: "hermit", text: reply.answer, sources: reply.sources, form_ids: reply.formIds },
+    ])
   }
-  return {
-    answer: `${answer}\n\n_Hindi ito legal o tax advice. Not legal or tax advice._`,
-    sources: matches.map((r) => ({ name: r.name, url: r.sourceUrl, lastVerified: r.lastVerified })),
-    formIds: [...new Set(matches.flatMap((r) => r.formIds))],
-  }
+  return reply
 }
 
 // --- eMessage ---------------------------------------------------------------
@@ -125,12 +174,12 @@ export async function reportProblem(input: { office: string; message: string }) 
 
 // --- Session ----------------------------------------------------------------
 
-export async function signOut() {
-  await clearSession()
-}
-
 export async function integrationStatus() {
-  return serviceModes()
+  return {
+    ...serviceModes(),
+    "kuya hermit": hermitEnabled() ? `live · ${HERMIT_MODEL}` : "keyword fallback",
+    database: db() ? "supabase" : "device only",
+  }
 }
 
 // --- Document vault ---------------------------------------------------------
@@ -138,17 +187,34 @@ export async function integrationStatus() {
 const MAX_UPLOAD = 10 * 1024 * 1024
 const UPLOAD_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]
 
-// The AI reads the file; lib/vault.ts decides if it's correct (on the client,
-// so the owner's profile never has to leave the device for this).
+// Stores the file (Supabase Storage, when on) and has the AI read it.
+// lib/vault.ts then decides on the device whether it's the right document.
 export async function readDocument(formData: FormData) {
   const file = formData.get("file")
+  const docId = String(formData.get("id") ?? "")
   if (!(file instanceof File) || file.size === 0) return { ok: false as const, error: "Walang file" }
   if (file.size > MAX_UPLOAD) return { ok: false as const, error: "Masyadong malaki — hanggang 10MB lang" }
   if (!UPLOAD_TYPES.includes(file.type)) return { ok: false as const, error: "PDF o larawan (JPG, PNG) lang" }
-  try {
-    return { ok: true as const, extracted: await egov("ai").extractDocument(file), mode: serviceModes().ai }
-  } catch (e) {
-    console.error("Document extraction failed; falling back to filename", e)
-    return { ok: true as const, extracted: await mock.ai.extractDocument(file), mode: "mock" }
+  if (!/^[0-9a-f-]{36}$/i.test(docId)) return { ok: false as const, error: "Invalid document id" }
+
+  let storagePath: string | undefined
+  const sb = db()
+  const id = sb && (await ownerId(true))
+  if (sb && id) {
+    await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
+    const up = await sb.storage.from(BUCKET).upload(`${id}/${docId}`, file, { contentType: file.type, upsert: false })
+    if (up.error) console.error("Storage upload failed; keeping the file on the device only", up.error)
+    else storagePath = `${id}/${docId}`
   }
+
+  try {
+    if (hermitEnabled() && file.type === "application/pdf") {
+      const extracted = await extractPdfWithHermit(file)
+      if (extracted) return { ok: true as const, extracted, reader: "Kuya Hermit", storagePath }
+    }
+    if (isLive("ai")) return { ok: true as const, extracted: await egov("ai").extractDocument(file), reader: "eGov AI", storagePath }
+  } catch (e) {
+    console.error("Document reading failed; falling back to filename", e)
+  }
+  return { ok: true as const, extracted: await mock.ai.extractDocument(file), reader: null, storagePath }
 }

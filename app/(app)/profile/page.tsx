@@ -4,7 +4,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
-import { integrationStatus, signOut } from "@/app/actions"
+import { integrationStatus } from "@/app/actions"
+import { deleteAllData } from "@/app/sync"
 import { label } from "@/components/onboarding"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { clearAll, update, useProfile } from "@/lib/store"
@@ -29,7 +30,7 @@ export default function ProfilePage() {
 
   async function deleteEverything() {
     if (!confirm("Burahin lahat ng data mo sa HERMIT? Hindi na ito maibabalik.")) return
-    await signOut()
+    await deleteAllData()
     clearAll()
     router.push("/")
   }
@@ -52,8 +53,8 @@ export default function ProfilePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Ang alam ni Hermit</h1>
         <p className="text-sm text-muted-foreground">
-          Ginagamit lang ito para sa sarili mong filings. Nasa device mo lang ito ngayon; walang naipapadala sa BIR o kahit
-          anong ahensya nang hindi mo ginagawa.
+          Ginagamit lang ito para sa sarili mong filings. Naka-save sa device mo at sa secure na server ng HERMIT; walang
+          naipapadala sa BIR o kahit anong ahensya nang hindi mo ginagawa.
         </p>
       </div>
       <dl className="divide-y rounded-2xl border text-sm">

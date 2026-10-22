@@ -4,6 +4,7 @@ import { CheckCircle2, CircleAlert, CircleX, FileUp, RefreshCw } from "lucide-re
 import { useRef, useState, useTransition } from "react"
 
 import { readDocument } from "@/app/actions"
+import { documentUrl } from "@/app/sync"
 import { Button } from "@/components/ui/button"
 import { buildChecklist, defaultExpiry, getRequirement } from "@/lib/engine"
 import { deleteFile, getFile, putFile, sha256 } from "@/lib/files"
@@ -96,6 +97,7 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
       const [hash] = await Promise.all([sha256(file), putFile(id, file)])
       const fd = new FormData()
       fd.set("file", file)
+      fd.set("id", id)
       const r = await readDocument(fd)
       if (!r.ok) {
         await deleteFile(id)
@@ -114,12 +116,13 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
         size: file.size,
         uploadedAt: new Date().toISOString(),
         requirementId: reqId || undefined,
+        storagePath: r.storagePath,
       }
       record(doc, [
         `Na-upload${reqId ? ` para sa ${getRequirement(reqId)?.name}` : ""}`,
-        r.mode === "live"
-          ? `Binasa ng eGov AI: ${docName(extracted.docType)}`
-          : `Hindi pa konektado ang eGov AI — hinulaan mula sa filename: ${docName(extracted.docType)}`,
+        r.reader
+          ? `Binasa ni ${r.reader}: ${docName(extracted.docType)}`
+          : `Hindi mabasa ng AI ang laman (larawan o scan) — hinulaan mula sa filename: ${docName(extracted.docType)}. I-type ang detalye.`,
         verdictEvent(doc),
       ])
       if (fileRef.current) fileRef.current.value = ""
@@ -139,7 +142,7 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
         <h1 className="text-2xl font-semibold tracking-tight">Mga dokumento</h1>
         <p className="text-sm text-muted-foreground">
           I-upload ang permits at requirements mo. Babasahin ito ng AI at iche-check ni Hermit kung tama ang dokumento,
-          pareho ang pangalan, at hindi pa expired. Nasa device mo lang ang mga file.
+          pareho ang pangalan, at hindi pa expired. Naka-save ang files sa device mo at sa private storage ng HERMIT.
         </p>
       </div>
 
@@ -268,9 +271,10 @@ function DocCard({ doc, profile, docs, log }: { doc: VaultDoc; profile: Profile;
   const others = docs.filter((d) => d.id !== doc.id)
 
   async function view() {
-    const blob = await getFile(doc.id)
-    if (!blob) return alert("Wala na ang file sa device na ito.")
-    window.open(URL.createObjectURL(blob), "_blank", "noopener")
+    const blob = await getFile(doc.id).catch(() => undefined)
+    const url = blob ? URL.createObjectURL(blob) : await documentUrl(doc.id)
+    if (!url) return alert("Wala ang file sa device na ito o sa server.")
+    window.open(url, "_blank", "noopener")
   }
 
   function saveDetails(form: FormData) {

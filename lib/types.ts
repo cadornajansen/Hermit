@@ -64,7 +64,6 @@ export type Requirement = {
   optional?: boolean
   prerequisites: string[]
   documents: string[]
-  formIds: string[]
   fee: string
   processingTime: string
   renewal: string
@@ -185,6 +184,7 @@ export type VaultDoc = {
   checks: Check[]
   verdict: Verdict
   ownerConfirmed: boolean
+  storagePath?: string // copy in Supabase Storage, when the backend is on
 }
 
 export type VaultEvent = { at: string; docId: string; docName: string; event: string }

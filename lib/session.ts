@@ -1,13 +1,16 @@
 import "server-only"
 
-import { createHmac, timingSafeEqual } from "node:crypto"
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto"
 import { cookies } from "next/headers"
 
 import type { Identity } from "@/lib/egov"
 
-// Signed, httpOnly cookie holding the verified identity from SSO + eVerify.
-// ponytail: stateless cookie session; move to a DB-backed session when
-// PostgreSQL lands (needed for revocation and server-side reminders).
+// Signed, httpOnly cookies:
+// - hermit_session: verified identity from eGovPH SSO + eVerify
+// - hermit_owner:   anonymous owner id that keys the owner's rows in Supabase
+//   ("anonymous, then upgrade": SSO can later be linked to the same id).
+// ponytail: lose the cookie, lose access to the server copy (the device still
+// has its local copy). Add account linking (SSO / email OTP) to recover it.
 
 export type Session = {
   identity: Identity
@@ -15,8 +18,8 @@ export type Session = {
   verified: boolean
 }
 
-const NAME = "hermit_session"
-const MAX_AGE = 60 * 60 * 24 * 7
+const SESSION = "hermit_session"
+const OWNER = "hermit_owner"
 
 function secret() {
   const s = process.env.SESSION_SECRET
@@ -27,19 +30,19 @@ function secret() {
 
 const sign = (payload: string) => createHmac("sha256", secret()).update(payload).digest("base64url")
 
-export async function writeSession(s: Session) {
-  const payload = Buffer.from(JSON.stringify(s)).toString("base64url")
-  ;(await cookies()).set(NAME, `${payload}.${sign(payload)}`, {
+async function writeSigned(name: string, value: unknown, maxAge: number) {
+  const payload = Buffer.from(JSON.stringify(value)).toString("base64url")
+  ;(await cookies()).set(name, `${payload}.${sign(payload)}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: MAX_AGE,
+    maxAge,
     path: "/",
   })
 }
 
-export async function readSession(): Promise<Session | null> {
-  const raw = (await cookies()).get(NAME)?.value
+async function readSigned<T>(name: string): Promise<T | null> {
+  const raw = (await cookies()).get(name)?.value
   if (!raw) return null
   const [payload, sig] = raw.split(".")
   const expected = Buffer.from(sign(payload ?? ""))
@@ -52,6 +55,20 @@ export async function readSession(): Promise<Session | null> {
   }
 }
 
+export const writeSession = (s: Session) => writeSigned(SESSION, s, 60 * 60 * 24 * 7)
+export const readSession = () => readSigned<Session>(SESSION)
+
+// Existing owner id, or a new one when create is set (only from Server Actions / Route Handlers).
+export async function ownerId(create = false): Promise<string | null> {
+  const id = await readSigned<string>(OWNER)
+  if (id || !create) return id
+  const fresh = randomUUID()
+  await writeSigned(OWNER, fresh, 60 * 60 * 24 * 400)
+  return fresh
+}
+
 export async function clearSession() {
-  ;(await cookies()).delete(NAME)
+  const c = await cookies()
+  c.delete(SESSION)
+  c.delete(OWNER)
 }

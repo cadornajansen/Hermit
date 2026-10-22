@@ -76,8 +76,8 @@ type Step = (typeof STEPS)[number]
 const input = "h-11 w-full rounded-xl border bg-background px-3 text-base"
 
 export function Onboarding({ identity, authError }: { identity: IdentityPrefill | null; authError?: string }) {
-  const { ready, profile } = useHermit()
-  if (!ready) return null
+  const { ready, synced, profile } = useHermit()
+  if (!ready || !synced) return null
   return <Wizard saved={profile} identity={identity} authError={authError} />
 }
 

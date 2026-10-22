@@ -1,13 +1,14 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
-import { fillForm, getForm } from "@/lib/forms"
+import { fillForm, getForm, HANDOFF_LABEL } from "@/lib/forms"
 import { update, useProfile } from "@/lib/store"
 
-// Side-by-side review before export. HERMIT never submits: the owner prints,
-// uploads or copy-pastes into the agency portal themselves.
+// Side-by-side review before hand-off. HERMIT never submits: the owner files
+// online, prints, or brings it to the office themselves.
 export function FormSheet({ id }: { id: string }) {
   const { profile } = useProfile()
   const [copied, setCopied] = useState(false)
@@ -18,13 +19,24 @@ export function FormSheet({ id }: { id: string }) {
   const missing = fields.filter((f) => f.missing).length
   const remember = (key: string, value: string) =>
     update((s) => ({ profile: s.profile && { ...s.profile, extra: { ...s.profile.extra, [key]: value } } }))
+  const portalIsUrl = form.portal.startsWith("http")
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="flex flex-col gap-1">
+        <Link href="/forms" className="text-sm text-primary print:hidden">
+          ← Lahat ng forms
+        </Link>
         <h1 className="text-xl font-semibold tracking-tight">{form.name}</h1>
-        <p className="text-sm text-muted-foreground print:hidden">
-          {missing ? `${missing} field ang kulang — punan sa baba, tatandaan ito ni Hermit para sa susunod na form.` : "Kumpleto na! I-review bago i-print o i-upload."}
+        <p className="text-sm text-muted-foreground">{form.purpose}</p>
+        <p className="text-xs text-muted-foreground print:hidden">
+          {form.agency} · {HANDOFF_LABEL[form.handoff]}
+          {!portalIsUrl && ` · ${form.portal}`}
+        </p>
+        <p className="text-sm print:hidden">
+          {missing
+            ? `${missing} field ang kulang — punan sa baba (o sabihin kay Kuya Hermit). Tatandaan ito para sa susunod na form.`
+            : "Kumpleto na! I-review bago i-file."}
         </p>
       </div>
       <table className="w-full text-sm">
@@ -33,15 +45,16 @@ export function FormSheet({ id }: { id: string }) {
             <tr key={f.key}>
               <th scope="row" className="w-2/5 py-2 pr-3 text-left align-top font-normal text-muted-foreground">
                 {f.label}
+                {f.hint && <span className="block text-[11px]">{f.hint}</span>}
               </th>
               <td className="py-2">
-                {f.source && !f.missing ? (
+                {f.fromProfile ? (
                   <span>{f.value}</span>
                 ) : (
                   <input
                     className="h-9 w-full rounded-lg border bg-background px-2 print:border-0"
                     defaultValue={f.value}
-                    onBlur={(e) => remember(f.key, e.target.value.trim())}
+                    onBlur={(e) => e.target.value.trim() !== f.value && remember(f.key, e.target.value.trim())}
                     aria-label={f.label}
                   />
                 )}
@@ -51,7 +64,11 @@ export function FormSheet({ id }: { id: string }) {
         </tbody>
       </table>
       <div className="flex flex-wrap gap-2 print:hidden">
-        <Button onClick={() => window.print()}>Print / Save as PDF</Button>
+        {portalIsUrl && (
+          <a href={form.portal} target="_blank" rel="noreferrer" className={buttonVariants()}>
+            {form.handoff === "portal" ? "Buksan ang portal at i-file" : `Open ${form.agency}`}
+          </a>
+        )}
         <Button
           variant="outline"
           onClick={async () => {
@@ -61,12 +78,20 @@ export function FormSheet({ id }: { id: string }) {
         >
           {copied ? "Nakopya ✓" : "Copy field sheet"}
         </Button>
-        <a href={form.portal} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "ghost" })}>
-          Open {form.agency} portal
-        </a>
+        <Button variant="outline" onClick={() => window.print()}>
+          Print / Save as PDF
+        </Button>
+        {form.source !== form.portal && (
+          <a href={form.source} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "ghost" })}>
+            Official form page
+          </a>
+        )}
+        <Link href={`/assistant?q=${encodeURIComponent(`Tulungan mo akong punan ang ${form.name}`)}`} className={buttonVariants({ variant: "ghost" })}>
+          Ipa-fill kay Kuya Hermit
+        </Link>
       </div>
       <p className="text-xs text-muted-foreground">
-        Draft field sheet — compare with the official form before filing. Hindi ito legal o tax advice.
+        Field sheet — kopyahin sa official form o portal. Compare with the official form before filing. Hindi ito legal o tax advice.
       </p>
     </div>
   )
