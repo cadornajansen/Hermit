@@ -7,7 +7,6 @@ import {
   egovAi,
   egovPay,
   egovSso,
-  faceLiveness,
 } from "egov.js"
 
 import type { Category, Extracted } from "@/lib/types"
@@ -22,8 +21,7 @@ import { classifyByKeywords } from "./mock"
 
 const env = (k: string) => process.env[k] ?? ""
 const HOSTS = {
-  sso: "https://hackathon-sso.e.gov.ph",
-  liveness: "https://platforms-api.e.gov.ph/face-liveness",
+  sso: "https://platforms-api.e.gov.ph/egov-sso",
   everify: "https://platforms-api.e.gov.ph/everify",
   emessage: "https://platforms-api.e.gov.ph/emessage",
   ai: "https://platforms-api.e.gov.ph/egov-ai",
@@ -56,10 +54,6 @@ const CATEGORIES: Category[] = ["retail", "food_service", "packaged_food", "othe
 
 export const live: Egov = {
   sso: {
-    // ponytail: the SSO login page isn't in the OpenAPI spec; EGOV_SSO_LOGIN_URL
-    // takes a {callback} placeholder until DICT confirms the redirect contract.
-    loginUrl: (callbackUrl) =>
-      env("EGOV_SSO_LOGIN_URL").replace("{callback}", encodeURIComponent(callbackUrl)),
     exchange: async (code) => {
       const c = client("sso")
       const tok = await egovSso.generateAccessToken({
@@ -75,11 +69,13 @@ export const live: Egov = {
       const data = await egovSso.authenticate({ client: c, auth: tok.access_token, throwOnError: true })
       const p = data.data
       return {
+        uniqid: p.uniqid ?? "",
         firstName: p.first_name ?? "",
         middleName: p.middle_name ?? "",
         lastName: p.last_name ?? "",
+        suffix: p.suffix ?? "",
         birthDate: p.birth_date ?? "",
-        address: [p.street, p.address, p.barangay, p.municipality, p.province].filter(Boolean).join(", "),
+        address: p.address || [p.street, p.barangay, p.municipality, p.province].filter(Boolean).join(", "),
         barangay: p.barangay ?? "",
         municipality: p.municipality ?? "",
         mobile: p.mobile ?? "",
@@ -92,26 +88,8 @@ export const live: Egov = {
       }
     },
   },
-  liveness: {
-    start: async (callbackUrl) => {
-      const data = await faceLiveness.createSession({
-        client: client("liveness", { "x-api-key": env("EGOV_LIVENESS_API_KEY") }),
-        body: { action: "redirect", callback_url: callbackUrl },
-        throwOnError: true,
-      })
-      return { sessionId: data.token, url: data.url }
-    },
-    result: async (sessionId) => {
-      const data = await faceLiveness.getVerificationResult({
-        client: client("liveness", { "x-api-key": env("EGOV_LIVENESS_API_KEY") }),
-        path: { sessionToken: sessionId },
-        throwOnError: true,
-      })
-      return { passed: data.status === "SUCCEEDED", score: data.confidence_score }
-    },
-  },
   everify: {
-    verify: async (id, livenessSessionId) => {
+    verify: async (person, livenessSessionId) => {
       const c = client("everify")
       const auth = await eVerify.authenticate({
         client: c,
@@ -122,17 +100,34 @@ export const live: Egov = {
         client: c,
         auth: auth.data.access_token,
         body: {
-          first_name: id.firstName,
-          middle_name: id.middleName || undefined,
-          last_name: id.lastName,
-          birth_date: id.birthDate,
+          first_name: person.firstName,
+          middle_name: person.middleName || undefined,
+          last_name: person.lastName,
+          suffix: person.suffix || undefined,
+          birth_date: person.birthDate,
           face_liveness_session_id: livenessSessionId,
         },
         throwOnError: true,
       })
       // A failed face match comes back as 200 with { verified: false }.
       if ("verified" in data.data) return { verified: false }
-      return { verified: true, fullAddress: data.data.present_full_address || data.data.full_address }
+      const d = data.data
+      return {
+        verified: true,
+        identity: {
+          firstName: d.first_name,
+          middleName: d.middle_name ?? "",
+          lastName: d.last_name,
+          suffix: d.suffix ?? "",
+          birthDate: d.birth_date,
+          address: d.present_full_address || d.full_address,
+          barangay: d.present_barangay || d.barangay,
+          municipality: d.present_municipality || d.municipality,
+          gender: d.gender,
+          ...(d.mobile_number && d.mobile_number !== "N/A" ? { mobile: `+${d.mobile_number.replace(/^\+/, "")}` } : {}),
+          ...(d.email && d.email !== "N/A" ? { email: d.email } : {}),
+        },
+      }
     },
   },
   emessage: {

@@ -67,6 +67,9 @@ export async function ownerId(create = false): Promise<string | null> {
   return fresh
 }
 
+// Switch this device to an existing owner (a returning eGovPH user).
+export const setOwner = (id: string) => writeSigned(OWNER, id, 60 * 60 * 24 * 400)
+
 export async function clearSession() {
   const c = await cookies()
   c.delete(SESSION)

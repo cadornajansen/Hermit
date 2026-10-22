@@ -10,9 +10,11 @@ import { live } from "./live"
 // See .env.example for the variables per service.
 
 export type Identity = {
+  uniqid: string // eGovPH account id (SSO); "" for manual / eVerify-only
   firstName: string
   middleName: string
   lastName: string
+  suffix: string
   birthDate: string // YYYY-MM-DD
   address: string
   barangay: string
@@ -31,15 +33,16 @@ export type Classification = { category: Category; psic: string; label: string }
 
 export type Egov = {
   sso: {
-    loginUrl(callbackUrl: string): string
+    // eGovPH hands us a single-use exchange_code (in-app entry or the Login widget).
     exchange(exchangeCode: string): Promise<Identity>
   }
-  liveness: {
-    start(callbackUrl: string): Promise<{ sessionId: string; url: string }>
-    result(sessionId: string): Promise<{ passed: boolean; score: number }>
-  }
   everify: {
-    verify(id: Identity, livenessSessionId: string): Promise<{ verified: boolean; fullAddress?: string }>
+    // Face liveness runs in the browser (eVerify Web SDK); this matches its
+    // session + the owner's name and birthday against PhilSys.
+    verify(
+      person: Pick<Identity, "firstName" | "middleName" | "lastName" | "suffix" | "birthDate">,
+      livenessSessionId: string
+    ): Promise<{ verified: false } | { verified: true; identity: Partial<Identity> }>
   }
   emessage: {
     sendSms(e164: string, message: string): Promise<void>
@@ -74,8 +77,7 @@ export type ServiceName = keyof Egov
 
 // Env vars whose presence switches a service from mock to live.
 export const LIVE_WHEN: Record<ServiceName, string[]> = {
-  sso: ["EGOV_SSO_PARTNER_CODE", "EGOV_SSO_PARTNER_SECRET", "EGOV_SSO_LOGIN_URL"],
-  liveness: ["EGOV_LIVENESS_API_KEY"],
+  sso: ["EGOV_SSO_PARTNER_CODE", "EGOV_SSO_PARTNER_SECRET"],
   everify: ["EGOV_EVERIFY_CLIENT_ID", "EGOV_EVERIFY_CLIENT_SECRET"],
   emessage: ["EGOV_EMESSAGE_TOKEN"],
   ai: ["EGOV_AI_ACCESS_CODE"],

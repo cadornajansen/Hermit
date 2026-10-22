@@ -3,10 +3,7 @@ import { readSession } from "@/lib/session"
 
 const AUTH_ERRORS: Record<string, string> = {
   missing_code: "Hindi natapos ang eGovPH sign-in. Subukan ulit.",
-  sso: "Hindi ma-reach ang eGovPH ngayon. Puwede kang mag-manual muna.",
-  no_session: "Nag-expire ang sign-in. Subukan ulit.",
-  not_verified: "Hindi na-verify ang National ID mo. Puwede kang mag-manual gamit ang ibang ID.",
-  verify: "Hindi ma-reach ang eVerify ngayon. Puwede kang mag-manual muna.",
+  sso: "Hindi natapos ang eGovPH sign-in (expired o nagamit na ang code). Subukan ulit, o mag-type muna nang manual.",
 }
 
 export default async function Page({ searchParams }: PageProps<"/onboarding">) {
@@ -30,6 +27,7 @@ export default async function Page({ searchParams }: PageProps<"/onboarding">) {
               }
             : null
         }
+        sso={Boolean(id?.uniqid)}
         authError={typeof auth_error === "string" ? AUTH_ERRORS[auth_error] : undefined}
       />
     </main>

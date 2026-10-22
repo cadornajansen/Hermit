@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 
 import { integrationStatus } from "@/app/actions"
 import { deleteAllData } from "@/app/sync"
+import { NationalIdCheck } from "@/components/egov-auth"
 import { label } from "@/components/onboarding"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { clearAll, update, useProfile } from "@/lib/store"
@@ -65,6 +66,11 @@ export default function ProfilePage() {
           </div>
         ))}
       </dl>
+      <NationalIdCheck
+        profile={p}
+        sso={false}
+        onVerified={(patch) => update((st) => ({ profile: st.profile && { ...st.profile, ...patch } }))}
+      />
       <div className="flex flex-wrap gap-2">
         <Link href="/onboarding" className={buttonVariants()}>
           I-edit ang profile

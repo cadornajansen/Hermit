@@ -5,9 +5,11 @@ import type { Classification, Egov, Identity } from "./index"
 // Offline stand-ins so the whole flow works before credentials arrive.
 
 const SAMPLE: Identity = {
+  uniqid: "MOCKJUANA",
   firstName: "Juana",
   middleName: "Santos",
   lastName: "Dela Cruz",
+  suffix: "",
   birthDate: "1980-05-14",
   address: "123 Sample St., Western Bicutan, Taguig City",
   barangay: "Western Bicutan",
@@ -42,15 +44,10 @@ export function classifyByKeywords(description: string): Classification {
 
 export const mock: Egov = {
   sso: {
-    loginUrl: (callbackUrl) => `${callbackUrl}?exchange_code=mock`,
     exchange: async () => SAMPLE,
   },
-  liveness: {
-    start: async (callbackUrl) => ({ sessionId: "mock-liveness", url: `${callbackUrl}?session=mock-liveness` }),
-    result: async () => ({ passed: true, score: 0.99 }),
-  },
   everify: {
-    verify: async (id) => ({ verified: true, fullAddress: id.address }),
+    verify: async (person) => ({ verified: true, identity: { ...person, address: SAMPLE.address } }),
   },
   emessage: {
     sendSms: async (to, message) => {

@@ -21,7 +21,7 @@ Without `.env.local` the app still runs: device-only storage and keyword answers
 
 `supabase/migrations/` holds the schema: `owners` (profile + checklist), `documents`, append-only `vault_events`,
 `chat_messages`, and a private `documents` storage bucket. Only the Next.js server reaches the database, with the secret
-key, always scoped to the owner id in a signed httpOnly cookie (anonymous for now; eGovPH SSO will be linked to it).
+key, always scoped to the owner id in a signed httpOnly cookie. Owners start anonymous; signing in with eGovPH binds their `uniqid`, so the same data opens on any device.
 RLS is on with no public policies, so the publishable key reads nothing. The device keeps a working copy (offline,
 weak signal) and mirrors every change through `app/sync.ts`; a new device restores from the server.
 
@@ -53,12 +53,16 @@ its extracted text, and writes `lib/form-files.json` (sha256, size, retrieved da
 Kuya Hermit reads the stored text (`read_official_form`) to explain items and attachments. Re-run the sync to detect new
 versions: it reports files whose hash changed.
 
-**Filling the real form:** each stored PDF has an editor at `/forms/<id>/fill`. `pnpm forms:layout` (once per file
-version) has Kuya Hermit match HERMIT's fields to the labels printed on the form; the coordinates are computed from the
-PDF's own text layer (fillable PDFs map to their real fields), saved in `lib/form-layouts.json`. The editor renders the
-official pages with pdf.js, places the owner's answers, and lets them edit, drag, delete, add text, tap any of their
-saved values onto the page, draw a signature, and download the finished PDF (pdf-lib). It all runs on the device; the
-signature and the filled PDF are never uploaded.
+**Filling the real form:** each stored PDF has an editor at `/forms/<id>/fill` that opens already filled in. The AI
+behind the gateway is text-only, so `pnpm forms:layout` (once per file version) first "sees" each page for it
+(`scripts/form-vision.mjs`): it renders the page, detects every drawn box and one-character cell, and reads every word
+from the text layer or, for scanned forms like SSS R-1, two OCR passes (tesseract.js). Kuya Hermit then picks the box,
+sub-label, name part (last / first / middle) and format (capitals, MM/DD/YYYY) for each answer, plus the signature
+line and date; a review pass adds anything it missed. Code then enforces form conventions (name sub-labels,
+"PRINTED NAME / SIGNATURE / DATE" lines, barangay / city, CAPITAL LETTERS) and rejects answers whose box label
+doesn't match (e.g. an email in the WEBSITE box). Results go to `lib/form-layouts.json`. In the editor the owner
+just checks, taps "Pirmahan" (the signature drops onto the signature line), and downloads; any answer can still be
+edited, moved or removed. Everything runs on the device; the signature and filled PDF are never uploaded.
 
 **Start here:** `lib/processes.ts` lists, per requirement, the exact page that starts the process (BNRS, ORUS with its
 click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,
@@ -87,9 +91,9 @@ service's env vars are set (see `.env.example`), otherwise the mock in `lib/egov
 
 | API | Used for | Live status |
 | --- | --- | --- |
-| eGovPH SSO | Sign-in (`/api/auth/sso` → `/callback`) | Wired; login URL contract still to confirm |
-| Face Liveness | Before eVerify (`/api/auth/liveness`) | Wired |
-| National ID eVerify | Pull verified name, birthday, address | Wired |
+| eGovPH SSO | In-app entry `/egovph/sso?exchange_code=…` + the official "Login as eGov" widget; binds the eGovPH `uniqid` to the owner so their data follows them | **Live** |
+| Face Liveness | eVerify Web SDK in the browser, before the PhilSys match | **Live** |
+| National ID eVerify | Match name + birthday + face against PhilSys; fills the verified name, birthday and address | **Live** |
 | eMessage | SMS reminders | Wired (sends only to the signed-in owner's number) |
 | eGov AI | Business classification, Taglish explanations, document reading | Wired; keyword / filename fallbacks |
 | eGovPay | Fees (P2) | Adapter wired, no UI yet |
@@ -108,7 +112,7 @@ guessed from the filename and the owner types the details, which run through the
 
 ## Not built yet
 
-Account linking (eGovPH SSO / OTP) to recover data on a new browser, server-side reminder
-scheduling, shareable compliance pack, filled official PDFs,
+Server-side reminder
+scheduling, shareable compliance pack,
 holiday-aware deadlines, full Filipino/English toggle, other LGUs, employer payroll module. Every rule in the seed table
 is unverified until a pilot LGU and RDO sign it off.

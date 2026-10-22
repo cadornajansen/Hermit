@@ -17,6 +17,7 @@ const RULES = {
   chat: { ownerHour: 30, ownerDay: 120, ipHour: 300 },
   read: { ownerHour: 20, ownerDay: 60, ipHour: 150 },
   classify: { ownerHour: 10, ownerDay: 30, ipHour: 150 },
+  verify: { ownerHour: 5, ownerDay: 10, ipHour: 40 }, // eVerify (PhilSys) checks
 } as const
 
 export type AiKind = keyof typeof RULES

@@ -1,5 +1,6 @@
 {
  "bir_1901/bir-form-1901-october-2025.pdf": {
+  "version": 2,
   "formId": "bir_1901",
   "sha256": "0cd788622d464271fb2f325089400c39f88533277ae4eff9caa2b63f8cebbb3f",
   "fillable": false,
@@ -21,114 +22,196 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
-    "key": "owner_name",
+    "key": "__constant",
     "page": 0,
-    "x": 126.02,
-    "y": 589.78,
-    "size": 7
-   },
-   {
-    "key": "birth_date",
-    "page": 0,
-    "x": 215.654,
-    "y": 533.05,
-    "size": 9
-   },
-   {
-    "key": "residence",
-    "page": 0,
-    "x": 27.4,
-    "y": 461.55,
-    "size": 8
-   },
-   {
-    "key": "mobile",
-    "page": 0,
-    "x": 218.85,
-    "y": 268.32,
-    "size": 8
-   },
-   {
-    "key": "email",
-    "page": 0,
-    "x": 290.35,
-    "y": 268.32,
-    "size": 8
-   },
-   {
-    "key": "business_name",
-    "page": 1,
-    "x": 192.93,
-    "y": 702.38,
-    "size": 9
-   },
-   {
-    "key": "business_address",
-    "page": 0,
-    "x": 27.4,
-    "y": 400.95,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 35.445,
+    "y": 723.19,
+    "size": 8.5,
+    "mark": true
    },
    {
     "key": "barangay",
     "page": 0,
-    "x": 67.4,
-    "y": 375.85,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 35,
+    "y": 375.75,
+    "size": 9,
+    "maxWidth": 109
    },
    {
     "key": "city",
     "page": 0,
-    "x": 312.15,
-    "y": 375.85,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 279.5,
+    "y": 375.75,
+    "size": 9,
+    "maxWidth": 109.5
    },
    {
-    "key": "activity",
-    "page": 1,
-    "x": 463.97,
-    "y": 655.78,
-    "size": 9
-   },
-   {
-    "key": "tin",
+    "key": "mobile",
     "page": 0,
-    "x": 182.63499999999993,
-    "y": 742.38,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 207.5,
+    "y": 265.875,
+    "size": 9,
+    "maxWidth": 66.5
+   },
+   {
+    "key": "email",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 293.75,
+    "y": 265.875,
+    "size": 9,
+    "maxWidth": 284
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 440.695,
+    "y": 250.44,
+    "size": 8.5,
+    "mark": true,
+    "equals": "8% flat rate"
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 497.945,
+    "y": 250.69,
+    "size": 8.5,
+    "mark": true,
+    "equals": "Graduated rates"
+   },
+   {
+    "key": "business_name",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 77.5,
+    "y": 702.8625,
+    "size": 8.525,
+    "maxWidth": 325.75
    },
    {
     "key": "dti_no",
     "page": 1,
-    "x": 87.125,
-    "y": 654.97,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 77.5,
+    "y": 650.25,
+    "size": 9,
+    "maxWidth": 95
    },
    {
-    "key": "tax_option",
-    "page": 0,
-    "x": 445.77,
-    "y": 250.03,
+    "key": "activity",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 408.75,
+    "y": 650.25,
     "size": 9,
-    "equals": "8% flat rate",
-    "mark": true
+    "maxWidth": 182.75
    },
    {
-    "key": "tax_option",
+    "key": "__signature",
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 196,
+    "y": 294.25,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "birth_date",
     "page": 0,
-    "x": 502.9,
-    "y": 250.03,
+    "part": "full",
+    "format": "date",
+    "x": 221.5,
+    "y": 529.125,
     "size": 9,
-    "equals": "Graduated rates",
-    "mark": true
+    "maxWidth": 23.75
+   },
+   {
+    "key": "residence",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 337.25,
+    "y": 461.375,
+    "size": 9,
+    "maxWidth": 111.75
+   },
+   {
+    "key": "business_address",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 337.25,
+    "y": 400.75,
+    "size": 9,
+    "maxWidth": 111.75
+   },
+   {
+    "key": "tin",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 182.63499999999993,
+    "y": 751.875,
+    "size": 9,
+    "maxWidth": 33.365000000000066
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 126.02,
+    "y": 592.28,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "last",
+    "format": "as_is"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 240.35,
+    "y": 592.28,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "first",
+    "format": "as_is"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 393.6989999999998,
+    "y": 592.28,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "middle",
+    "format": "as_is"
    }
   ],
-  "generatedAt": "2026-10-22T12:30:51.558Z",
+  "generatedAt": "2026-10-22T13:40:44.944Z",
   "model": "claude-opus-5-5"
  },
  "bir_1903/bir-form-1903-october-2025.pdf": {
+  "version": 2,
   "formId": "bir_1903",
   "sha256": "fe23da0e1f724be648d778cbe7a8ca09938e6e1a6df289d835e8a4fe8b78b744",
   "fillable": false,
@@ -150,75 +233,135 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 30.5,
-    "y": 581.47,
-    "size": 9
-   },
-   {
-    "key": "mobile",
-    "page": 0,
-    "x": 218.15,
-    "y": 415.25,
-    "size": 8
-   },
-   {
-    "key": "email",
-    "page": 0,
-    "x": 291.15,
-    "y": 415.25,
-    "size": 8
-   },
    {
     "key": "business_name",
     "page": 0,
-    "x": 193.52,
-    "y": 52.625,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 35,
+    "y": 582,
+    "size": 9,
+    "maxWidth": 542.25
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 27.4,
-    "y": 511.35,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 337.75,
+    "y": 511.25,
+    "size": 9,
+    "maxWidth": 110
    },
    {
     "key": "barangay",
     "page": 0,
-    "x": 74.025,
-    "y": 486.25,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 35,
+    "y": 486,
+    "size": 9,
+    "maxWidth": 109.5
    },
    {
     "key": "city",
     "page": 0,
-    "x": 313.35,
-    "y": 486.25,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 279.25,
+    "y": 486,
+    "size": 9,
+    "maxWidth": 111
    },
    {
-    "key": "activity",
-    "page": 1,
-    "x": 464.38,
-    "y": 850.7,
-    "size": 9
+    "key": "mobile",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 207.5,
+    "y": 412.75,
+    "size": 9,
+    "maxWidth": 66.25
+   },
+   {
+    "key": "email",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 294.25,
+    "y": 412.75,
+    "size": 9,
+    "maxWidth": 283
+   },
+   {
+    "key": "business_name",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 78,
+    "y": 52.125,
+    "size": 9,
+    "maxWidth": 326
    },
    {
     "key": "dti_no",
     "page": 1,
-    "x": 109.93,
-    "y": 847.4,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 78,
+    "y": 845.375,
+    "size": 9,
+    "maxWidth": 95
+   },
+   {
+    "key": "activity",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 409.5,
+    "y": 845.375,
+    "size": 9,
+    "maxWidth": 182
+   },
+   {
+    "key": "__signature",
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 53.6815,
+    "y": 308.45,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "__today",
+    "page": 2,
+    "part": "full",
+    "format": "date",
+    "x": 247.25,
+    "y": 283.03,
+    "size": 9,
+    "maxWidth": 200.5
+   },
+   {
+    "key": "start_date",
+    "page": 0,
+    "part": "full",
+    "format": "date",
+    "x": 18.25,
+    "y": 544.25,
+    "size": 9,
+    "pitch": 17.125,
+    "slots": 10
    }
   ],
-  "generatedAt": "2026-10-22T12:31:02.204Z",
+  "generatedAt": "2026-10-22T13:40:29.080Z",
   "model": "claude-opus-5-5"
  },
  "bir_1905/bir-form-1905-october-2025.pdf": {
+  "version": 2,
   "formId": "bir_1905",
   "sha256": "708aba680e50e83d2f935f045465faa2b86d258b88b65da369e7e4e0550a23e2",
   "fillable": false,
@@ -240,79 +383,119 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 30.5,
-    "y": 746.47,
-    "size": 9
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 30.5,
-    "y": 775.58,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 32,
+    "y": 771,
+    "size": 9,
+    "pitch": 14.166666666666666,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 303.75,
-    "y": 775.58,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 305.5,
+    "y": 771,
+    "size": 9,
+    "pitch": 14.25,
+    "slots": 3
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 21.25,
+    "y": 745.875,
+    "size": 9,
+    "maxWidth": 570.25
+   },
+   {
+    "key": "reason",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 425.765125,
+    "y": 694.8915,
+    "size": 8.2875,
+    "mark": true,
+    "equals": "closure"
+   },
+   {
+    "key": "reason",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 35.195,
+    "y": 566.44,
+    "size": 8.5,
+    "mark": true,
+    "equals": "update"
+   },
+   {
+    "key": "reason",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 35.195,
+    "y": 265.44,
+    "size": 8.5,
+    "mark": true,
+    "equals": "cancellation"
+   },
+   {
+    "key": "__signature",
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 188.875,
+    "y": 240.25,
+    "size": 90,
+    "signature": true
    },
    {
     "key": "business_name",
     "page": 1,
-    "x": 411.67,
-    "y": 143.53,
-    "size": 9
-   },
-   {
-    "key": "business_address",
-    "page": 0,
-    "x": 32.6,
-    "y": 422.55,
-    "size": 7
+    "part": "full",
+    "format": "as_is",
+    "x": 409.5,
+    "y": 141.375,
+    "size": 9,
+    "maxWidth": 168
    },
    {
     "key": "barangay",
     "page": 0,
-    "x": 176.53,
-    "y": 372.25,
-    "size": 7
+    "part": "full",
+    "format": "as_is",
+    "x": 35,
+    "y": 370.625,
+    "size": 9,
+    "maxWidth": 282.5
    },
    {
     "key": "city",
     "page": 0,
-    "x": 133.83,
-    "y": 347.05,
-    "size": 7
-   },
-   {
-    "key": "reason",
-    "page": 0,
-    "x": 229.65,
-    "y": 659.47,
-    "size": 8,
-    "equals": "update",
-    "mark": true
-   },
-   {
-    "key": "reason",
-    "page": 0,
-    "x": 431.47,
-    "y": 694.28,
-    "size": 8.5,
-    "equals": "closure",
-    "mark": true
+    "part": "full",
+    "format": "as_is",
+    "x": 35,
+    "y": 345.5,
+    "size": 9,
+    "maxWidth": 210.25
    }
   ],
-  "generatedAt": "2026-10-22T12:31:15.343Z",
+  "generatedAt": "2026-10-22T13:40:29.555Z",
   "model": "claude-opus-5-5"
  },
  "bir_1906/bir-form-1906-october-2025.pdf": {
+  "version": 2,
   "formId": "bir_1906",
   "sha256": "cc92712f2d6384462919c1b962919aa81aa18ce6f1dbc79688cff29cc521cffe",
   "fillable": false,
@@ -326,47 +509,79 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
     "key": "tin",
     "page": 0,
-    "x": 27.4,
-    "y": 798,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 29,
+    "y": 805.25,
+    "size": 9,
+    "pitch": 14.333333333333334,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 535.5,
-    "y": 810,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 537.25,
+    "y": 805.25,
+    "size": 9,
+    "pitch": 14.416666666666666,
+    "slots": 3
    },
    {
     "key": "owner_name",
     "page": 0,
-    "x": 99.925,
-    "y": 774.47,
-    "size": 8
+    "part": "full",
+    "format": "as_is",
+    "x": 15.25,
+    "y": 769.25,
+    "size": 9,
+    "pitch": 15.243421052631579,
+    "slots": 38
    },
    {
     "key": "business_name",
     "page": 0,
-    "x": 27.4,
-    "y": 727.17,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 15.25,
+    "y": 723,
+    "size": 9,
+    "pitch": 15.243421052631579,
+    "slots": 38
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 101.92,
-    "y": 700.08,
-    "size": 7.5
+    "part": "full",
+    "format": "as_is",
+    "x": 15.25,
+    "y": 694.5,
+    "size": 9,
+    "pitch": 15.243421052631579,
+    "slots": 38
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 92.33800000000005,
+    "y": 88.925,
+    "size": 90,
+    "signature": true
    }
   ],
-  "generatedAt": "2026-10-22T12:31:19.008Z",
+  "generatedAt": "2026-10-22T13:40:20.822Z",
   "model": "claude-opus-5-5"
  },
  "lgu_permit/taguig-unified-business-permit-application-form.pdf": {
+  "version": 2,
   "formId": "lgu_permit",
   "sha256": "365b2619fb6c82b57b175e80ed40552fd03177e992d72b5958f5b9a1da6b749e",
   "fillable": true,
@@ -376,130 +591,184 @@
     "h": 1152
    }
   ],
+  "scanned": false,
   "entries": [
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "last",
+    "format": "upper",
+    "pdfField": "text_34lyeh",
+    "x": 129,
+    "y": 826.5,
+    "size": 7,
+    "maxWidth": 105
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "first",
+    "format": "upper",
+    "pdfField": "text_35xptt",
+    "x": 243,
+    "y": 826.5,
+    "size": 7,
+    "maxWidth": 148
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "middle",
+    "format": "upper",
+    "pdfField": "text_36huqn",
+    "x": 401,
+    "y": 826.5,
+    "size": 7,
+    "maxWidth": 125
+   },
    {
     "key": "business_name",
     "page": 0,
+    "part": "full",
+    "format": "upper",
+    "pdfField": "text_38zjey",
     "x": 98,
     "y": 803.5,
     "size": 9,
-    "pdfField": "text_38zjey"
+    "maxWidth": 189
+   },
+   {
+    "key": "dti_no",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "pdfField": "text_30udps",
+    "x": 28,
+    "y": 851.5,
+    "size": 7,
+    "maxWidth": 179
+   },
+   {
+    "key": "tin",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "pdfField": "text_32oio",
+    "x": 456,
+    "y": 851.5,
+    "size": 7,
+    "maxWidth": 112
+   },
+   {
+    "key": "business_address",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "pdfField": "text_43gghd",
+    "x": 45,
+    "y": 743.5,
+    "size": 9,
+    "maxWidth": 166
    },
    {
     "key": "barangay",
     "page": 0,
+    "part": "full",
+    "format": "upper",
+    "pdfField": "text_44jxkd",
     "x": 219,
-    "y": 743,
+    "y": 742.5,
     "size": 9,
-    "pdfField": "text_44jxkd"
+    "maxWidth": 123
    },
    {
     "key": "city",
     "page": 0,
+    "part": "full",
+    "format": "upper",
+    "pdfField": "text_45syka",
     "x": 359,
-    "y": 744,
+    "y": 743.5,
     "size": 9,
-    "pdfField": "text_45syka"
+    "maxWidth": 139
+   },
+   {
+    "key": "floor_area",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "pdfField": "text_47eyfl",
+    "x": 120,
+    "y": 717,
+    "size": 9,
+    "maxWidth": 25
    },
    {
     "key": "structure",
     "page": 0,
-    "x": 181,
-    "y": 896.5,
-    "size": 9,
+    "part": "full",
+    "format": "as_is",
     "pdfField": "checkbox_21ksxx",
+    "x": 180,
+    "y": 895,
+    "size": 9,
     "mark": true,
     "equals": "Sole proprietorship"
    },
    {
     "key": "structure",
     "page": 0,
-    "x": 422,
-    "y": 895.5,
+    "part": "full",
+    "format": "as_is",
+    "pdfField": "checkbox_22mohi",
+    "x": 288,
+    "y": 896,
     "size": 9,
+    "mark": true,
+    "equals": "Corporation / OPC"
+   },
+   {
+    "key": "structure",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
     "pdfField": "checkbox_23rjvx",
+    "x": 421,
+    "y": 894,
+    "size": 9,
     "mark": true,
     "equals": "Partnership"
    },
    {
-    "key": "structure",
-    "page": 0,
-    "x": 421,
-    "y": 877.5,
-    "size": 9,
-    "pdfField": "checkbox_29toih",
-    "mark": true,
-    "equals": "Corporation / OPC"
-   },
-   {
-    "key": "structure",
-    "page": 0,
-    "x": 289,
-    "y": 897.5,
-    "size": 9,
-    "pdfField": "checkbox_22mohi",
-    "mark": true,
-    "equals": "Corporation / OPC"
-   },
-   {
-    "key": "structure",
-    "page": 0,
-    "x": 507,
-    "y": 896.5,
-    "size": 9,
-    "pdfField": "checkbox_24qwpv",
-    "mark": true,
-    "equals": "Cooperative"
-   },
-   {
     "key": "premises",
     "page": 0,
-    "x": 187,
-    "y": 712.5,
-    "size": 9,
+    "part": "full",
+    "format": "as_is",
     "pdfField": "checkbox_48phys",
+    "x": 186,
+    "y": 711,
+    "size": 9,
     "mark": true,
     "equals": "Owned"
    },
    {
     "key": "premises",
     "page": 0,
-    "x": 238,
-    "y": 712.5,
-    "size": 9,
+    "part": "full",
+    "format": "as_is",
     "pdfField": "checkbox_49luxb",
+    "x": 237,
+    "y": 711,
+    "size": 9,
     "mark": true,
     "equals": "Rented"
-   },
-   {
-    "key": "dti_no",
-    "page": 0,
-    "x": 28,
-    "y": 852,
-    "size": 7,
-    "pdfField": "text_30udps"
-   },
-   {
-    "key": "tin",
-    "page": 0,
-    "x": 456,
-    "y": 852,
-    "size": 7,
-    "pdfField": "text_32oio"
-   },
-   {
-    "key": "floor_area",
-    "page": 0,
-    "x": 120,
-    "y": 717,
-    "size": 9,
-    "pdfField": "text_47eyfl"
    }
   ],
-  "generatedAt": "2026-10-22T12:31:33.692Z",
+  "generatedAt": "2026-10-22T13:45:44.193Z",
   "model": "claude-opus-5-5"
  },
  "bir_2121/bir-form-2121.pdf": {
+  "version": 2,
   "formId": "bir_2121",
   "sha256": "ad0e9b48154e71825628a87337f3e879b6222e0b8829de4165a87c6f1b70e044",
   "fillable": false,
@@ -509,47 +778,68 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 101.18,
-    "y": 728.5400000000001,
-    "size": 7.56
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 180.309,
-    "y": 755.62,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 204,
+    "y": 751.5,
+    "size": 9,
+    "pitch": 14.083333333333334,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 506.96299999999997,
-    "y": 755.62,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 546,
+    "y": 751.5,
+    "size": 9,
+    "pitch": 13.916666666666666,
+    "slots": 3
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 19,
+    "y": 722.75,
+    "size": 9,
+    "pitch": 14.21875,
+    "slots": 40
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 27.84,
-    "y": 669.86,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 19,
+    "y": 665.75,
+    "size": 9,
+    "pitch": 14.21875,
+    "slots": 40
    },
    {
-    "key": "period",
+    "key": "__signature",
     "page": 0,
-    "x": 28.32,
-    "y": 801.26,
-    "size": 8.04
+    "part": "full",
+    "format": "as_is",
+    "x": 121.375,
+    "y": 243.25,
+    "size": 90,
+    "signature": true
    }
   ],
-  "generatedAt": "2026-10-22T12:31:40.856Z",
+  "generatedAt": "2026-10-22T13:40:47.699Z",
   "model": "claude-opus-5-5"
  },
  "bir_0605/bir-form-0605-pdf.pdf": {
+  "version": 2,
   "formId": "bir_0605",
   "sha256": "de04419766c59bf27fdeb854c0f7c3f98601900caa20630442e671e2313e536f",
   "fillable": false,
@@ -563,40 +853,54 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
+   {
+    "key": "rdo_code",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 246.25,
+    "y": 676.875,
+    "size": 9,
+    "maxWidth": 37.5
+   },
    {
     "key": "owner_name",
     "page": 0,
-    "x": 76.52723200000001,
-    "y": 658.63,
-    "size": 8.064
+    "part": "full",
+    "format": "as_is",
+    "x": 96,
+    "y": 650.75,
+    "size": 9,
+    "maxWidth": 352.5
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 91.67217599999992,
+    "y": 288.32399999999996,
+    "size": 90,
+    "signature": true
    },
    {
     "key": "tin",
     "page": 0,
-    "x": 29.28,
-    "y": 681.446,
-    "size": 8.064
-   },
-   {
-    "key": "rdo_code",
-    "page": 0,
-    "x": 243.41,
-    "y": 681.446,
-    "size": 8.064
-   },
-   {
-    "key": "period",
-    "page": 0,
-    "x": 31.554048,
-    "y": 743.1560000000001,
-    "size": 8.064
+    "part": "full",
+    "format": "as_is",
+    "x": 33.75,
+    "y": 676.875,
+    "size": 9,
+    "maxWidth": 32.75
    }
   ],
-  "generatedAt": "2026-10-22T12:31:50.235Z",
+  "generatedAt": "2026-10-22T13:40:50.716Z",
   "model": "claude-opus-5-5"
  },
  "bir_2551q/bir-form-2551q-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_2551q",
   "sha256": "1f270ecf66d778836a14697863e420ff65d5ed0a5576a6cf58b97c9a8e8c9b24",
   "fillable": false,
@@ -610,54 +914,145 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 36.36,
-    "y": 734.9,
-    "size": 9
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 196.377,
-    "y": 763.66,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 221,
+    "y": 759.75,
+    "size": 9,
+    "pitch": 14,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 525.7108400000001,
-    "y": 763.66,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 547.75,
+    "y": 759.75,
+    "size": 9,
+    "pitch": 13.916666666666666,
+    "slots": 3
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 23.75,
+    "y": 730.5,
+    "size": 9,
+    "pitch": 14.14375,
+    "slots": 40
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 36.36,
-    "y": 705.74,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 23.75,
+    "y": 701.25,
+    "size": 9,
+    "pitch": 14.14375,
+    "slots": 40
    },
    {
     "key": "period",
     "page": 0,
-    "x": 129.40816,
-    "y": 797.38,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 248.155,
+    "y": 800.385,
+    "size": 9,
+    "mark": true,
+    "equals": "1st"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 290.405,
+    "y": 800.01,
+    "size": 9,
+    "mark": true,
+    "equals": "2nd"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 332.78,
+    "y": 800.385,
+    "size": 9,
+    "mark": true,
+    "equals": "3rd"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 374.905,
+    "y": 800.51,
+    "size": 9,
+    "mark": true,
+    "equals": "4th"
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 23.75,
+    "y": 812,
+    "size": 9,
+    "pitch": 14.107142857142858,
+    "slots": 14
+   },
+   {
+    "key": "owner_name",
+    "page": 1,
+    "part": "last",
+    "format": "upper",
+    "x": 221.75,
+    "y": 812,
+    "size": 9,
+    "pitch": 14.14423076923077,
+    "slots": 26
    },
    {
     "key": "gross_sales",
     "page": 1,
-    "x": 181.7,
-    "y": 767.06,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 108.5,
+    "y": 757.25,
+    "size": 9,
+    "pitch": 14.125,
+    "slots": 12
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 3.3005999999999958,
+    "y": 260.97999999999996,
+    "size": 90,
+    "signature": true
    }
   ],
-  "generatedAt": "2026-10-22T12:32:01.798Z",
+  "generatedAt": "2026-10-22T13:41:10.000Z",
   "model": "claude-opus-5-5"
  },
  "bir_2550q/bir-form-2550q-april-2024.pdf": {
+  "version": 2,
   "formId": "bir_2550q",
   "sha256": "18eb16925010fdda820cef958221ba2c0d073066efa93a898113e39b31135a25",
   "fillable": false,
@@ -671,54 +1066,134 @@
     "h": 1008
    }
   ],
+  "scanned": false,
   "entries": [
    {
-    "key": "owner_name",
-    "page": 0,
-    "x": 35,
-    "y": 799.17,
-    "size": 9
-   },
-   {
     "key": "tin",
-    "page": 0,
-    "x": 187.22499999999994,
-    "y": 827.08,
-    "size": 9
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 22.75,
+    "y": 902.75,
+    "size": 5,
+    "pitch": 14.035714285714286,
+    "slots": 14
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 536.5039999999999,
-    "y": 827.08,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 547,
+    "y": 823.5,
+    "size": 9,
+    "pitch": 14.833333333333334,
+    "slots": 3
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 22.75,
+    "y": 795,
+    "size": 9,
+    "pitch": 14.583333333333334,
+    "slots": 39
+   },
+   {
+    "key": "owner_name",
+    "page": 1,
+    "part": "last",
+    "format": "upper",
+    "x": 219.75,
+    "y": 902.75,
+    "size": 9,
+    "pitch": 15.385416666666666,
+    "slots": 24
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 38.5,
-    "y": 770.58,
-    "size": 9
-   },
-   {
-    "key": "period",
-    "page": 0,
-    "x": 59.99999999999999,
-    "y": 859.58,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 22.75,
+    "y": 766.25,
+    "size": 9,
+    "pitch": 14.583333333333334,
+    "slots": 39
    },
    {
     "key": "gross_sales",
     "page": 1,
-    "x": 143.92899999999997,
-    "y": 819.47,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 162.75,
+    "y": 861.5,
+    "size": 9,
+    "pitch": 17,
+    "slots": 10
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 34.644000000000005,
+    "y": 345.35,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 438.53,
+    "y": 888.885,
+    "size": 9,
+    "mark": true,
+    "equals": "1st"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 474.28,
+    "y": 888.135,
+    "size": 9,
+    "mark": true,
+    "equals": "2nd"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 516.405,
+    "y": 888.76,
+    "size": 9,
+    "mark": true,
+    "equals": "3rd"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 558.155,
+    "y": 888.635,
+    "size": 9,
+    "mark": true,
+    "equals": "4th"
    }
   ],
-  "generatedAt": "2026-10-22T12:32:15.964Z",
+  "generatedAt": "2026-10-22T13:41:13.224Z",
   "model": "claude-opus-5-5"
  },
  "bir_1701q/bir-form-1701q-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1701q",
   "sha256": "c731d3f12556e6f19ab81f6113ca7c4a23f7ed099675c03451ac0074d96b85ed",
   "fillable": false,
@@ -732,79 +1207,132 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 119.3,
-    "y": 723.98,
-    "size": 7.56
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 178.509,
-    "y": 798.58,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 198.75,
+    "y": 795.25,
+    "size": 9,
+    "pitch": 14.25,
+    "slots": 3
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 14.25,
+    "y": 823,
+    "size": 5,
+    "pitch": 13.785714285714286,
+    "slots": 14
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 508.745,
-    "y": 798.58,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 533.25,
+    "y": 795.25,
+    "size": 9,
+    "pitch": 15.833333333333334,
+    "slots": 3
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 16.25,
+    "y": 719.25,
+    "size": 9,
+    "pitch": 14.4625,
+    "slots": 40
+   },
+   {
+    "key": "owner_name",
+    "page": 1,
+    "part": "last",
+    "format": "upper",
+    "x": 207.75,
+    "y": 823,
+    "size": 9,
+    "pitch": 14.961538461538462,
+    "slots": 26
+   },
+   {
+    "key": "residence",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 16.25,
+    "y": 691.75,
+    "size": 9,
+    "pitch": 14.4625,
+    "slots": 40
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 63.655,
+    "y": 596.26,
+    "size": 9,
+    "mark": true,
+    "equals": "Graduated rates"
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 64.28,
+    "y": 574.76,
+    "size": 9,
+    "mark": true,
+    "equals": "8% flat rate"
+   },
+   {
+    "key": "__constant",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 116.655,
+    "y": 781.76,
+    "size": 9,
+    "mark": true
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 72.26539999999999,
+    "y": 199.54,
+    "size": 90,
+    "signature": true
    },
    {
     "key": "birth_date",
     "page": 0,
-    "x": 29.28,
-    "y": 650.51,
-    "size": 9
-   },
-   {
-    "key": "tax_option",
-    "page": 0,
-    "x": 69.624,
-    "y": 574.15,
-    "size": 9,
-    "equals": "8% flat rate",
-    "mark": true
-   },
-   {
-    "key": "tax_option",
-    "page": 0,
-    "x": 70.104,
-    "y": 598.51,
-    "size": 9,
-    "equals": "Graduated rates",
-    "mark": true
-   },
-   {
-    "key": "period",
-    "page": 0,
-    "x": 82.066,
-    "y": 831.1,
-    "size": 9
-   },
-   {
-    "key": "gross_sales",
-    "page": 1,
-    "x": 319.0851600000001,
-    "y": 763.78,
-    "size": 9
-   },
-   {
-    "key": "gross_sales",
-    "page": 1,
-    "x": 319.0851600000001,
-    "y": 550.15,
-    "size": 9
+    "part": "full",
+    "format": "date",
+    "x": 207.309,
+    "y": 665,
+    "size": 7.25,
+    "maxWidth": 385.44100000000003
    }
   ],
-  "generatedAt": "2026-10-22T12:32:29.989Z",
+  "generatedAt": "2026-10-22T13:41:15.140Z",
   "model": "claude-opus-5-5"
  },
  "bir_1701/bir-form-1701-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1701",
   "sha256": "19be91d78258eb7c255f2615610db2739f10c378f8ac97adc0887c1bf40d1b2e",
   "fillable": false,
@@ -826,72 +1354,220 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 101.18,
-    "y": 714.1400000000001,
-    "size": 7.56
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 177.68687999999997,
-    "y": 789.94,
-    "size": 8.04
+    "part": "full",
+    "format": "as_is",
+    "x": 195.5,
+    "y": 786.25,
+    "size": 9,
+    "pitch": 14.166666666666666,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 526.2830000000001,
-    "y": 789.94,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 552.5,
+    "y": 786.25,
+    "size": 9,
+    "pitch": 15.25,
+    "slots": 3
    },
    {
-    "key": "birth_date",
+    "key": "__constant",
     "page": 0,
-    "x": 80.664,
-    "y": 645.59,
-    "size": 7.56
+    "part": "full",
+    "format": "as_is",
+    "x": 116.03,
+    "y": 773.51,
+    "size": 9,
+    "mark": true
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 158.53,
+    "y": 755.51,
+    "size": 9,
+    "mark": true,
+    "equals": "Graduated rates"
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 158.655,
+    "y": 741.51,
+    "size": 9,
+    "mark": true,
+    "equals": "8% flat rate"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 15.5,
+    "y": 710.5,
+    "size": 9,
+    "pitch": 14.56875,
+    "slots": 40
    },
    {
     "key": "residence",
     "page": 0,
-    "x": 73.584,
-    "y": 686.42,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 15.5,
+    "y": 684.25,
+    "size": 9,
+    "pitch": 14.56875,
+    "slots": 40
+   },
+   {
+    "key": "birth_date",
+    "page": 0,
+    "part": "full",
+    "format": "date",
+    "x": 18.5,
+    "y": 644.5,
+    "size": 9,
+    "maxWidth": 21.75
    },
    {
     "key": "tax_option",
     "page": 0,
-    "x": 69.864,
-    "y": 531.91,
+    "part": "full",
+    "format": "as_is",
+    "x": 65.655,
+    "y": 530.51,
     "size": 9,
-    "equals": "Graduated rates",
-    "mark": true
+    "mark": true,
+    "equals": "Graduated rates"
    },
    {
     "key": "tax_option",
     "page": 0,
-    "x": 69.864,
-    "y": 507.43,
+    "part": "full",
+    "format": "as_is",
+    "x": 65.905,
+    "y": 508.51,
     "size": 9,
-    "equals": "8% flat rate",
-    "mark": true
+    "mark": true,
+    "equals": "8% flat rate"
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 194.5,
+    "y": 198.75,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 15.5,
+    "y": 844.5,
+    "size": 5,
+    "pitch": 13.785714285714286,
+    "slots": 14
+   },
+   {
+    "key": "owner_name",
+    "page": 1,
+    "part": "last",
+    "format": "as_is",
+    "x": 209,
+    "y": 844.5,
+    "size": 9,
+    "pitch": 14.971153846153847,
+    "slots": 26
    },
    {
     "key": "gross_sales",
     "page": 1,
-    "x": 156.94899999999998,
-    "y": 321.77,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 328.25,
+    "y": 318.5,
+    "size": 9,
+    "pitch": 14.805555555555555,
+    "slots": 9
+   },
+   {
+    "key": "tin",
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 15.5,
+    "y": 844,
+    "size": 5,
+    "pitch": 13.785714285714286,
+    "slots": 14
+   },
+   {
+    "key": "owner_name",
+    "page": 2,
+    "part": "last",
+    "format": "as_is",
+    "x": 209,
+    "y": 844,
+    "size": 9,
+    "pitch": 14.971153846153847,
+    "slots": 26
+   },
+   {
+    "key": "gross_sales",
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 328.25,
+    "y": 804,
+    "size": 9,
+    "pitch": 14.805555555555555,
+    "slots": 9
+   },
+   {
+    "key": "tin",
+    "page": 3,
+    "part": "full",
+    "format": "as_is",
+    "x": 15.5,
+    "y": 847.5,
+    "size": 5,
+    "pitch": 13.785714285714286,
+    "slots": 14
+   },
+   {
+    "key": "owner_name",
+    "page": 3,
+    "part": "last",
+    "format": "as_is",
+    "x": 209,
+    "y": 847.5,
+    "size": 9,
+    "pitch": 14.971153846153847,
+    "slots": 26
    }
   ],
-  "generatedAt": "2026-10-22T12:32:44.375Z",
+  "generatedAt": "2026-10-22T13:41:27.847Z",
   "model": "claude-opus-5-5"
  },
  "bir_1701/bir-form-1701a-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1701",
   "sha256": "8d492eabc6da2088cf9a55084488b192def5cc415048f607142c8bce1b72bfb8",
   "fillable": false,
@@ -905,79 +1581,143 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
-    "key": "owner_name",
-    "page": 0,
-    "x": 101.18,
-    "y": 710.3000000000001,
-    "size": 8.04
-   },
-   {
     "key": "tin",
-    "page": 0,
-    "x": 27.84,
-    "y": 771.62,
-    "size": 9
+    "page": 1,
+    "part": "full",
+    "format": "upper",
+    "x": 15.5,
+    "y": 829.75,
+    "size": 5,
+    "pitch": 13.785714285714286,
+    "slots": 14
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 296.93,
-    "y": 771.62,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 298.25,
+    "y": 766.75,
+    "size": 9,
+    "pitch": 14.666666666666666,
+    "slots": 3
    },
    {
-    "key": "birth_date",
+    "key": "owner_name",
     "page": 0,
-    "x": 82.104,
-    "y": 635.2700000000001,
-    "size": 7.56
+    "part": "full",
+    "format": "upper",
+    "x": 15.5,
+    "y": 705,
+    "size": 9,
+    "pitch": 14.56875,
+    "slots": 40
+   },
+   {
+    "key": "owner_name",
+    "page": 1,
+    "part": "last",
+    "format": "upper",
+    "x": 209,
+    "y": 829.75,
+    "size": 9,
+    "pitch": 14.971153846153847,
+    "slots": 26
    },
    {
     "key": "residence",
     "page": 0,
-    "x": 73.584,
-    "y": 680.78,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 15.5,
+    "y": 676.25,
+    "size": 9,
+    "pitch": 14.56875,
+    "slots": 40
    },
    {
     "key": "tax_option",
     "page": 0,
-    "x": 90.264,
-    "y": 542.59,
+    "part": "full",
+    "format": "as_is",
+    "x": 85.78,
+    "y": 538.01,
     "size": 9,
-    "equals": "Graduated rates",
-    "mark": true
+    "mark": true,
+    "equals": "Graduated rates"
    },
    {
     "key": "tax_option",
     "page": 0,
-    "x": 280.37,
-    "y": 542.59,
+    "part": "full",
+    "format": "as_is",
+    "x": 272.905,
+    "y": 537.76,
     "size": 9,
-    "equals": "8% flat rate",
+    "mark": true,
+    "equals": "8% flat rate"
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 163.03,
+    "y": 752.01,
+    "size": 9,
+    "mark": true,
+    "equals": "Graduated rates"
+   },
+   {
+    "key": "tax_option",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 162.78,
+    "y": 738.26,
+    "size": 9,
+    "mark": true,
+    "equals": "8% flat rate"
+   },
+   {
+    "key": "__constant",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 396.78,
+    "y": 771.51,
+    "size": 9,
     "mark": true
    },
    {
-    "key": "gross_sales",
-    "page": 1,
-    "x": 159.582,
-    "y": 781.54,
-    "size": 9
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 194.16974000000005,
+    "y": 213.42,
+    "size": 90,
+    "signature": true
    },
    {
-    "key": "gross_sales",
-    "page": 1,
-    "x": 159.469,
-    "y": 571.75,
-    "size": 9
+    "key": "birth_date",
+    "page": 0,
+    "part": "full",
+    "format": "date",
+    "x": 206.469,
+    "y": 648.25,
+    "size": 7.25,
+    "maxWidth": 389.781
    }
   ],
-  "generatedAt": "2026-10-22T12:32:56.500Z",
+  "generatedAt": "2026-10-22T13:41:40.283Z",
   "model": "claude-opus-5-5"
  },
  "bir_1702q/bir-form-1702q-2018.pdf": {
+  "version": 2,
   "formId": "bir_1702q",
   "sha256": "589e22190b9211571cb8a0ba14c97c17dff250f3b8ee9f9e8f6cc3b37b1b1be4",
   "fillable": false,
@@ -995,47 +1735,134 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "business_name",
-    "page": 0,
-    "x": 31.68,
-    "y": 717.02,
-    "size": 9
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 200.26872,
-    "y": 745.54,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 215.25,
+    "y": 742.25,
+    "size": 9,
+    "pitch": 15,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 532.5230000000001,
-    "y": 745.54,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 533.75,
+    "y": 742.25,
+    "size": 9,
+    "pitch": 15,
+    "slots": 3
+   },
+   {
+    "key": "business_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 712,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 31.68,
-    "y": 668.54,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 663.5,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 159.155,
+    "y": 788.385,
+    "size": 9,
+    "mark": true,
+    "equals": "1st"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 186.53,
+    "y": 788.135,
+    "size": 9,
+    "mark": true,
+    "equals": "2nd"
+   },
+   {
+    "key": "period",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 215.53,
+    "y": 788.51,
+    "size": 9,
+    "mark": true,
+    "equals": "3rd"
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 829,
+    "size": 5,
+    "pitch": 15.125,
+    "slots": 14
+   },
+   {
+    "key": "business_name",
+    "page": 1,
+    "part": "full",
+    "format": "upper",
+    "x": 231,
+    "y": 829,
+    "size": 9,
+    "pitch": 15.114583333333334,
+    "slots": 24
    },
    {
     "key": "gross_sales",
     "page": 1,
-    "x": 176.27020000000005,
-    "y": 545.35,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 412.75,
+    "y": 542,
+    "size": 9,
+    "pitch": 15.0625,
+    "slots": 12
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 101.2310399999999,
+    "y": 251.7,
+    "size": 90,
+    "signature": true
    }
   ],
-  "generatedAt": "2026-10-22T12:33:08.892Z",
+  "generatedAt": "2026-10-22T13:41:38.395Z",
   "model": "claude-opus-5-5"
  },
  "bir_1702/bir-form-1702-rt-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1702",
   "sha256": "d9a6a8a13e0114934261151c4eb269a1573042e7ce670eaf12b15f169d308d2d",
   "fillable": false,
@@ -1057,47 +1884,134 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
-    "key": "tin",
+    "key": "business_name",
     "page": 0,
-    "x": 183.069,
-    "y": 742.54,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 708.5,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
+   },
+   {
+    "key": "business_name",
+    "page": 1,
+    "part": "full",
+    "format": "upper",
+    "x": 230.5,
+    "y": 767.5,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 24
+   },
+   {
+    "key": "business_name",
+    "page": 2,
+    "part": "full",
+    "format": "upper",
+    "x": 230.5,
+    "y": 816.5,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 24
+   },
+   {
+    "key": "business_name",
+    "page": 3,
+    "part": "full",
+    "format": "upper",
+    "x": 230.5,
+    "y": 816.5,
+    "size": 9,
+    "pitch": 15.09375,
+    "slots": 24
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 767.5,
+    "size": 5,
+    "pitch": 15.089285714285714,
+    "slots": 14
+   },
+   {
+    "key": "tin",
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 816.5,
+    "size": 5,
+    "pitch": 15.089285714285714,
+    "slots": 14
+   },
+   {
+    "key": "tin",
+    "page": 3,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 816.5,
+    "size": 5,
+    "pitch": 15.089285714285714,
+    "slots": 14
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 484.06,
-    "y": 728.54,
-    "size": 9
-   },
-   {
-    "key": "business_name",
-    "page": 0,
-    "x": 30.96,
-    "y": 714.5,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 533.75,
+    "y": 738.75,
+    "size": 9,
+    "pitch": 15,
+    "slots": 3
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 77.064,
-    "y": 645.47,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 639.5,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
    },
    {
     "key": "gross_sales",
     "page": 1,
-    "x": 165.478,
-    "y": 737.62,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 412.75,
+    "y": 732.75,
+    "size": 9,
+    "pitch": 15.0625,
+    "slots": 12
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 102,
+    "y": 258.25,
+    "size": 90,
+    "signature": true
    }
   ],
-  "generatedAt": "2026-10-22T12:33:13.597Z",
+  "generatedAt": "2026-10-22T13:41:36.724Z",
   "model": "claude-opus-5-5"
  },
  "bir_1702/bir-form-1702-ex-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1702",
   "sha256": "e2dece405bbf48d4be8f50fc73f124b90e574ddaf79361b2f81bacf8831efcfb",
   "fillable": false,
@@ -1115,47 +2029,122 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
-    "key": "business_name",
-    "page": 0,
-    "x": 30.96,
-    "y": 711.14,
-    "size": 9
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 755.5,
+    "size": 5,
+    "pitch": 15.089285714285714,
+    "slots": 14
    },
    {
     "key": "tin",
-    "page": 0,
-    "x": 183.069,
-    "y": 739.06,
-    "size": 9
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 811.75,
+    "size": 5,
+    "pitch": 15.089285714285714,
+    "slots": 14
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 532.0430000000001,
-    "y": 739.06,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 533.75,
+    "y": 735.25,
+    "size": 9,
+    "pitch": 15,
+    "slots": 3
+   },
+   {
+    "key": "business_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 705,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 30.96,
-    "y": 641.99,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 636,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
+   },
+   {
+    "key": "business_name",
+    "page": 1,
+    "part": "full",
+    "format": "upper",
+    "x": 230.5,
+    "y": 755.5,
+    "size": 9,
+    "pitch": 15.145833333333334,
+    "slots": 24
+   },
+   {
+    "key": "business_name",
+    "page": 2,
+    "part": "full",
+    "format": "upper",
+    "x": 230.5,
+    "y": 811.75,
+    "size": 9,
+    "pitch": 15.145833333333334,
+    "slots": 24
    },
    {
     "key": "gross_sales",
     "page": 1,
-    "x": 165.478,
-    "y": 720.94,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 412.75,
+    "y": 715.5,
+    "size": 9,
+    "pitch": 15.0625,
+    "slots": 12
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 102,
+    "y": 262.75,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 21.75,
+    "y": 279.375,
+    "size": 9,
+    "maxWidth": 251.5
    }
   ],
-  "generatedAt": "2026-10-22T12:33:21.007Z",
+  "generatedAt": "2026-10-22T13:41:49.842Z",
   "model": "claude-opus-5-5"
  },
  "bir_1702/bir-form-1702-mx-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1702",
   "sha256": "81c05fffadde6c0b4098aeba8547a9820a0806c6be9b0c6ceac5597cab4263d2",
   "fillable": false,
@@ -1177,47 +2166,143 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
     "key": "business_name",
     "page": 0,
-    "x": 30.96,
-    "y": 708.74,
-    "size": 9
-   },
-   {
-    "key": "tin",
-    "page": 0,
-    "x": 183.069,
-    "y": 736.78,
-    "size": 9
-   },
-   {
-    "key": "rdo_code",
-    "page": 0,
-    "x": 532.0430000000001,
-    "y": 736.78,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 702.75,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 30.96,
-    "y": 639.71,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.75,
+    "y": 633.75,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 38
+   },
+   {
+    "key": "rdo_code",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 533.75,
+    "y": 733,
+    "size": 9,
+    "pitch": 15,
+    "slots": 3
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 826.75,
+    "size": 5,
+    "pitch": 15.160714285714286,
+    "slots": 14
+   },
+   {
+    "key": "business_name",
+    "page": 1,
+    "part": "full",
+    "format": "upper",
+    "x": 231.5,
+    "y": 826.75,
+    "size": 9,
+    "pitch": 15.052083333333334,
+    "slots": 24
+   },
+   {
+    "key": "tin",
+    "page": 2,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 805,
+    "size": 5,
+    "pitch": 15.089285714285714,
+    "slots": 14
+   },
+   {
+    "key": "business_name",
+    "page": 2,
+    "part": "full",
+    "format": "upper",
+    "x": 230.5,
+    "y": 805,
+    "size": 9,
+    "pitch": 15.125,
+    "slots": 24
+   },
+   {
+    "key": "tin",
+    "page": 3,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.75,
+    "y": 821,
+    "size": 5,
+    "pitch": 15.089285714285714,
+    "slots": 14
+   },
+   {
+    "key": "business_name",
+    "page": 3,
+    "part": "full",
+    "format": "upper",
+    "x": 230.5,
+    "y": 821,
+    "size": 9,
+    "pitch": 15.09375,
+    "slots": 24
    },
    {
     "key": "gross_sales",
     "page": 1,
-    "x": 144.01912,
-    "y": 618.91,
-    "size": 8.04
+    "part": "full",
+    "format": "as_is",
+    "x": 506.5,
+    "y": 613.75,
+    "size": 9,
+    "maxWidth": 85
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 101.2310399999999,
+    "y": 250.26,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 21.75,
+    "y": 268.875,
+    "size": 9,
+    "maxWidth": 251.5
    }
   ],
-  "generatedAt": "2026-10-22T12:33:29.107Z",
+  "generatedAt": "2026-10-22T13:42:02.581Z",
   "model": "claude-opus-5-5"
  },
  "bir_0619e/bir-form-0619-e-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_0619e",
   "sha256": "0418160d63d4e6f68c34f2bad553273a5d148c3686d8562d338d35fcdd0c5215",
   "fillable": false,
@@ -1227,40 +2312,67 @@
     "h": 792
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 30.36,
-    "y": 586.22,
-    "size": 9
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 182.42500000000004,
-    "y": 614.74,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 218.25,
+    "y": 610.5,
+    "size": 9,
+    "pitch": 14.25,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 525.0830000000001,
-    "y": 614.74,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 536.5,
+    "y": 610.5,
+    "size": 9,
+    "pitch": 14.166666666666666,
+    "slots": 3
    },
    {
-    "key": "period",
+    "key": "owner_name",
     "page": 0,
-    "x": 30.6,
-    "y": 650.06,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.5,
+    "y": 581.75,
+    "size": 9,
+    "pitch": 14.3625,
+    "slots": 40
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 37.19879999999998,
+    "y": 249.20999999999998,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "__constant",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 449.155,
+    "y": 520.885,
+    "size": 9,
+    "mark": true
    }
   ],
-  "generatedAt": "2026-10-22T12:33:35.711Z",
+  "generatedAt": "2026-10-22T13:42:01.719Z",
   "model": "claude-opus-5-5"
  },
  "bir_1601eq/bir-form-1601-eq-january-2019.pdf": {
+  "version": 2,
   "formId": "bir_1601eq",
   "sha256": "5277addc6778c96a53fde99b8664b1a5213fcea638dea06033c9acf22ee73c25",
   "fillable": false,
@@ -1274,40 +2386,100 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
-    "key": "owner_name",
+    "key": "period",
     "page": 0,
-    "x": 139.22,
-    "y": 753.0200000000001,
-    "size": 7.56
+    "part": "full",
+    "format": "as_is",
+    "x": 32.25,
+    "y": 809.5,
+    "size": 9,
+    "pitch": 14.3125,
+    "slots": 4
    },
    {
     "key": "tin",
     "page": 0,
-    "x": 30.6,
-    "y": 756.1,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 233.25,
+    "y": 775.75,
+    "size": 9,
+    "pitch": 14.166666666666666,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 489.82,
-    "y": 766.1,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 549.25,
+    "y": 775.75,
+    "size": 9,
+    "pitch": 14.833333333333334,
+    "slots": 3
    },
    {
-    "key": "period",
+    "key": "owner_name",
     "page": 0,
-    "x": 30.6,
-    "y": 814.46,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 18.5,
+    "y": 748.25,
+    "size": 9,
+    "pitch": 14.38125,
+    "slots": 40
+   },
+   {
+    "key": "__constant",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 451.155,
+    "y": 689.01,
+    "size": 9,
+    "mark": true
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 30.478799999999993,
+    "y": 230.45999999999998,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.5,
+    "y": 810,
+    "size": 9,
+    "pitch": 14.285714285714286,
+    "slots": 14
+   },
+   {
+    "key": "owner_name",
+    "page": 1,
+    "part": "last",
+    "format": "upper",
+    "x": 219,
+    "y": 810,
+    "size": 9,
+    "pitch": 14.413461538461538,
+    "slots": 26
    }
   ],
-  "generatedAt": "2026-10-22T12:33:41.052Z",
+  "generatedAt": "2026-10-22T13:42:01.822Z",
   "model": "claude-opus-5-5"
  },
  "bir_2307/bir-form-2307-pdf.pdf": {
+  "version": 2,
   "formId": "bir_2307",
   "sha256": "eca9476c5f6346939b973e693d35d635f6dd82519b87092c717c21965b0b90f9",
   "fillable": false,
@@ -1321,40 +2493,55 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 85.8,
-    "y": 760.676,
-    "size": 7.584
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 163.022592,
-    "y": 789.34,
-    "size": 7.584
+    "part": "full",
+    "format": "as_is",
+    "x": 207.5,
+    "y": 785,
+    "size": 9,
+    "pitch": 13,
+    "slots": 3
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 37.25,
+    "y": 760.25,
+    "size": 9,
+    "maxWidth": 552.75
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 34.44,
-    "y": 732.2360000000001,
-    "size": 7.584
+    "part": "full",
+    "format": "as_is",
+    "x": 37.75,
+    "y": 731.875,
+    "size": 9,
+    "maxWidth": 496.25
    },
    {
-    "key": "period",
+    "key": "__signature",
     "page": 0,
-    "x": 150.51148799999999,
-    "y": 819.82,
-    "size": 7.584
+    "part": "full",
+    "format": "as_is",
+    "x": 262.75,
+    "y": 110.75,
+    "size": 90,
+    "signature": true
    }
   ],
-  "generatedAt": "2026-10-22T12:33:49.779Z",
+  "generatedAt": "2026-10-22T13:42:09.519Z",
   "model": "claude-opus-5-5"
  },
  "sss_r1/sss-form-r-1-employer-registration.pdf": {
+  "version": 2,
   "formId": "sss_r1",
   "sha256": "41f2e8cc705268cbb68358e502a4da60ddab6a82df0dc4b6c6d9e18695085e23",
   "fillable": false,
@@ -1372,11 +2559,231 @@
     "h": 799.92
    }
   ],
-  "entries": [],
-  "generatedAt": "2026-10-22T12:33:52.674Z",
+  "scanned": true,
+  "entries": [
+   {
+    "key": "__constant",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 186.15645503695285,
+    "y": 719.0303218462219,
+    "size": 5.31300114374262,
+    "mark": true
+   },
+   {
+    "key": "tin",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 408.5755475809845,
+    "y": 675.3135568181818,
+    "size": 9,
+    "pitch": 14.252635380732016,
+    "slots": 12
+   },
+   {
+    "key": "business_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 21.753467606226337,
+    "y": 675.0635332349468,
+    "size": 9,
+    "maxWidth": 383.82189503575944
+   },
+   {
+    "key": "business_address",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 21.753467606226337,
+    "y": 651.3112928276269,
+    "size": 9,
+    "maxWidth": 556.103750778292
+   },
+   {
+    "key": "barangay",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 162.7800988220446,
+    "y": 630.5604674144038,
+    "size": 9,
+    "maxWidth": 157.52968270929748
+   },
+   {
+    "key": "city",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 323.3097815313421,
+    "y": 630.8104909976387,
+    "size": 9,
+    "maxWidth": 123.02330231384099
+   },
+   {
+    "key": "email",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 167.7804687000421,
+    "y": 572.5538641086187,
+    "size": 9,
+    "maxWidth": 194.78694156499796
+   },
+   {
+    "key": "activity",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 241.7941541859487,
+    "y": 539.3007275383707,
+    "size": 9,
+    "maxWidth": 92.51803155237698
+   },
+   {
+    "key": "structure",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 345.2891507151873,
+    "y": 554.1274373229044,
+    "size": 5,
+    "mark": true,
+    "equals": "Sole proprietorship"
+   },
+   {
+    "key": "structure",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 485.5319296474226,
+    "y": 554.2162759192444,
+    "size": 5.1004810979929145,
+    "mark": true,
+    "equals": "Corporation / OPC"
+   },
+   {
+    "key": "structure",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 345.1858603377522,
+    "y": 542.2636484991144,
+    "size": 5.31300114374262,
+    "mark": true,
+    "equals": "Partnership"
+   },
+   {
+    "key": "structure",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 485.4617980323252,
+    "y": 542.2636484991144,
+    "size": 5.31300114374262,
+    "mark": true,
+    "equals": "Cooperative"
+   },
+   {
+    "key": "start_date",
+    "page": 0,
+    "part": "full",
+    "format": "date",
+    "x": 18.753467606226337,
+    "y": 539.0507039551358,
+    "size": 9,
+    "pitch": 14.40891427745057,
+    "slots": 8
+   },
+   {
+    "key": "employee_count_exact",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 138.02496676482963,
+    "y": 539.3007275383707,
+    "size": 9,
+    "maxWidth": 97.51895624737065
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 99.40170056794281,
+    "y": 196.76837134002372,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "mobile",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 18.25337513672697,
+    "y": 572.5538641086187,
+    "size": 9,
+    "pitch": 14.552690862431637,
+    "slots": 10
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 44.258183550694156,
+    "y": 511.0491002951594,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "last",
+    "format": "upper"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 136.02515170382839,
+    "y": 511.0491002951594,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "first",
+    "format": "upper"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 239.79433912494744,
+    "y": 511.0491002951594,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "middle",
+    "format": "upper"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 172.2855545225074,
+    "y": 198.01839492325863,
+    "size": 8,
+    "maxWidth": 140,
+    "part": "full",
+    "format": "upper"
+   },
+   {
+    "key": "__today",
+    "page": 0,
+    "x": 265.050118468658,
+    "y": 198.51844208972855,
+    "size": 8,
+    "maxWidth": 110,
+    "part": "full",
+    "format": "date"
+   }
+  ],
+  "generatedAt": "2026-10-22T13:43:01.784Z",
   "model": "claude-opus-5-5"
  },
  "sss_r1a/sss-form-r-1a-employment-report.pdf": {
+  "version": 2,
   "formId": "sss_r1a",
   "sha256": "bf3eaee0556b8382316933882da24e570f22a07d49bb5ddff5cae9a093e9ffe2",
   "fillable": false,
@@ -1394,11 +2801,95 @@
     "h": 798.48
    }
   ],
-  "entries": [],
-  "generatedAt": "2026-10-22T12:33:54.923Z",
+  "scanned": true,
+  "entries": [
+   {
+    "key": "sss_er_no",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 19.503512582781454,
+    "y": 478.6888321782178,
+    "size": 9,
+    "pitch": 11.848287722873152,
+    "slots": 13
+   },
+   {
+    "key": "business_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 177.53143311258276,
+    "y": 479.18903011551157,
+    "size": 9,
+    "maxWidth": 519.844524503311
+   },
+   {
+    "key": "business_address",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 22.503512582781454,
+    "y": 461.43200334158416,
+    "size": 6.003364933993453,
+    "maxWidth": 847.6535629139072
+   },
+   {
+    "key": "__constant",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 708.1941827496918,
+    "y": 483.60537131782183,
+    "size": 5.10201896039604,
+    "mark": true
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 375.7007682119205,
+    "y": 133.8021564768977,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 94.76652715231786,
+    "y": 121.29740598184816,
+    "size": 9,
+    "maxWidth": 161.7800370860927
+   },
+   {
+    "key": "__today",
+    "page": 0,
+    "part": "full",
+    "format": "date",
+    "x": 555.6000635761588,
+    "y": 133.8021564768977,
+    "size": 9,
+    "maxWidth": 60
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 280.80417483443705,
+    "y": 130.30037504125414,
+    "size": 8,
+    "maxWidth": 140,
+    "part": "full",
+    "format": "upper"
+   }
+  ],
+  "generatedAt": "2026-10-22T13:43:03.180Z",
   "model": "claude-opus-5-5"
  },
  "philhealth_er1/philhealth-er1.pdf": {
+  "version": 2,
   "formId": "philhealth_er1",
   "sha256": "470e67631cf1bc1113534452e1810f9bc5d44c99808c7e03dfc0dbf04aff1d0c",
   "fillable": false,
@@ -1408,74 +2899,127 @@
     "h": 792
    }
   ],
+  "scanned": false,
   "entries": [
    {
     "key": "business_name",
     "page": 0,
-    "x": 42.153811618708055,
-    "y": 652.493045762935,
-    "size": 8.991970345291653
-   },
-   {
-    "key": "business_address",
-    "page": 0,
-    "x": 42.153811618708055,
-    "y": 625.330704489501,
-    "size": 8.991970345291653
+    "part": "full",
+    "format": "as_is",
+    "x": 425.8895642188606,
+    "y": 666.875,
+    "size": 9,
+    "maxWidth": 25.360435781139415
    },
    {
     "key": "tin",
     "page": 0,
-    "x": 463.7563678082458,
-    "y": 652.7455558878313,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 457.5,
+    "y": 658.5,
+    "size": 7.245555887831301,
+    "maxWidth": 79.5
+   },
+   {
+    "key": "business_address",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 37.25,
+    "y": 630.75,
+    "size": 7.572674834792679,
+    "maxWidth": 414
+   },
+   {
+    "key": "mobile",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 457.5,
+    "y": 630.75,
+    "size": 7.254294822566976,
+    "maxWidth": 79.5
    },
    {
     "key": "email",
     "page": 0,
-    "x": 42.153811618708055,
-    "y": 597.5261834218076,
-    "size": 8.991970345291653
+    "part": "full",
+    "format": "as_is",
+    "x": 37.25,
+    "y": 603,
+    "size": 7.518153767099193,
+    "maxWidth": 414
    },
    {
     "key": "employee_count_exact",
     "page": 0,
-    "x": 413.1857058663324,
-    "y": 541.9800512888361,
-    "size": 8.991970345291653
+    "part": "full",
+    "format": "as_is",
+    "x": 408.5,
+    "y": 547.5,
+    "size": 7.472021634127714,
+    "maxWidth": 128.5
    },
    {
     "key": "structure",
     "page": 0,
-    "x": 218.6691231137445,
-    "y": 441.11662083552176,
+    "part": "full",
+    "format": "as_is",
+    "x": 207.78,
+    "y": 445.01,
     "size": 9,
-    "equals": "Sole proprietorship",
-    "mark": true
+    "mark": true,
+    "equals": "Sole proprietorship"
    },
    {
     "key": "structure",
     "page": 0,
-    "x": 336.7125799130474,
-    "y": 441.11662083552176,
+    "part": "full",
+    "format": "as_is",
+    "x": 325.905,
+    "y": 445.01,
     "size": 9,
-    "equals": "Partnership",
-    "mark": true
+    "mark": true,
+    "equals": "Partnership"
    },
    {
     "key": "structure",
     "page": 0,
-    "x": 437.92027432348135,
-    "y": 441.1165844473608,
+    "part": "full",
+    "format": "as_is",
+    "x": 427.03,
+    "y": 445.01,
     "size": 9,
-    "equals": "Corporation / OPC",
-    "mark": true
+    "mark": true,
+    "equals": "Corporation / OPC"
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 326.00480508557354,
+    "y": 390.6315204165081,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "__today",
+    "page": 0,
+    "part": "full",
+    "format": "date",
+    "x": 73.9128656765136,
+    "y": 390.6315204165081,
+    "size": 9,
+    "maxWidth": 463.0871343234864
    }
   ],
-  "generatedAt": "2026-10-22T12:34:01.592Z",
+  "generatedAt": "2026-10-22T13:42:23.573Z",
   "model": "claude-opus-5-5"
  },
  "philhealth_er2/philhealth-er2.pdf": {
+  "version": 2,
   "formId": "philhealth_er2",
   "sha256": "25f99b290153c65ac738fa449803d1c5ac087492973836900b46c6c5d2105ecf",
   "fillable": true,
@@ -1489,36 +3033,47 @@
     "h": 612
    }
   ],
+  "scanned": false,
   "entries": [
    {
     "key": "business_name",
     "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "pdfField": "NAME OF EMPLOYERFIRM",
     "x": 95.96,
     "y": 358.79999999999995,
     "size": 9,
-    "pdfField": "NAME OF EMPLOYERFIRM"
+    "maxWidth": 14.600000000000009
    },
    {
     "key": "philhealth_er_no",
     "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "pdfField": "EMPLOYER NO",
     "x": 95.96,
     "y": 706.74,
     "size": 9,
-    "pdfField": "EMPLOYER NO"
+    "maxWidth": 14.600000000000009
    },
    {
     "key": "business_address",
     "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "pdfField": "ADDRESS",
     "x": 116.48,
     "y": 240.42,
     "size": 9,
-    "pdfField": "ADDRESS"
+    "maxWidth": 14.600000000000009
    }
   ],
-  "generatedAt": "2026-10-22T12:34:07.081Z",
+  "generatedAt": "2026-10-22T13:42:31.895Z",
   "model": "claude-opus-5-5"
  },
  "philhealth_rf1/philhealth-rf-1.pdf": {
+  "version": 2,
   "formId": "philhealth_rf1",
   "sha256": "b3c2332622fefead3a2fe8a709f696e2ac68b9c8fb89dabff33bdb3dd155e4bd",
   "fillable": false,
@@ -1528,40 +3083,64 @@
     "h": 595.276
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "business_name",
-    "page": 0,
-    "x": 525.3563999999985,
-    "y": 456.2245,
-    "size": 9
-   },
    {
     "key": "philhealth_er_no",
     "page": 0,
-    "x": 157.06500000000005,
-    "y": 486.5745,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 162.77656964656967,
+    "y": 489.5163370348593,
+    "size": 6.510284351112976,
+    "maxWidth": 11.002661122661124
    },
    {
-    "key": "business_address",
+    "key": "__constant",
     "page": 0,
-    "x": 525.9753999999984,
-    "y": 444.2245,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 552.9183377393467,
+    "y": 441.7727954069718,
+    "size": 6.587787736245274,
+    "mark": true
    },
    {
     "key": "period",
     "page": 0,
-    "x": 737.0394,
-    "y": 434.4745,
-    "size": 7
+    "part": "full",
+    "format": "as_is",
+    "x": 727.8705405405406,
+    "y": 418.0181923561529,
+    "size": 9,
+    "maxWidth": 75.26334719334716
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 376.0700207900208,
+    "y": 57.252413271734554,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "__today",
+    "page": 0,
+    "part": "full",
+    "format": "date",
+    "x": 632.9338,
+    "y": 68.9268,
+    "size": 9,
+    "maxWidth": 170.2000877338878
    }
   ],
-  "generatedAt": "2026-10-22T12:34:13.043Z",
+  "generatedAt": "2026-10-22T13:42:49.353Z",
   "model": "claude-opus-5-5"
  },
  "philhealth_pmrf/philhealth-pmrf.pdf": {
+  "version": 2,
   "formId": "philhealth_pmrf",
   "sha256": "26d572088d280e7e42b4174c92a950e166ef2828481f09a4f85b808e807ced01",
   "fillable": false,
@@ -1575,11 +3154,94 @@
     "h": 841.5
    }
   ],
-  "entries": [],
-  "generatedAt": "2026-10-22T12:44:09.153Z",
+  "scanned": false,
+  "entries": [
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "last",
+    "format": "upper",
+    "x": 88.75,
+    "y": 629.125,
+    "size": 9,
+    "maxWidth": 124.75
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "first",
+    "format": "upper",
+    "x": 219.25,
+    "y": 629.125,
+    "size": 9,
+    "maxWidth": 124.75
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "middle",
+    "format": "upper",
+    "x": 390.25,
+    "y": 629.125,
+    "size": 9,
+    "maxWidth": 124.75
+   },
+   {
+    "key": "__signature",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 167.375,
+    "y": 465,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "__today",
+    "page": 1,
+    "part": "full",
+    "format": "date",
+    "x": 252.33,
+    "y": 496.60499999999996,
+    "size": 9,
+    "maxWidth": 151.17
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 124.65,
+    "y": 642.67,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "last",
+    "format": "upper"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 254.08,
+    "y": 642.67,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "first",
+    "format": "upper"
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "x": 421.02,
+    "y": 642.67,
+    "size": 8,
+    "maxWidth": 100,
+    "part": "middle",
+    "format": "upper"
+   }
+  ],
+  "generatedAt": "2026-10-22T13:42:53.472Z",
   "model": "claude-opus-5-5"
  },
  "bir_1601c/bir-form-1601-c-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1601c",
   "sha256": "c8faaa71015337a73b4ceb96bfb265c539589ab5e10eb27899bb81f87f417397",
   "fillable": false,
@@ -1593,40 +3255,89 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
-   {
-    "key": "owner_name",
-    "page": 0,
-    "x": 139.22,
-    "y": 757.22,
-    "size": 7.56
-   },
    {
     "key": "tin",
     "page": 0,
-    "x": 182.42500000000004,
-    "y": 783.22,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 233.25,
+    "y": 780,
+    "size": 9,
+    "pitch": 14.166666666666666,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 537.803,
-    "y": 783.22,
-    "size": 9
+    "part": "full",
+    "format": "upper",
+    "x": 549.25,
+    "y": 780,
+    "size": 9,
+    "pitch": 14.833333333333334,
+    "slots": 3
+   },
+   {
+    "key": "owner_name",
+    "page": 0,
+    "part": "full",
+    "format": "upper",
+    "x": 18.5,
+    "y": 753.75,
+    "size": 9,
+    "pitch": 14.38125,
+    "slots": 40
+   },
+   {
+    "key": "tin",
+    "page": 1,
+    "part": "full",
+    "format": "as_is",
+    "x": 18.5,
+    "y": 829.5,
+    "size": 9,
+    "pitch": 14.267857142857142,
+    "slots": 14
+   },
+   {
+    "key": "owner_name",
+    "page": 1,
+    "part": "last",
+    "format": "upper",
+    "x": 218.75,
+    "y": 829.5,
+    "size": 9,
+    "pitch": 14.384615384615385,
+    "slots": 26
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 30.598799999999983,
+    "y": 216.17999999999998,
+    "size": 90,
+    "signature": true
    },
    {
     "key": "period",
     "page": 0,
-    "x": 28.92,
-    "y": 816.26,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 21.25,
+    "y": 814.625,
+    "size": 9,
+    "maxWidth": 23
    }
   ],
-  "generatedAt": "2026-10-22T12:34:22.472Z",
+  "generatedAt": "2026-10-22T13:43:11.858Z",
   "model": "claude-opus-5-5"
  },
  "bir_1604c/bir-form-1604-c-january-2018.pdf": {
+  "version": 2,
   "formId": "bir_1604c",
   "sha256": "5239dd7f94bfc9d8a1b2e330e2da955bd5a0223762f41e95112d6b3822325dfd",
   "fillable": false,
@@ -1636,33 +3347,89 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
     "key": "tin",
     "page": 0,
-    "x": 202.509,
-    "y": 770.14,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 238.5,
+    "y": 765.75,
+    "size": 9,
+    "pitch": 13.666666666666666,
+    "slots": 3
+   },
+   {
+    "key": "tin",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 294.25,
+    "y": 765.75,
+    "size": 9,
+    "pitch": 13.75,
+    "slots": 3
+   },
+   {
+    "key": "tin",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 350.25,
+    "y": 765.75,
+    "size": 9,
+    "pitch": 14.083333333333334,
+    "slots": 3
    },
    {
     "key": "rdo_code",
     "page": 0,
-    "x": 543.1538,
-    "y": 770.14,
-    "size": 9
+    "part": "full",
+    "format": "as_is",
+    "x": 547.25,
+    "y": 765.75,
+    "size": 9,
+    "pitch": 14.666666666666666,
+    "slots": 3
    },
    {
     "key": "owner_name",
     "page": 0,
-    "x": 156.74,
-    "y": 741.86,
-    "size": 7.56
+    "part": "full",
+    "format": "as_is",
+    "x": 23.25,
+    "y": 733.75,
+    "size": 9,
+    "pitch": 14.2,
+    "slots": 40
+   },
+   {
+    "key": "__constant",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 181.28,
+    "y": 668.26,
+    "size": 9,
+    "mark": true
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 35.278799999999976,
+    "y": 85.47999999999999,
+    "size": 90,
+    "signature": true
    }
   ],
-  "generatedAt": "2026-10-22T12:34:26.140Z",
+  "generatedAt": "2026-10-22T13:43:08.598Z",
   "model": "claude-opus-5-5"
  },
  "bir_2316/bir-form-2316-pdf.pdf": {
+  "version": 2,
   "formId": "bir_2316",
   "sha256": "8e927e65b096d7a786ba7d36c55c28ee3de3546278880d9de8c11a91d1b48d60",
   "fillable": false,
@@ -1672,30 +3439,104 @@
     "h": 936
    }
   ],
+  "scanned": false,
   "entries": [
    {
     "key": "tin",
     "page": 0,
-    "x": 65.48843199999999,
-    "y": 594.67,
-    "size": 7.224
+    "part": "first",
+    "format": "as_is",
+    "x": 86.5,
+    "y": 587.25,
+    "size": 9,
+    "pitch": 12.416666666666666,
+    "slots": 3
+   },
+   {
+    "key": "tin",
+    "page": 0,
+    "part": "middle",
+    "format": "as_is",
+    "x": 136.25,
+    "y": 587.5,
+    "size": 9,
+    "pitch": 12.416666666666666,
+    "slots": 3
+   },
+   {
+    "key": "tin",
+    "page": 0,
+    "part": "last",
+    "format": "as_is",
+    "x": 185.75,
+    "y": 587.5,
+    "size": 9,
+    "pitch": 12.5,
+    "slots": 3
    },
    {
     "key": "business_name",
     "page": 0,
-    "x": 45.949944,
-    "y": 563.606,
-    "size": 7.224
+    "part": "full",
+    "format": "as_is",
+    "x": 45.5,
+    "y": 564.005,
+    "size": 8.99,
+    "maxWidth": 260.5
    },
    {
     "key": "business_address",
     "page": 0,
-    "x": 45.949944,
-    "y": 537.786,
-    "size": 7.224
+    "part": "full",
+    "format": "as_is",
+    "x": 45.75,
+    "y": 537.9575,
+    "size": 8.834999999999999,
+    "maxWidth": 205.5
+   },
+   {
+    "key": "__signature",
+    "page": 0,
+    "part": "full",
+    "format": "as_is",
+    "x": 134.72031600000003,
+    "y": 167.224,
+    "size": 90,
+    "signature": true
+   },
+   {
+    "key": "__today",
+    "page": 0,
+    "part": "first",
+    "format": "date",
+    "x": 419,
+    "y": 168.4575,
+    "size": 8.834999999999999,
+    "maxWidth": 19.75
+   },
+   {
+    "key": "__today",
+    "page": 0,
+    "part": "middle",
+    "format": "date",
+    "x": 444.25,
+    "y": 168.4575,
+    "size": 8.834999999999999,
+    "maxWidth": 19.5
+   },
+   {
+    "key": "__today",
+    "page": 0,
+    "part": "last",
+    "format": "date",
+    "x": 466.5,
+    "y": 166.25,
+    "size": 9,
+    "pitch": 12.4375,
+    "slots": 4
    }
   ],
-  "generatedAt": "2026-10-22T12:34:37.509Z",
+  "generatedAt": "2026-10-22T13:43:22.815Z",
   "model": "claude-opus-5-5"
  }
 }

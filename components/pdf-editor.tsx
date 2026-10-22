@@ -18,7 +18,8 @@ import { cn } from "@/lib/utils"
 
 type Mode = { kind: "none" } | { kind: "text"; text: string } | { kind: "signature"; image: string; aspect: number }
 
-const stateKey = (path: string) => `hermit:fill:${path}`
+// Drafts are tied to the layout version, so improved placements replace stale drafts.
+const stateKey = (path: string, layout: Layout | null) => `hermit:fill:${path}:${(layout as { generatedAt?: string } | null)?.generatedAt ?? "manual"}`
 
 export function PdfEditor({ formId, filePath }: { formId: string; filePath?: string }) {
   const { profile } = useProfile()
@@ -52,9 +53,9 @@ export function PdfEditor({ formId, filePath }: { formId: string; filePath?: str
         setBytes(buf)
         let saved: Box[] | null = null
         try {
-          saved = JSON.parse(localStorage.getItem(stateKey(file.path)) ?? "null")
+          saved = JSON.parse(localStorage.getItem(stateKey(file.path, layout)) ?? "null")
         } catch {}
-        setBoxes(saved ?? (layout ? initialBoxes(layout, values) : []))
+        setBoxes(saved ?? (layout ? initialBoxes(layout, values).boxes : []))
       })
       .catch((e) => setError(`Hindi ma-load ang form (${e.message}).`))
     return () => {
@@ -68,9 +69,9 @@ export function PdfEditor({ formId, filePath }: { formId: string; filePath?: str
   useEffect(() => {
     if (!file || !bytes) return
     try {
-      localStorage.setItem(stateKey(file.path), JSON.stringify(boxes))
+      localStorage.setItem(stateKey(file.path, layout), JSON.stringify(boxes))
     } catch {}
-  }, [boxes, bytes, file])
+  }, [boxes, bytes, file, layout])
 
   // The page container only exists once the profile has loaded.
   const ready = Boolean(profile && file)
@@ -164,7 +165,11 @@ export function PdfEditor({ formId, filePath }: { formId: string; filePath?: str
           const png = await pdf.embedPng(b.image)
           page.drawImage(png, { x: b.x, y: b.y, width: b.size, height: b.size * (b.aspect ?? 0.4) })
         } else {
-          page.drawText(pdfSafe(b.text), { x: b.x, y: b.y, size: b.size, font })
+          if (b.pitch) {
+            ;[...pdfSafe(b.text)].forEach((ch, i) =>
+              page.drawText(ch, { x: b.x + i * b.pitch! + (b.pitch! - font.widthOfTextAtSize(ch, b.size)) / 2, y: b.y, size: b.size, font })
+            )
+          } else page.drawText(pdfSafe(b.text), { x: b.x, y: b.y, size: b.size, font })
         }
       }
       if (acro) acro.updateFieldAppearances(font)
@@ -198,8 +203,8 @@ export function PdfEditor({ formId, filePath }: { formId: string; filePath?: str
         </Link>
         <h1 className="text-xl font-semibold tracking-tight">Punan ang {file.label}</h1>
         <p className="text-sm text-muted-foreground">
-          Inilagay ni Hermit ang mga sagot mo sa mismong form. Pindutin ang kahon para i-edit, i-drag ang ⠿ para ilipat. Ikaw
-          ang magpipirma at magre-review bago i-download.
+          Napunan na ni Hermit ang form gamit ang profile mo. I-check, pindutin ang &quot;Pirma&quot; para pumirma (kusa itong
+          ilalagay sa linya ng pirma), at i-download. Kung may mali, pindutin ang sagot para i-edit.
         </p>
         {pdfs.length > 1 && (
           <div className="flex flex-wrap gap-2 pt-1">
@@ -221,14 +226,14 @@ export function PdfEditor({ formId, filePath }: { formId: string; filePath?: str
           <Type /> Text
         </Button>
         <Button size="sm" variant={mode.kind === "signature" ? "default" : "outline"} onClick={() => setSigning(true)}>
-          <PenLine /> Pirma
+          <PenLine /> Pirmahan
         </Button>
         <Button
           size="sm"
           variant="ghost"
           onClick={() => {
             if (!confirm("Ibalik sa unang fill ni Hermit? Mawawala ang mga edit mo sa form na ito.")) return
-            setBoxes(layout ? initialBoxes(layout, values) : [])
+            setBoxes(layout ? initialBoxes(layout, values).boxes : [])
           }}
         >
           <RotateCcw /> Reset
@@ -332,7 +337,12 @@ export function PdfEditor({ formId, filePath }: { formId: string; filePath?: str
           onCancel={() => setSigning(false)}
           onDone={(image, aspect) => {
             setSigning(false)
-            setMode({ kind: "signature", image, aspect })
+            const slot = layout ? initialBoxes(layout, values).signature : undefined
+            if (slot) {
+              const box: Box = { id: boxId(), page: slot.page, x: slot.x, y: slot.y, size: slot.width, kind: "signature", text: "", image, aspect }
+              setBoxes((bs) => [...bs.filter((b) => b.kind !== "signature"), box])
+              setSelected(box.id)
+            } else setMode({ kind: "signature", image, aspect })
           }}
         />
       )}
@@ -400,7 +410,13 @@ function BoxView({
           )}
           style={{ fontSize: b.size * s, fontFamily: "Helvetica, Arial, sans-serif" }}
         >
-          {b.text || " "}
+          {b.pitch
+            ? [...b.text].map((ch, i) => (
+                <span key={i} className="inline-block text-center" style={{ width: b.pitch! * s }}>
+                  {ch}
+                </span>
+              ))
+            : b.text || " "}
         </span>
       )}
     </div>

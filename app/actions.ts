@@ -15,7 +15,7 @@ import {
   type HermitReply,
 } from "@/lib/hermit"
 import { takeAiQuota } from "@/lib/ratelimit"
-import { ownerId, readSession } from "@/lib/session"
+import { ownerId, readSession, writeSession } from "@/lib/session"
 import type { Extracted, Profile, Requirement } from "@/lib/types"
 
 // Server Functions are public POST endpoints: validate every input here.
@@ -191,6 +191,7 @@ export async function integrationStatus() {
   return {
     ...serviceModes(),
     "kuya hermit": hermitEnabled() ? `live · ${HERMIT_MODEL}` : "keyword fallback",
+    "face liveness": process.env.NEXT_PUBLIC_EGOV_LIVENESS_PUBKEY ? "live (eVerify SDK)" : "mock",
     database: db() ? "supabase" : "device only",
   }
 }
@@ -235,3 +236,80 @@ export async function readDocument(formData: FormData) {
   }
   return done(await mock.ai.extractDocument(file), null)
 }
+
+// --- National ID (PhilSys) verification -------------------------------------
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const LIVENESS_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// The browser runs eVerify's face-liveness SDK and sends us its session id;
+// we match it with the owner's name + birthday against PhilSys. If they came
+// in through eGovPH SSO, the eGovPH name and birthday are used, not typed ones.
+export async function verifyNationalId(input: {
+  sessionId: string
+  firstName?: string
+  middleName?: string
+  lastName?: string
+  suffix?: string
+  birthDate?: string
+}) {
+  const sessionId = text(input?.sessionId, 64)
+  const live = isLive("everify")
+  if (live ? !LIVENESS_ID.test(sessionId) : !sessionId) return { ok: false as const, error: "Hindi natapos ang face scan. Subukan ulit." }
+
+  const session = await readSession()
+  const sso = session?.identity?.uniqid ? session.identity : null
+  const person = sso
+    ? { firstName: sso.firstName, middleName: sso.middleName, lastName: sso.lastName, suffix: sso.suffix ?? "", birthDate: sso.birthDate }
+    : {
+        firstName: text(input.firstName, 80),
+        middleName: text(input.middleName, 80),
+        lastName: text(input.lastName, 80),
+        suffix: text(input.suffix, 10),
+        birthDate: text(input.birthDate, 10),
+      }
+  if (!person.firstName || !person.lastName || !ISO_DATE.test(person.birthDate))
+    return { ok: false as const, error: "Kailangan ang pangalan (first at last) at kaarawan na nasa National ID mo." }
+  if (live && !(await takeAiQuota("verify")))
+    return { ok: false as const, error: "Masyadong maraming subok. Subukan ulit pagkalipas ng isang oras." }
+
+  let result
+  try {
+    result = await egov("everify").verify(person, sessionId)
+  } catch (e) {
+    // egov.js throws the parsed error body; a bad/expired liveness session is the owner's to retry.
+    if ((e as { error?: string })?.error === "face_liveness_error_exception")
+      return { ok: false as const, error: "Hindi natapos o nag-expire ang face scan. Subukan ulit." }
+    console.error("eVerify failed", e)
+    return { ok: false as const, error: "Hindi ma-reach ang eVerify ngayon. Subukan ulit mamaya." }
+  }
+  if (!result.verified)
+    return { ok: false as const, error: "Hindi tugma sa National ID ang mukha o detalye. Siguraduhing tama ang pangalan at kaarawan, at subukan ulit." }
+
+  const base = session?.identity ?? {
+    uniqid: "", firstName: "", middleName: "", lastName: "", suffix: "", birthDate: "", address: "", barangay: "", municipality: "",
+    mobile: "", email: "", gender: "", regionCode: "", provinceCode: "", municipalityCode: "", barangayCode: "",
+  }
+  const identity = { ...base, ...person, ...result.identity }
+  await writeSession({ identity, verified: true })
+
+  const sb = db()
+  const id = sb && (await ownerId(true))
+  if (sb && id) await sb.from("owners").upsert({ id, identity_verified_at: new Date().toISOString() }, { onConflict: "id" })
+
+  const fullName = [identity.firstName, identity.middleName, identity.lastName, identity.suffix].filter(Boolean).join(" ")
+  return {
+    ok: true as const,
+    profile: {
+      ownerName: titleCase(fullName),
+      birthDate: identity.birthDate,
+      homeAddress: identity.address,
+      identityVerified: true,
+      ...(identity.mobile ? { mobile: identity.mobile } : {}),
+      ...(identity.email ? { email: identity.email } : {}),
+    },
+  }
+}
+
+// PhilSys returns names in capitals; the profile keeps them readable.
+const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, a, b) => a + b.toUpperCase())

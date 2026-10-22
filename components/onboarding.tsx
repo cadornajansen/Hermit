@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 
 import { classifyBusiness } from "@/app/actions"
+import { EgovLogin, NationalIdCheck } from "@/components/egov-auth"
 import { Button } from "@/components/ui/button"
 import { buildChecklist, diffChecklists, EMPTY_PROFILE } from "@/lib/engine"
 import { PILOT_CITY } from "@/lib/offices"
@@ -75,19 +76,21 @@ type Step = (typeof STEPS)[number]
 
 const input = "h-11 w-full rounded-xl border bg-background px-3 text-base"
 
-export function Onboarding({ identity, authError }: { identity: IdentityPrefill | null; authError?: string }) {
+export function Onboarding({ identity, sso, authError }: { identity: IdentityPrefill | null; sso: boolean; authError?: string }) {
   const { ready, synced, profile } = useHermit()
   if (!ready || !synced) return null
-  return <Wizard saved={profile} identity={identity} authError={authError} />
+  return <Wizard saved={profile} identity={identity} sso={sso} authError={authError} />
 }
 
 function Wizard({
   saved,
   identity,
+  sso,
   authError,
 }: {
   saved: Profile | null
   identity: IdentityPrefill | null
+  sso: boolean
   authError?: string
 }) {
   const router = useRouter()
@@ -101,7 +104,7 @@ function Wizard({
       city: (saved && base.city) || identity.city || base.city,
     }
   })
-  const [step, setStep] = useState<Step>(saved ? "review" : "identity")
+  const [step, setStep] = useState<Step>(saved && !(sso && !saved.identityVerified) ? "review" : "identity")
   const [guess, setGuess] = useState<string>()
   const [classifying, startClassify] = useTransition()
   const set = (patch: Partial<Profile>) => setP((prev) => ({ ...prev, ...patch }))
@@ -124,25 +127,35 @@ function Wizard({
           <div className="flex gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4">
             <BadgeCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
             <div className="text-sm">
-              <p className="font-medium">Verified with eGovPH + National ID</p>
+              <p className="font-medium">Verified sa National ID{sso ? " · naka-sign in sa eGovPH" : ""}</p>
               <p>{p.ownerName}</p>
               <p className="text-muted-foreground">
                 {p.birthDate} · {p.homeAddress}
               </p>
             </div>
           </div>
+        ) : sso ? (
+          <>
+            <div className="rounded-xl border p-4 text-sm">
+              <p className="font-medium">Naka-sign in gamit ang eGovPH</p>
+              <p>{p.ownerName}</p>
+              <p className="text-muted-foreground">
+                {p.birthDate} · {p.homeAddress}
+              </p>
+            </div>
+            <NationalIdCheck profile={p} sso onVerified={(patch) => set(patch)} />
+          </>
         ) : (
           <>
-            <a href="/api/auth/sso" className="flex h-12 items-center justify-center rounded-xl bg-primary font-medium text-primary-foreground">
-              Mag-sign in gamit ang eGovPH
-            </a>
-            <p className="text-center text-xs text-muted-foreground">o kaya, i-type nang manual (kahit walang National ID)</p>
+            <EgovLogin />
+            <p className="text-center text-xs text-muted-foreground">o kaya, i-type at i-verify gamit ang National ID</p>
             <Field label="Buong pangalan · Full name (as on your ID)">
               <input className={input} value={p.ownerName} onChange={(e) => set({ ownerName: e.target.value })} autoComplete="name" />
             </Field>
             <Field label="Kaarawan · Birthday">
               <input type="date" className={input} value={p.birthDate} onChange={(e) => set({ birthDate: e.target.value })} />
             </Field>
+            <NationalIdCheck profile={p} sso={false} onVerified={(patch) => set(patch)} />
             <Field label="Tirahan · Home address">
               <input className={input} value={p.homeAddress} onChange={(e) => set({ homeAddress: e.target.value })} autoComplete="street-address" />
             </Field>
@@ -150,7 +163,8 @@ function Wizard({
               <input type="email" className={input} value={p.email} onChange={(e) => set({ email: e.target.value })} autoComplete="email" />
             </Field>
             <p className="text-xs text-muted-foreground">
-              Paalala: dapat pareho ang pangalan mo sa DTI, BIR at permits — kung hindi, puwedeng ma-reject ang filing.
+              Paalala: dapat pareho ang pangalan mo sa DTI, BIR at permits — kung hindi, puwedeng ma-reject ang filing. Puwede
+              kang magpatuloy kahit hindi pa verified.
             </p>
           </>
         )}

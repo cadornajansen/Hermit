@@ -114,6 +114,13 @@ async function hydrate() {
     console.warn("HERMIT: server unavailable, using this device's copy", e)
   }
   const local = read()
+  // Returning eGovPH user on this device (/egovph/sso switched the owner):
+  // their saved data wins over whatever this device had.
+  if (typeof location !== "undefined" && new URLSearchParams(location.search).has("restore")) {
+    commit({ ...SERVER, ...(server ?? {}), ready: true, synced: true })
+    history.replaceState(null, "", location.pathname)
+    return
+  }
   if (server?.profile && !local.profile) {
     // New device / cleared browser: restore everything from the server.
     commit({ ...local, ...server, synced: true })
