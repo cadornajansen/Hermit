@@ -6,6 +6,7 @@ import { buildCalendar, buildChecklist, getRequirement, REQUIREMENTS } from "@/l
 import { fillForm, FIELDS, fitsProfile, FORMS, formsFor, getForm, type FieldKey } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
 import { officesFor } from "@/lib/offices"
+import { packetPlan, slotName, usable } from "@/lib/pack"
 import { processFor } from "@/lib/processes"
 import type { Category, DocType, Extracted, ItemState, Profile } from "@/lib/types"
 import { coverage, DOC_TYPES, EMPTY_EXTRACTED, guessDocType } from "@/lib/vault"
@@ -120,6 +121,7 @@ export type HermitReply = {
   sources: { name: string; url: string; lastVerified: string | null; copiedOn?: string }[]
   formIds: string[]
   saved: Record<string, string>
+  packs?: string[] // requirement ids the owner said yes to a filled document packet for
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -145,6 +147,11 @@ FORMS
 - When the owner asks how or where to start a process, call get_requirement and give the exact startHere URL(s) and click-by-click steps word for word (and any note, e.g. a site that was down). Never shorten or invent URLs.
 - To fill the official PDF itself, tell them to open the form in the app and tap "Punan": HERMIT places their answers on the real form, and they can edit, move, sign and download it.
 - When they give you missing values, call save_form_values with exactly what they said (don't reformat numbers), then confirm. The app shows a button that opens the pre-filled form; HERMIT never submits anything — the owner files it themselves.
+
+DOCUMENT PACKETS
+- After you explain a requirement that has forms to fill or documents to bring, end by offering ONCE to fill in and prepare those documents as one PDF ready to print (e.g. "Gusto mo bang ihanda ko na ang mga form at dokumento para dito, napunan na at naka-PDF?"). Do not prepare it in that same reply.
+- Call prepare_documents only after the owner says yes to that offer (oo, sige, yes, go) or asks you directly to prepare or fill their documents. One call per requirement.
+- After calling it, say in a few lines what is in the packet, which fields are still blank, and which documents are still missing from their vault. Remind them to review every page, sign it, and file it themselves. The app shows the download button; don't paste links to it.
 
 GUARDRAILS
 - The app already shows "not legal or tax advice" under every answer; don't add your own disclaimer line.
@@ -227,6 +234,11 @@ const TOOLS = [
       },
       required: ["values"],
     },
+  },
+  {
+    name: "prepare_documents",
+    description: "Prepare a filled document packet for one requirement: the official forms filled in from the owner's details, a property owner's consent letter when needed, and copies of the owner's vault documents, merged into one PDF the app builds on the owner's device. Only after the owner said yes.",
+    parameters: { type: "object", properties: { requirement_id: { type: "string", description: "Requirement id from get_checklist" } }, required: ["requirement_id"] },
   },
 ].map((t) => ({ type: "function" as const, function: t }))
 
@@ -326,6 +338,21 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
         saved,
         rejected,
         note: rejected.length ? `Only these keys can be saved: ${SAVABLE_KEYS.join(", ")}. Others are profile facts the owner edits in their profile.` : undefined,
+      }
+    }
+    case "prepare_documents": {
+      const plan = packetPlan(String(args.requirement_id), { ...p, extra: { ...p.extra, ...out.saved } }, vaultDocs)
+      if (!plan) return { error: "Unknown requirement id. Call get_checklist for valid ids." }
+      if (!plan.forms.length && !plan.needs.length) return { error: "HERMIT has no forms or documents to prepare for this requirement. Give the steps and startHere links instead." }
+      out.packs = [...new Set([...(out.packs ?? []), plan.requirement.id])]
+      cite(plan.requirement.id)
+      return {
+        packet: plan.requirement.name,
+        forms: plan.forms.map((f) => ({ form: f.form.name, filledOnOfficialPdf: Boolean(f.file && f.layout), stillBlank: f.missing })),
+        consentLetter: plan.letter,
+        vaultCopiesIncluded: plan.needs.filter(usable).map(slotName),
+        stillMissing: plan.needs.filter((s) => !usable(s)).map(slotName),
+        note: "The app now shows a card with a download button; the PDF is built on the owner's device. The owner reviews, signs and files it.",
       }
     }
     default:

@@ -1,12 +1,15 @@
 "use client"
 
-import { ExternalLink, Send } from "lucide-react"
+import { Download, ExternalLink, FileText, Send } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 
 import { askHermit } from "@/app/actions"
+import { documentUrl } from "@/app/sync"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { getFile } from "@/lib/files"
 import { getForm } from "@/lib/forms"
+import { buildPacket, packetPlan, slotName, usable } from "@/lib/pack"
 import { update, useProfile, type ChatMessage } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
@@ -51,7 +54,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
         })),
       }).catch(() => null)
       const answer: ChatMessage = r
-        ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, at: new Date().toISOString() }
+        ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, packs: r.packs, at: new Date().toISOString() }
         : { role: "hermit", text: "Pasensya, hindi kita ma-reach ngayon. Subukan ulit mamaya. · Sorry, I can't connect right now.", at: new Date().toISOString() }
       update((s) => ({
         chat: [...s.chat, answer],
@@ -113,6 +116,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
                 Pre-fill {getForm(f)?.short}
               </Link>
             ))}
+            {m.packs?.map((id) => <PacketCard key={id} requirementId={id} />)}
             {m.role === "hermit" && (
               <p className="text-[11px] text-muted-foreground">Hindi ito legal o tax advice · Not legal or tax advice</p>
             )}
@@ -169,5 +173,75 @@ function linkify(text: string) {
     ) : (
       part
     )
+  )
+}
+
+// The filled document packet the owner said yes to. Built on the device from
+// their profile, form edits and vault files; nothing is uploaded.
+function PacketCard({ requirementId }: { requirementId: string }) {
+  const { profile, docs } = useProfile()
+  const [status, setStatus] = useState<string>()
+  const [busy, setBusy] = useState(false)
+  const plan = profile && packetPlan(requirementId, profile, docs)
+  if (!profile || !plan) return null
+  const en = profile.lang === "en"
+
+  async function download() {
+    setBusy(true)
+    setStatus(undefined)
+    try {
+      const bytes = await buildPacket(plan!, profile!, async (d) => {
+        const local = await getFile(d.id).catch(() => undefined)
+        if (local) return local
+        const url = await documentUrl(d.id)
+        return url ? (await fetch(url)).blob() : undefined
+      })
+      const url = URL.createObjectURL(new Blob([bytes.slice().buffer], { type: "application/pdf" }))
+      Object.assign(document.createElement("a"), { href: url, download: `HERMIT-${plan!.requirement.id}-packet.pdf` }).click()
+      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      setStatus(en ? "Downloaded. Check every page and sign before filing." : "Na-download na. Suriin ang bawat pahina at pumirma bago i-file.")
+    } catch (e) {
+      console.error(e)
+      setStatus(en ? "Couldn't build the PDF. Try again." : "Hindi nagawa ang PDF. Subukan ulit.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border bg-background p-3 text-xs">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <FileText className="size-4" /> {en ? "Document packet" : "Document packet"}: {plan.requirement.name}
+      </p>
+      <ul className="flex flex-col gap-0.5">
+        {plan.forms.map((f) => (
+          <li key={f.form.id}>
+            ✓ {f.form.name}
+            <span className="text-muted-foreground">
+              {f.file && f.layout ? (en ? " · filled in" : " · napunan na") : en ? " · info sheet" : " · info sheet"}
+              {f.missing.length ? ` · ${f.missing.length} ${en ? "blank" : "blanko pa"}` : ""}
+            </span>
+          </li>
+        ))}
+        {plan.letter && <li>✓ {en ? "Property owner's consent letter (for them to sign)" : "Liham ng pahintulot ng may-ari ng lugar (papirmahan)"}</li>}
+        {plan.needs.map((s) => (
+          <li key={s.types.join()} className={usable(s) ? undefined : "text-amber-700 dark:text-amber-400"}>
+            {usable(s) ? "✓" : "✗"} {slotName(s)}
+            {usable(s) ? (en ? " · copy from your vault" : " · kopya mula sa vault") : en ? " · not in your vault" : " · wala pa sa vault"}
+          </li>
+        ))}
+      </ul>
+      <Button size="sm" onClick={download} disabled={busy}>
+        <Download /> {busy ? (en ? "Preparing…" : "Inihahanda…") : en ? "Download PDF packet" : "I-download ang PDF packet"}
+      </Button>
+      {plan.forms
+        .filter((f) => f.file && f.layout)
+        .map((f) => (
+          <Link key={f.form.id} href={`/forms/${f.form.id}/fill?file=${encodeURIComponent(f.file!.path)}`} className={buttonVariants({ size: "sm", variant: "outline" })}>
+            {en ? `Review / sign ${f.form.short}` : `I-review / pirmahan ang ${f.form.short}`}
+          </Link>
+        ))}
+      {status && <p role="status">{status}</p>}
+    </div>
   )
 }

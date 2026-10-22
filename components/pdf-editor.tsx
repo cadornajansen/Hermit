@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { boxId, initialBoxes, pdfSafe, type Box, type Layout } from "@/lib/fill"
+import { boxId, draftKey as stateKey, initialBoxes, type Box, type Layout } from "@/lib/fill"
 import layouts from "@/lib/form-layouts.json"
 import { fillForm, getForm } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
@@ -17,9 +17,6 @@ import { cn } from "@/lib/utils"
 // on the device: the signature and the filled PDF never leave it.
 
 type Mode = { kind: "none" } | { kind: "text"; text: string } | { kind: "signature"; image: string; aspect: number }
-
-// Drafts are tied to the layout version, so improved placements replace stale drafts.
-const stateKey = (path: string, layout: Layout | null) => `hermit:fill:${path}:${(layout as { generatedAt?: string } | null)?.generatedAt ?? "manual"}`
 
 export function PdfEditor({ formId, filePath }: { formId: string; filePath?: string }) {
   const { profile } = useProfile()
@@ -141,37 +138,10 @@ export function PdfEditor({ formId, filePath }: { formId: string; filePath?: str
     setBusy(true)
     setError(undefined)
     try {
-      const { PDFDocument, StandardFonts, PDFCheckBox, PDFTextField } = await import("pdf-lib")
+      const [{ PDFDocument, StandardFonts }, { drawBoxes }] = await Promise.all([import("pdf-lib"), import("@/lib/pdf-draw")])
       const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true })
       const font = await pdf.embedFont(StandardFonts.Helvetica)
-      const pdfPages = pdf.getPages()
-      let acro: ReturnType<typeof pdf.getForm> | null = null
-      try {
-        acro = pdf.getForm()
-      } catch {}
-      for (const b of boxes) {
-        const page = pdfPages[b.page]
-        if (!page) continue
-        const field = b.pdfField && acro ? acro.getFields().find((f) => f.getName() === b.pdfField) : undefined
-        if (field instanceof PDFTextField) {
-          field.setText(pdfSafe(b.text))
-          continue
-        }
-        if (field instanceof PDFCheckBox) {
-          field.check()
-          continue
-        }
-        if (b.kind === "signature" && b.image) {
-          const png = await pdf.embedPng(b.image)
-          page.drawImage(png, { x: b.x, y: b.y, width: b.size, height: b.size * (b.aspect ?? 0.4) })
-        } else {
-          if (b.pitch) {
-            ;[...pdfSafe(b.text)].forEach((ch, i) =>
-              page.drawText(ch, { x: b.x + i * b.pitch! + (b.pitch! - font.widthOfTextAtSize(ch, b.size)) / 2, y: b.y, size: b.size, font })
-            )
-          } else page.drawText(pdfSafe(b.text), { x: b.x, y: b.y, size: b.size, font })
-        }
-      }
+      const acro = await drawBoxes(pdf, boxes, font)
       if (acro) acro.updateFieldAppearances(font)
       const out = await pdf.save()
       const url = URL.createObjectURL(new Blob([out.slice().buffer], { type: "application/pdf" }))

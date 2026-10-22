@@ -44,6 +44,10 @@ export type Box = {
 export type SignatureSlot = { page: number; x: number; y: number; width: number }
 
 let n = 0
+// The owner's edits to a filled form, saved on the device. Tied to the layout
+// version, so improved placements replace stale drafts.
+export const draftKey = (path: string, layout: Layout | null) => `hermit:fill:${path}:${(layout as { generatedAt?: string } | null)?.generatedAt ?? "manual"}`
+
 export const boxId = () => `b${Date.now().toString(36)}${(n++).toString(36)}`
 
 // Filipino surnames often carry particles: "Dela Cruz", "De los Santos", "San Juan".
