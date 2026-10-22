@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle2, CreditCard, ExternalLink, Landmark, Lock, Printer, QrCode, ShieldCheck, Smartphone, Wallet } from "lucide-react"
+import { Banknote, Building2, CheckCircle2, ExternalLink, Landmark, Lock, Printer, QrCode, ScanLine, ShieldCheck, Smartphone, Wallet } from "lucide-react"
 import Link from "next/link"
 import QRCode from "qrcode"
 import { useEffect, useState, useTransition } from "react"
@@ -259,23 +259,26 @@ function Header() {
   )
 }
 
+// The channels eGovPay's payment page offers (as shown on its checkout).
 function Methods() {
   const items = [
-    { icon: QrCode, label: "QR" },
+    { icon: QrCode, label: "QR Ph" },
     { icon: Wallet, label: "E-wallet" },
     { icon: Landmark, label: "Online banking" },
-    { icon: CreditCard, label: "Card" },
+    { icon: Building2, label: "Banks" },
+    { icon: ScanLine, label: "LANDBANK QR" },
+    { icon: Banknote, label: "Cash" },
   ]
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex justify-between gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {items.map(({ icon: Icon, label }) => (
-          <span key={label} className="flex flex-1 flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] text-muted-foreground">
+          <span key={label} className="flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-center text-[11px] text-muted-foreground">
             <Icon className="size-5" /> {label}
           </span>
         ))}
       </div>
-      <p className="text-[11px] text-muted-foreground">Pipili ka ng paraan ng pagbayad sa secure page ng eGovPay (depende sa available na channels).</p>
+      <p className="text-[11px] text-muted-foreground">Pipili ka ng paraan ng pagbayad sa secure page ng eGovPay. May maliit na convenience fee depende sa channel.</p>
     </div>
   )
 }

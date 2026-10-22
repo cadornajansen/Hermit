@@ -50,6 +50,13 @@ async function aiPrompt(prompt: string) {
   return data.data
 }
 
+// eGovPay returns "October 22, 2026 10:15:43 PM" in Philippine time, no zone.
+function phTime(s: string | null) {
+  if (!s) return null
+  const iso = /^\d{4}-\d{2}-\d{2}T/.test(s) ? Date.parse(s) : Date.parse(`${s} GMT+0800`)
+  return Number.isNaN(iso) ? null : new Date(iso).toISOString()
+}
+
 const CATEGORIES: Category[] = ["retail", "food_service", "packaged_food", "other"]
 
 export const live: Egov = {
@@ -216,8 +223,8 @@ export const live: Egov = {
       })
       return {
         paid: Boolean(t.paid_at) || /^(paid|success|successful|completed)$/i.test(t.payment_status),
-        status: t.payment_status,
-        paidAt: t.paid_at,
+        status: t.payment_status, // INITIAL while unpaid, VOIDED after a void
+        paidAt: phTime(t.paid_at),
         channel: [t.payment_channel, t.payment_channel_branch].filter(Boolean).join(" · ") || null,
         refno: t.refno,
       }

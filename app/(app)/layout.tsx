@@ -10,15 +10,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
           HERMIT
         </Link>
-        <nav className="flex items-center gap-4 text-sm text-muted-foreground">
-          <Link href="/forms" className="flex items-center gap-1.5">
-            <FileText className="size-5" aria-hidden /> Forms
+        <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-4">
+          <Link href="/forms" className="flex items-center gap-1.5" aria-label="Forms">
+            <FileText className="size-5" aria-hidden /> <span className="hidden min-[400px]:inline">Forms</span>
           </Link>
-          <Link href="/pay" className="flex items-center gap-1.5">
-            <Wallet className="size-5" aria-hidden /> Bayad
+          <Link href="/pay" className="flex items-center gap-1.5" aria-label="Bayad">
+            <Wallet className="size-5" aria-hidden /> <span className="hidden min-[400px]:inline">Bayad</span>
           </Link>
-          <Link href="/profile" className="flex items-center gap-1.5">
-            <UserRound className="size-5" aria-hidden /> Profile
+          <Link href="/profile" className="flex items-center gap-1.5" aria-label="Profile">
+            <UserRound className="size-5" aria-hidden /> <span className="hidden min-[400px]:inline">Profile</span>
           </Link>
         </nav>
       </header>

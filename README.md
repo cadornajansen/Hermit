@@ -69,8 +69,9 @@ pre-filled from the profile and ordered by what's due; the owner enters the amou
 computes tax). It creates an eGovPay transaction and shows a scan-to-pay QR of eGovPay's payment page plus a link, then
 watches the status. A payment is marked paid only when eGovPay reports it (status poll and `/api/pay/callback` both
 re-read the transaction); the receipt shows eGovPay's reference number. Payments are stored in the `payments` table.
-Until `EGOV_PAY_TOKEN` and `EGOV_PAY_SETTLEMENT_TEMPLATE` are set, the terminal says online payment isn't available yet
-and points to BIR's own ePayment channels and the filled return; nothing ever looks paid without a gateway.
+eGovPay's checkout offers QR Ph, e-wallets, online banking, banks, LANDBANK QR and cash, with a small convenience fee
+per channel. `EGOV_PAY_TOKEN` is the `test_`-prefixed token (test mode, no live funds); drop the prefix to go live.
+Without a token the terminal says online payment isn't available yet and points to BIR's own ePayment channels.
 
 **Start here:** `lib/processes.ts` lists, per requirement, the exact page that starts the process (BNRS, ORUS with its
 click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,
@@ -104,7 +105,7 @@ service's env vars are set (see `.env.example`), otherwise the mock in `lib/egov
 | National ID eVerify | Match name + birthday + face against PhilSys; fills the verified name, birthday and address | **Live** |
 | eMessage | SMS reminders | Wired (sends only to the signed-in owner's number) |
 | eGov AI | Business classification, Taglish explanations, document reading | Wired; keyword / filename fallbacks |
-| eGovPay | Tax payment terminal `/pay` (QR + payment link, status, receipts) | Wired; needs merchant token |
+| eGovPay | Tax payment terminal `/pay` (QR + payment link, status, receipts) | **Live** (test-mode `test_` token) |
 | eReport | Report red tape at an office | Wired |
 | eGovChain | Vault anchoring (stretch) | Socket only |
 | Compass | — | Not used: in egov.js it's budget data, not an office locator |
