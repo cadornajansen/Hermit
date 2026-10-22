@@ -1,3 +1,4 @@
+import { UserRound } from "lucide-react"
 import Link from "next/link"
 
 import { Nav } from "@/components/nav"
@@ -9,7 +10,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Link href="/dashboard" className="text-lg font-semibold tracking-tight">
           HERMIT
         </Link>
-        <span className="text-xs text-muted-foreground">Your business, remembered.</span>
+        <Link href="/profile" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <UserRound className="size-5" aria-hidden /> Profile
+        </Link>
       </header>
       {children}
       <Nav />

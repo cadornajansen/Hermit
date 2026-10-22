@@ -23,6 +23,7 @@ pnpm test    # requirements engine + calendar checks
 | F2 Kuya Hermit: retrieval-grounded answers with sources, form pre-fill field sheets | `app/(app)/assistant`, `app/(app)/forms/[id]`, `lib/forms.ts` |
 | F3 Office locator (pilot city: Taguig) + eReport red-tape reports | `app/(app)/offices`, `lib/offices.ts` |
 | F4 Calendar: generated deadlines, weekend shift, 14/3/0-day reminders, SMS, Google Calendar | `app/(app)/calendar` |
+| F5 Document vault: upload, AI read, rule-based verification, per-requirement tracking, activity log | `app/(app)/vault`, `components/vault.tsx`, `lib/vault.ts` |
 | "What Hermit knows": view, export, delete everything | `app/(app)/profile` |
 
 ## eGov API sockets
@@ -37,14 +38,23 @@ service's env vars are set (see `.env.example`), otherwise the mock in `lib/egov
 | Face Liveness | Before eVerify (`/api/auth/liveness`) | Wired |
 | National ID eVerify | Pull verified name, birthday, address | Wired |
 | eMessage | SMS reminders | Wired (sends only to the signed-in owner's number) |
-| eGov AI | Business classification, Taglish explanations | Wired, keyword classifier as fallback |
+| eGov AI | Business classification, Taglish explanations, document reading | Wired; keyword / filename fallbacks |
 | eGovPay | Fees (P2) | Adapter wired, no UI yet |
 | eReport | Report red tape at an office | Wired |
 | eGovChain | Vault anchoring (stretch) | Socket only |
 | Compass | — | Not used: in egov.js it's budget data, not an office locator |
 
+## Document verification
+
+The AI only *reads* an upload (type, names, numbers, dates) through `egov("ai").extractDocument`. Whether it's the right,
+valid document is decided by the rules in `lib/vault.ts`: document type vs. the slot it was uploaded for, owner and
+business name vs. the profile and every other document, expiry, city, duplicates. A verified permit marks its checklist
+item Approved with its expiry, and its TIN / registration number is saved for form pre-fill. Every upload, check, edit
+and deletion goes to the activity log. Files stay on the device (IndexedDB). Until eGov AI is connected, the type is
+guessed from the filename and the owner types the details, which run through the same checks.
+
 ## Not built yet
 
-Database (owner data is in `localStorage`), server-side reminder scheduling, document vault/OCR, filled official PDFs,
+Database (owner data is in `localStorage`, files in IndexedDB), server-side reminder scheduling, shareable compliance pack, filled official PDFs,
 holiday-aware deadlines, full Filipino/English toggle, other LGUs, employer payroll module. Every rule in the seed table
 is unverified until a pilot LGU and RDO sign it off.

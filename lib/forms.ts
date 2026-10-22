@@ -12,6 +12,7 @@ export type FormField = { key: string; label: string; source?: Source }
 export type FormTemplate = {
   id: string
   name: string
+  short: string // button label
   agency: string
   portal: string
   fields: FormField[]
@@ -37,6 +38,7 @@ export const FORMS: FormTemplate[] = [
   {
     id: "bir_1901",
     name: "BIR Form 1901 — Application for Registration (individuals)",
+    short: "BIR 1901",
     agency: "BIR",
     portal: "https://orus.bir.gov.ph",
     fields: [
@@ -60,6 +62,7 @@ export const FORMS: FormTemplate[] = [
   {
     id: "bmbe",
     name: "BMBE Application Form",
+    short: "BMBE form",
     agency: "DTI Negosyo Center",
     portal: "https://www.dti.gov.ph",
     fields: [
@@ -76,6 +79,7 @@ export const FORMS: FormTemplate[] = [
   {
     id: "lgu_permit",
     name: "Unified Business Permit Application (pilot city)",
+    short: "business permit form",
     agency: "City BPLO",
     portal: "https://www.taguig.gov.ph",
     fields: [

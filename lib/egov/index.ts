@@ -1,6 +1,6 @@
 import "server-only"
 
-import type { Category } from "@/lib/types"
+import type { Category, Extracted } from "@/lib/types"
 import { mock } from "./mock"
 import { live } from "./live"
 
@@ -48,6 +48,9 @@ export type Egov = {
     classify(description: string): Promise<Classification>
     // Rewrites grounded context into a plain Taglish answer. Never decides requirements.
     explain(question: string, groundedContext: string): Promise<string>
+    // Reads a document (type, names, numbers, dates). Never judges validity —
+    // lib/vault.ts does that.
+    extractDocument(file: File): Promise<Extracted>
   }
   pay: {
     createPayment(p: {
