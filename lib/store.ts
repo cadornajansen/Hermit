@@ -26,7 +26,7 @@ import type { ItemState, Profile, VaultDoc, VaultEvent } from "./types"
 export type ChatMessage = {
   role: "owner" | "hermit"
   text: string
-  sources?: { name: string; url: string; lastVerified: string | null }[]
+  sources?: { name: string; url: string; lastVerified: string | null; copiedOn?: string }[]
   formIds?: string[]
   at: string
 }

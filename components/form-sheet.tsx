@@ -5,6 +5,7 @@ import { useState } from "react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { fillForm, getForm, HANDOFF_LABEL } from "@/lib/forms"
+import { libraryFiles } from "@/lib/library"
 import { update, useProfile } from "@/lib/store"
 
 // Side-by-side review before hand-off. HERMIT never submits: the owner files
@@ -20,6 +21,7 @@ export function FormSheet({ id }: { id: string }) {
   const remember = (key: string, value: string) =>
     update((s) => ({ profile: s.profile && { ...s.profile, extra: { ...s.profile.extra, [key]: value } } }))
   const portalIsUrl = form.portal.startsWith("http")
+  const copies = libraryFiles(form.id)
 
   return (
     <div className="flex flex-col gap-4">
@@ -39,6 +41,33 @@ export function FormSheet({ id }: { id: string }) {
             : "Kumpleto na! I-review bago i-file."}
         </p>
       </div>
+      {copies.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-2xl border p-3 print:hidden">
+          <h2 className="text-sm font-semibold">Opisyal na form · Official blank form</h2>
+          <ul className="flex flex-col gap-2 text-sm">
+            {copies.map((c) => (
+              <li key={c.path} className="flex items-center justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block">{c.label}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {c.kind === "guide" ? "Gabay · Guide" : "Blank form"} · {(c.bytes / 1024).toFixed(0)} KB · kinopya{" "}
+                    {c.retrievedAt.slice(0, 10)} ·{" "}
+                    <a href={c.sourceUrl} target="_blank" rel="noreferrer" className="text-primary">
+                      official source
+                    </a>
+                  </span>
+                </span>
+                <a href={c.url} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>
+                  I-download
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[11px] text-muted-foreground">
+            Kopya mula sa website ng ahensya. Gamitin ang field sheet sa baba para kopyahin ang sagot mo sa form.
+          </p>
+        </section>
+      )}
       <table className="w-full text-sm">
         <tbody className="divide-y">
           {fields.map((f) => (

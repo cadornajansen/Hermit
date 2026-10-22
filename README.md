@@ -47,6 +47,13 @@ official page, where it's filed, how it's handed off (online, print, or office),
 `/forms` lists them all; each form opens a pre-filled field sheet. Values the owner types (or tells Kuya Hermit) are
 remembered for every later form.
 
+**Official copies:** `pnpm forms:sync` downloads each form's official blank PDF/Excel (and agency guides) listed under
+`files:` in `lib/forms.ts`, checks it's a real PDF/Excel file, stores it in Supabase Storage (public `forms` bucket) with
+its extracted text, and writes `lib/form-files.json` (sha256, size, retrieved date). Form pages offer the download;
+Kuya Hermit reads the stored text (`read_official_form`) to explain items and attachments. Re-run the sync to detect new
+versions: it reports files whose hash changed. Currently 31 files for 24 forms (BIR, SSS, PhilHealth, Taguig); Pag-IBIG
+(reCAPTCHA), BFP and DOLE (bot-blocked) and the DTI BMBE flyer (server unreachable) stay link-only for now.
+
 ## What's in it
 
 | PRD module | Where |

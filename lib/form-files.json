@@ -1,0 +1,422 @@
+{
+  "bir_1901": [
+    {
+      "label": "BIR Form 1901 (October 2025)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/BIR/pdf/1901%20October%202025%20ENCS%20Final.pdf",
+      "path": "bir_1901/bir-form-1901-october-2025.pdf",
+      "contentType": "application/pdf",
+      "bytes": 907464,
+      "sha256": "0cd788622d464271fb2f325089400c39f88533277ae4eff9caa2b63f8cebbb3f",
+      "textPath": "bir_1901/bir-form-1901-october-2025.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:22.220Z",
+      "checkedAt": "2026-10-22T11:59:22.220Z"
+    }
+  ],
+  "bir_1903": [
+    {
+      "label": "BIR Form 1903 (October 2025)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/BIR/pdf/1903%20October%202025%20ENCS%20-%20Final.pdf",
+      "path": "bir_1903/bir-form-1903-october-2025.pdf",
+      "contentType": "application/pdf",
+      "bytes": 896172,
+      "sha256": "fe23da0e1f724be648d778cbe7a8ca09938e6e1a6df289d835e8a4fe8b78b744",
+      "textPath": "bir_1903/bir-form-1903-october-2025.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:26.162Z",
+      "checkedAt": "2026-10-22T11:59:26.162Z"
+    }
+  ],
+  "bir_1905": [
+    {
+      "label": "BIR Form 1905 (October 2025)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/BIR/pdf/1905%20October%202025%20ENCS%20Final.pdf",
+      "path": "bir_1905/bir-form-1905-october-2025.pdf",
+      "contentType": "application/pdf",
+      "bytes": 877392,
+      "sha256": "708aba680e50e83d2f935f045465faa2b86d258b88b65da369e7e4e0550a23e2",
+      "textPath": "bir_1905/bir-form-1905-october-2025.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:27.945Z",
+      "checkedAt": "2026-10-22T11:59:27.945Z"
+    }
+  ],
+  "bir_1906": [
+    {
+      "label": "BIR Form 1906 (October 2025)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/BIR/pdf/1906%20October%202025%20ENCS%20Final.pdf",
+      "path": "bir_1906/bir-form-1906-october-2025.pdf",
+      "contentType": "application/pdf",
+      "bytes": 398116,
+      "sha256": "cc92712f2d6384462919c1b962919aa81aa18ce6f1dbc79688cff29cc521cffe",
+      "textPath": "bir_1906/bir-form-1906-october-2025.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:29.491Z",
+      "checkedAt": "2026-10-22T11:59:29.491Z"
+    }
+  ],
+  "lgu_permit": [
+    {
+      "label": "Taguig Unified Business Permit Application Form",
+      "kind": "form",
+      "sourceUrl": "https://www.taguig.gov.ph/assets/pdfform/bplo/UNIFIED_BUSINESS_PERMIT_APPLICATION_FORM.pdf",
+      "path": "lgu_permit/taguig-unified-business-permit-application-form.pdf",
+      "contentType": "application/pdf",
+      "bytes": 1119570,
+      "sha256": "365b2619fb6c82b57b175e80ed40552fd03177e992d72b5958f5b9a1da6b749e",
+      "textPath": "lgu_permit/taguig-unified-business-permit-application-form.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:43.960Z",
+      "checkedAt": "2026-10-22T11:59:43.960Z"
+    },
+    {
+      "label": "Taguig 2025 additional requirements (national and local offices)",
+      "kind": "guide",
+      "sourceUrl": "https://www.taguig.gov.ph/assets/pdfform/bplo/2025_ADDITIONAL_REQUIREMENTS_FROM%20NATL_GOVT_and_LOCAL_OFFICES.xlsx",
+      "path": "lgu_permit/taguig-2025-additional-requirements-national-and-local-offices.xlsx",
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "bytes": 131016,
+      "sha256": "db85e328eafaf55d4ed3684c7085106b27d59ebf36b15983fcaced23cee819cd",
+      "textPath": null,
+      "retrievedAt": "2026-10-22T11:59:48.504Z",
+      "checkedAt": "2026-10-22T11:59:48.504Z"
+    }
+  ],
+  "bir_2121": [
+    {
+      "label": "BIR Form 2121",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/BIR/pdf/Form%202121.pdf",
+      "path": "bir_2121/bir-form-2121.pdf",
+      "contentType": "application/pdf",
+      "bytes": 305993,
+      "sha256": "ad0e9b48154e71825628a87337f3e879b6222e0b8829de4165a87c6f1b70e044",
+      "textPath": "bir_2121/bir-form-2121.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:49.250Z",
+      "checkedAt": "2026-10-22T11:59:49.250Z"
+    }
+  ],
+  "bir_0605": [
+    {
+      "label": "BIR Form 0605 (PDF)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/0605version1999_09.02.2022_copy.pdf",
+      "path": "bir_0605/bir-form-0605-pdf.pdf",
+      "contentType": "application/pdf",
+      "bytes": 228607,
+      "sha256": "de04419766c59bf27fdeb854c0f7c3f98601900caa20630442e671e2313e536f",
+      "textPath": "bir_0605/bir-form-0605-pdf.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:50.451Z",
+      "checkedAt": "2026-10-22T11:59:50.451Z"
+    },
+    {
+      "label": "BIR Form 0605 (Excel)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/0605version1999_09.02.2022_copy.xls",
+      "path": "bir_0605/bir-form-0605-excel.xls",
+      "contentType": "application/vnd.ms-excel",
+      "bytes": 368128,
+      "sha256": "fb4a2b754011a0c99f49680497e08c7346a18c9593cd2e93d698c3dbba7ac533",
+      "textPath": null,
+      "retrievedAt": "2026-10-22T11:59:51.828Z",
+      "checkedAt": "2026-10-22T11:59:51.828Z"
+    }
+  ],
+  "bir_2551q": [
+    {
+      "label": "BIR Form 2551Q (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/2551Q%20Jan%202018%20ENCS%20final%20rev%203_copy.pdf",
+      "path": "bir_2551q/bir-form-2551q-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 564749,
+      "sha256": "1f270ecf66d778836a14697863e420ff65d5ed0a5576a6cf58b97c9a8e8c9b24",
+      "textPath": "bir_2551q/bir-form-2551q-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:52.568Z",
+      "checkedAt": "2026-10-22T11:59:52.568Z"
+    }
+  ],
+  "bir_2550q": [
+    {
+      "label": "BIR Form 2550Q (April 2024)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/BIR/pdf/2550Q%20%20April%202024%20ENCS_Final.pdf",
+      "path": "bir_2550q/bir-form-2550q-april-2024.pdf",
+      "contentType": "application/pdf",
+      "bytes": 732639,
+      "sha256": "18eb16925010fdda820cef958221ba2c0d073066efa93a898113e39b31135a25",
+      "textPath": "bir_2550q/bir-form-2550q-april-2024.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:54.985Z",
+      "checkedAt": "2026-10-22T11:59:54.985Z"
+    }
+  ],
+  "bir_1701q": [
+    {
+      "label": "BIR Form 1701Q (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1701Q%20Jan%202018%20final%20rev2_copy.pdf",
+      "path": "bir_1701q/bir-form-1701q-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 1108853,
+      "sha256": "c731d3f12556e6f19ab81f6113ca7c4a23f7ed099675c03451ac0074d96b85ed",
+      "textPath": "bir_1701q/bir-form-1701q-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:57.140Z",
+      "checkedAt": "2026-10-22T11:59:57.140Z"
+    }
+  ],
+  "bir_1701": [
+    {
+      "label": "BIR Form 1701 (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1701%20Jan%202018%20final%20with%20rates.pdf",
+      "path": "bir_1701/bir-form-1701-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 1702267,
+      "sha256": "19be91d78258eb7c255f2615610db2739f10c378f8ac97adc0887c1bf40d1b2e",
+      "textPath": "bir_1701/bir-form-1701-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T11:59:59.927Z",
+      "checkedAt": "2026-10-22T11:59:59.927Z"
+    },
+    {
+      "label": "BIR Form 1701A (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1701A%20Jan%202018%20v5%20with%20rates.pdf",
+      "path": "bir_1701/bir-form-1701a-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 985387,
+      "sha256": "8d492eabc6da2088cf9a55084488b192def5cc415048f607142c8bce1b72bfb8",
+      "textPath": "bir_1701/bir-form-1701a-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:03.394Z",
+      "checkedAt": "2026-10-22T12:00:03.394Z"
+    }
+  ],
+  "bir_1702q": [
+    {
+      "label": "BIR Form 1702Q (2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1702Q%202018ENCS%20final2.pdf",
+      "path": "bir_1702q/bir-form-1702q-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 1218152,
+      "sha256": "589e22190b9211571cb8a0ba14c97c17dff250f3b8ee9f9e8f6cc3b37b1b1be4",
+      "textPath": "bir_1702q/bir-form-1702q-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:04.840Z",
+      "checkedAt": "2026-10-22T12:00:04.840Z"
+    }
+  ],
+  "bir_1702": [
+    {
+      "label": "BIR Form 1702-RT (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1702-RT%20Jan%202018%20ENCS%20Final%20v3.pdf",
+      "path": "bir_1702/bir-form-1702-rt-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 1268591,
+      "sha256": "d9a6a8a13e0114934261151c4eb269a1573042e7ce670eaf12b15f169d308d2d",
+      "textPath": "bir_1702/bir-form-1702-rt-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:06.307Z",
+      "checkedAt": "2026-10-22T12:00:06.307Z"
+    },
+    {
+      "label": "BIR Form 1702-EX (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1702-EX%20Jan%202018%20ENCS%20v2.pdf",
+      "path": "bir_1702/bir-form-1702-ex-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 1100312,
+      "sha256": "e2dece405bbf48d4be8f50fc73f124b90e574ddaf79361b2f81bacf8831efcfb",
+      "textPath": "bir_1702/bir-form-1702-ex-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:07.834Z",
+      "checkedAt": "2026-10-22T12:00:07.834Z"
+    },
+    {
+      "label": "BIR Form 1702-MX (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1702-MX%20Jan%202018%20ENCS%20Final%20with%20OSDv2.pdf",
+      "path": "bir_1702/bir-form-1702-mx-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 1080667,
+      "sha256": "81c05fffadde6c0b4098aeba8547a9820a0806c6be9b0c6ceac5597cab4263d2",
+      "textPath": "bir_1702/bir-form-1702-mx-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:11.109Z",
+      "checkedAt": "2026-10-22T12:00:11.109Z"
+    }
+  ],
+  "bir_0619e": [
+    {
+      "label": "BIR Form 0619-E (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/0619-E%20Jan%202018%20rev%20final.pdf",
+      "path": "bir_0619e/bir-form-0619-e-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 609990,
+      "sha256": "0418160d63d4e6f68c34f2bad553273a5d148c3686d8562d338d35fcdd0c5215",
+      "textPath": "bir_0619e/bir-form-0619-e-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:12.493Z",
+      "checkedAt": "2026-10-22T12:00:12.493Z"
+    }
+  ],
+  "bir_1601eq": [
+    {
+      "label": "BIR Form 1601-EQ (January 2019)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1601-EQ%20January%202019%20ENCS%20final.pdf",
+      "path": "bir_1601eq/bir-form-1601-eq-january-2019.pdf",
+      "contentType": "application/pdf",
+      "bytes": 879703,
+      "sha256": "5277addc6778c96a53fde99b8664b1a5213fcea638dea06033c9acf22ee73c25",
+      "textPath": "bir_1601eq/bir-form-1601-eq-january-2019.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:13.705Z",
+      "checkedAt": "2026-10-22T12:00:13.705Z"
+    }
+  ],
+  "bir_2307": [
+    {
+      "label": "BIR Form 2307 (PDF)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/2307%20Jan%202018%20ENCS%20v3.pdf",
+      "path": "bir_2307/bir-form-2307-pdf.pdf",
+      "contentType": "application/pdf",
+      "bytes": 335459,
+      "sha256": "eca9476c5f6346939b973e693d35d635f6dd82519b87092c717c21965b0b90f9",
+      "textPath": "bir_2307/bir-form-2307-pdf.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:15.098Z",
+      "checkedAt": "2026-10-22T12:00:15.098Z"
+    },
+    {
+      "label": "BIR Form 2307 (Excel)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/2307%20Jan%202018%20ENCS%20v3.xlsx",
+      "path": "bir_2307/bir-form-2307-excel.xlsx",
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "bytes": 60963,
+      "sha256": "53124923f53ddc381a2ee5b88672f01c946e771a5ceafa210c207d253bdef6c1",
+      "textPath": null,
+      "retrievedAt": "2026-10-22T12:00:16.225Z",
+      "checkedAt": "2026-10-22T12:00:16.225Z"
+    }
+  ],
+  "sss_r1": [
+    {
+      "label": "SSS Form R-1 Employer Registration",
+      "kind": "form",
+      "sourceUrl": "https://www.sss.gov.ph/wp-content/uploads/2022/03/SSSForms_ER_Registration.pdf",
+      "path": "sss_r1/sss-form-r-1-employer-registration.pdf",
+      "contentType": "application/pdf",
+      "bytes": 741811,
+      "sha256": "41f2e8cc705268cbb68358e502a4da60ddab6a82df0dc4b6c6d9e18695085e23",
+      "textPath": null,
+      "retrievedAt": "2026-10-22T12:00:52.654Z",
+      "checkedAt": "2026-10-22T12:00:52.654Z"
+    }
+  ],
+  "sss_r1a": [
+    {
+      "label": "SSS Form R-1A Employment Report",
+      "kind": "form",
+      "sourceUrl": "https://www.sss.gov.ph/wp-content/uploads/2022/03/SSSForms_Employment_Report.pdf",
+      "path": "sss_r1a/sss-form-r-1a-employment-report.pdf",
+      "contentType": "application/pdf",
+      "bytes": 726650,
+      "sha256": "bf3eaee0556b8382316933882da24e570f22a07d49bb5ddff5cae9a093e9ffe2",
+      "textPath": null,
+      "retrievedAt": "2026-10-22T12:00:55.699Z",
+      "checkedAt": "2026-10-22T12:00:55.699Z"
+    }
+  ],
+  "philhealth_er1": [
+    {
+      "label": "PhilHealth ER1",
+      "kind": "form",
+      "sourceUrl": "https://www.philhealth.gov.ph/downloads/employer/er1.pdf",
+      "path": "philhealth_er1/philhealth-er1.pdf",
+      "contentType": "application/pdf",
+      "bytes": 105545,
+      "sha256": "470e67631cf1bc1113534452e1810f9bc5d44c99808c7e03dfc0dbf04aff1d0c",
+      "textPath": "philhealth_er1/philhealth-er1.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:57.473Z",
+      "checkedAt": "2026-10-22T12:00:57.473Z"
+    }
+  ],
+  "philhealth_er2": [
+    {
+      "label": "PhilHealth ER2",
+      "kind": "form",
+      "sourceUrl": "https://www.philhealth.gov.ph/downloads/employer/er2.pdf",
+      "path": "philhealth_er2/philhealth-er2.pdf",
+      "contentType": "application/pdf",
+      "bytes": 266367,
+      "sha256": "25f99b290153c65ac738fa449803d1c5ac087492973836900b46c6c5d2105ecf",
+      "textPath": "philhealth_er2/philhealth-er2.pdf.txt",
+      "retrievedAt": "2026-10-22T12:00:59.339Z",
+      "checkedAt": "2026-10-22T12:00:59.339Z"
+    }
+  ],
+  "philhealth_rf1": [
+    {
+      "label": "PhilHealth RF-1",
+      "kind": "form",
+      "sourceUrl": "https://www.philhealth.gov.ph/downloads/employer/rf1.pdf",
+      "path": "philhealth_rf1/philhealth-rf-1.pdf",
+      "contentType": "application/pdf",
+      "bytes": 80972,
+      "sha256": "b3c2332622fefead3a2fe8a709f696e2ac68b9c8fb89dabff33bdb3dd155e4bd",
+      "textPath": "philhealth_rf1/philhealth-rf-1.pdf.txt",
+      "retrievedAt": "2026-10-22T12:01:01.338Z",
+      "checkedAt": "2026-10-22T12:01:01.338Z"
+    }
+  ],
+  "bir_1601c": [
+    {
+      "label": "BIR Form 1601-C (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1601C%20final%20Jan%202018%20with%20DPA.pdf",
+      "path": "bir_1601c/bir-form-1601-c-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 934424,
+      "sha256": "c8faaa71015337a73b4ceb96bfb265c539589ab5e10eb27899bb81f87f417397",
+      "textPath": "bir_1601c/bir-form-1601-c-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:01:02.661Z",
+      "checkedAt": "2026-10-22T12:01:02.661Z"
+    }
+  ],
+  "bir_1604c": [
+    {
+      "label": "BIR Form 1604-C (January 2018)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/1604-C%20Jan%202018%20Final.pdf",
+      "path": "bir_1604c/bir-form-1604-c-january-2018.pdf",
+      "contentType": "application/pdf",
+      "bytes": 602294,
+      "sha256": "5239dd7f94bfc9d8a1b2e330e2da955bd5a0223762f41e95112d6b3822325dfd",
+      "textPath": "bir_1604c/bir-form-1604-c-january-2018.pdf.txt",
+      "retrievedAt": "2026-10-22T12:01:04.387Z",
+      "checkedAt": "2026-10-22T12:01:04.387Z"
+    }
+  ],
+  "bir_2316": [
+    {
+      "label": "BIR Form 2316 (PDF)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/2316%20Sep%202021%20ENCS_Final_corrected.pdf",
+      "path": "bir_2316/bir-form-2316-pdf.pdf",
+      "contentType": "application/pdf",
+      "bytes": 107183,
+      "sha256": "8e927e65b096d7a786ba7d36c55c28ee3de3546278880d9de8c11a91d1b48d60",
+      "textPath": "bir_2316/bir-form-2316-pdf.pdf.txt",
+      "retrievedAt": "2026-10-22T12:01:05.806Z",
+      "checkedAt": "2026-10-22T12:01:05.806Z"
+    },
+    {
+      "label": "BIR Form 2316 (Excel)",
+      "kind": "form",
+      "sourceUrl": "https://bir-cdn.bir.gov.ph/local/pdf/2316%20Sep%202021%20ENCS_Final_corrected.xlsx",
+      "path": "bir_2316/bir-form-2316-excel.xlsx",
+      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "bytes": 48398,
+      "sha256": "c545a19a935a82318f0673ff6f8e31f5f1fffc45dfc4c28e8f20a8c502f59395",
+      "textPath": null,
+      "retrievedAt": "2026-10-22T12:01:07.234Z",
+      "checkedAt": "2026-10-22T12:01:07.234Z"
+    }
+  ]
+}

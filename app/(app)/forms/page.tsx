@@ -5,6 +5,7 @@ import { useState } from "react"
 
 import { buildChecklist } from "@/lib/engine"
 import { fillForm, fitsProfile, FORMS, HANDOFF_LABEL, type FormTemplate } from "@/lib/forms"
+import { hasLibraryCopy } from "@/lib/library"
 import { useProfile } from "@/lib/store"
 
 const GROUPS: [FormTemplate["group"], string][] = [
@@ -62,6 +63,7 @@ export default function FormsPage() {
                         <span className="block text-xs text-muted-foreground">
                           {f.agency} · {HANDOFF_LABEL[f.handoff].split(" · ")[1]}
                           {forYou && <span className="text-primary"> · para sa iyo</span>}
+                          {hasLibraryCopy(f.id) && <span> · may opisyal na kopya</span>}
                         </span>
                       </span>
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">

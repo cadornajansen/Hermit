@@ -123,7 +123,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
                     <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary">
                       {s.name} <ExternalLink className="size-3" />
                     </a>{" "}
-                    · {s.lastVerified ? `verified ${s.lastVerified}` : "not yet verified"}
+                    · {s.copiedOn ? `official copy, ${s.copiedOn}` : s.lastVerified ? `verified ${s.lastVerified}` : "not yet verified"}
                   </li>
                 ))}
               </ul>

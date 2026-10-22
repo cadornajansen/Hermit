@@ -23,3 +23,16 @@ test("pre-fill uses the profile first, then remembered values; forms follow owne
   const birForms = formsFor("bir_cor", p).map((f) => f.id)
   assert.ok(birForms.includes("bir_1901") && !birForms.includes("bir_1903"))
 })
+
+test("every stored official copy belongs to a catalog form and source", async () => {
+  const { readFileSync } = await import("node:fs")
+  const manifest = JSON.parse(readFileSync(new URL("./form-files.json", import.meta.url), "utf8"))
+  for (const [formId, entries] of Object.entries(manifest) as [string, { sourceUrl: string; path: string; sha256: string }[]][]) {
+    const form = FORMS.find((f) => f.id === formId)
+    assert.ok(form, `manifest has unknown form ${formId}`)
+    for (const e of entries) {
+      assert.ok(form.files?.some((f) => f.url === e.sourceUrl), `${formId}: ${e.sourceUrl} not in catalog`)
+      assert.ok(e.path.startsWith(`${formId}/`) && /^[0-9a-f]{64}$/.test(e.sha256))
+    }
+  }
+})
