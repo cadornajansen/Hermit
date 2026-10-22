@@ -208,6 +208,20 @@ export const live: Egov = {
       })
       return { url: data.data.url, uuid: data.data.uuid }
     },
+    getTransaction: async (uuid) => {
+      const { data: t } = await egovPay.getTransaction({
+        client: client("pay", { "X-eGovPay-Token": env("EGOV_PAY_TOKEN") }),
+        path: { uuid },
+        throwOnError: true,
+      })
+      return {
+        paid: Boolean(t.paid_at) || /^(paid|success|successful|completed)$/i.test(t.payment_status),
+        status: t.payment_status,
+        paidAt: t.paid_at,
+        channel: [t.payment_channel, t.payment_channel_branch].filter(Boolean).join(" · ") || null,
+        refno: t.refno,
+      }
+    },
   },
   report: {
     submit: async ({ identity: id, subject, message, reportType }) => {

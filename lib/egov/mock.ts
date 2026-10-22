@@ -61,11 +61,14 @@ export const mock: Egov = {
     // let the owner type the details, which go through the same checks.
     extractDocument: async (file) => ({ ...EMPTY_EXTRACTED, docType: guessDocType(file.name), source: "filename" }),
   },
+  // No mock payments: without a gateway, nothing may look paid.
   pay: {
-    createPayment: async ({ txnid, redirectUrl }) => ({
-      uuid: `mock-${txnid}`,
-      url: `${redirectUrl}?mock_paid=${txnid}`,
-    }),
+    createPayment: async () => {
+      throw new Error("payments_not_connected")
+    },
+    getTransaction: async () => {
+      throw new Error("payments_not_connected")
+    },
   },
   report: {
     submit: async () => ({ caseNumber: `MOCK-${Date.now().toString(36).toUpperCase()}` }),

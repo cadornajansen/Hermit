@@ -1,10 +1,12 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useTransition } from "react"
 
 import { sendReminderSms } from "@/app/actions"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { buildCalendar, buildChecklist, reminderDates } from "@/lib/engine"
+import { PAYABLES } from "@/lib/payments"
 import { useProfile } from "@/lib/store"
 import type { Deadline } from "@/lib/types"
 
@@ -62,6 +64,14 @@ export default function CalendarPage() {
               {d.note && <p className="text-xs text-muted-foreground">{d.note}</p>}
               <p className="text-xs text-muted-foreground">Paalala: {reminderDates(d.due).join(", ")}</p>
               <div className="flex flex-wrap gap-2">
+                {PAYABLES.some((p) => p.deadlineId === d.id.split(":")[0]) && (
+                  <Link
+                    href={`/pay?form=${PAYABLES.find((p) => p.deadlineId === d.id.split(":")[0])!.formId}`}
+                    className={buttonVariants({ size: "sm" })}
+                  >
+                    Magbayad
+                  </Link>
+                )}
                 <a href={googleCalendarUrl(d)} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>
                   Add to Google Calendar
                 </a>

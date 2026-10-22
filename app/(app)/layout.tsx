@@ -1,4 +1,4 @@
-import { FileText, UserRound } from "lucide-react"
+import { FileText, UserRound, Wallet } from "lucide-react"
 import Link from "next/link"
 
 import { Nav } from "@/components/nav"
@@ -13,6 +13,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <nav className="flex items-center gap-4 text-sm text-muted-foreground">
           <Link href="/forms" className="flex items-center gap-1.5">
             <FileText className="size-5" aria-hidden /> Forms
+          </Link>
+          <Link href="/pay" className="flex items-center gap-1.5">
+            <Wallet className="size-5" aria-hidden /> Bayad
           </Link>
           <Link href="/profile" className="flex items-center gap-1.5">
             <UserRound className="size-5" aria-hidden /> Profile

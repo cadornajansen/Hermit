@@ -63,6 +63,8 @@ export type Egov = {
       callbackUrl: string
       redirectUrl: string
     }): Promise<{ url: string; uuid: string }>
+    // Status straight from eGovPay — the only source a payment is trusted from.
+    getTransaction(uuid: string): Promise<{ paid: boolean; status: string; paidAt: string | null; channel: string | null; refno: string }>
   }
   report: {
     submit(r: { identity: Identity; subject: string; message: string; reportType: string }): Promise<{ caseNumber: string }>
