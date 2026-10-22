@@ -21,7 +21,7 @@ export type Session = {
 const SESSION = "hermit_session"
 const OWNER = "hermit_owner"
 
-function secret() {
+export function secret() {
   const s = process.env.SESSION_SECRET
   if (s) return s
   if (process.env.NODE_ENV === "production") throw new Error("SESSION_SECRET is required in production")

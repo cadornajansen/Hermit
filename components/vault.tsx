@@ -122,7 +122,9 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
         `Na-upload${reqId ? ` para sa ${getRequirement(reqId)?.name}` : ""}`,
         r.reader
           ? `Binasa ni ${r.reader}: ${docName(extracted.docType)}`
-          : `Hindi mabasa ng AI ang laman (larawan o scan) — hinulaan mula sa filename: ${docName(extracted.docType)}. I-type ang detalye.`,
+          : r.limited
+            ? `Naabot ang limit ng AI reading ngayong oras — hinulaan mula sa filename: ${docName(extracted.docType)}. I-type ang detalye o subukan ulit mamaya.`
+            : `Hindi mabasa ng AI ang laman (larawan o scan) — hinulaan mula sa filename: ${docName(extracted.docType)}. I-type ang detalye.`,
         verdictEvent(doc),
       ])
       if (fileRef.current) fileRef.current.value = ""

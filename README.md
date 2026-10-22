@@ -35,6 +35,11 @@ refuses bribes and fixers, never asks for passwords or OTPs, stays on topic, and
 classifies the business at onboarding and reads text-based PDFs in the vault. The gateway is text-only, so photos and
 scans fall back to eGov AI or owner-typed details.
 
+Paid AI calls are rate-limited in Postgres (`take_ai_quota`, `lib/ratelimit.ts`) per owner (hourly and daily) and per
+hashed IP (hourly, generous for carrier CGNAT): chat 30/h · 120/day · 300/h per IP; document reading 20/h · 60/day ·
+150/h; classification 10/h · 30/day · 150/h. Over the limit, chat says so in the owner's language, and reading and
+classification fall back to the free filename/keyword paths.
+
 ## Forms catalog
 
 `lib/forms.ts`: 43 forms across BIR, DTI, SEC, CDA, LGU, BFP, SSS, PhilHealth, Pag-IBIG, DOLE, FDA and BOC, each with its
@@ -84,7 +89,7 @@ guessed from the filename and the owner types the details, which run through the
 
 ## Not built yet
 
-Account linking (eGovPH SSO / OTP) to recover data on a new browser, rate limiting on Kuya Hermit, server-side reminder
+Account linking (eGovPH SSO / OTP) to recover data on a new browser, server-side reminder
 scheduling, shareable compliance pack, filled official PDFs,
 holiday-aware deadlines, full Filipino/English toggle, other LGUs, employer payroll module. Every rule in the seed table
 is unverified until a pilot LGU and RDO sign it off.

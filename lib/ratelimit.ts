@@ -1,0 +1,57 @@
+import "server-only"
+
+import { createHmac } from "node:crypto"
+import { headers } from "next/headers"
+
+import { db } from "@/lib/db"
+import { ownerId, secret } from "@/lib/session"
+
+// Caps on paid AI calls, enforced in Postgres (public.take_ai_quota) so they
+// hold across serverless instances. Per-owner stops one person burning
+// credits; per-IP stops someone who keeps clearing cookies. The IP cap is
+// generous because many Filipino mobile users share an IP (carrier CGNAT).
+// ponytail: fixed numbers; move to env/config when real usage data exists.
+const HOUR = 3600
+const DAY = 86_400
+const RULES = {
+  chat: { ownerHour: 30, ownerDay: 120, ipHour: 300 },
+  read: { ownerHour: 20, ownerDay: 60, ipHour: 150 },
+  classify: { ownerHour: 10, ownerDay: 30, ipHour: 150 },
+} as const
+
+export type AiKind = keyof typeof RULES
+
+async function ipBucket() {
+  const h = await headers()
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")
+  return ip ? `ip:${createHmac("sha256", secret()).update(ip).digest("base64url").slice(0, 22)}` : null
+}
+
+// true = go ahead (and the use is recorded). Without Supabase (local dev) there's no limit.
+// If the check itself fails, say no: callers fall back to the free non-AI path.
+export async function takeAiQuota(kind: AiKind): Promise<boolean> {
+  const sb = db()
+  if (!sb) return true
+  const owner = await ownerId(true)
+  const ip = await ipBucket()
+  const r = RULES[kind]
+  const buckets = [`owner:${owner}`, `owner:${owner}`]
+  const limits: number[] = [r.ownerHour, r.ownerDay]
+  const windows = [HOUR, DAY]
+  if (ip) {
+    buckets.push(ip)
+    limits.push(r.ipHour)
+    windows.push(HOUR)
+  }
+  const { data, error } = await sb.rpc("take_ai_quota", {
+    p_kind: kind,
+    p_buckets: buckets,
+    p_limits: limits,
+    p_window_seconds: windows,
+  })
+  if (error) {
+    console.error("AI quota check failed; skipping AI for this call", error)
+    return false
+  }
+  return data === true
+}

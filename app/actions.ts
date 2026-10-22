@@ -14,8 +14,9 @@ import {
   type HermitContext,
   type HermitReply,
 } from "@/lib/hermit"
+import { takeAiQuota } from "@/lib/ratelimit"
 import { ownerId, readSession } from "@/lib/session"
-import type { Profile, Requirement } from "@/lib/types"
+import type { Extracted, Profile, Requirement } from "@/lib/types"
 
 // Server Functions are public POST endpoints: validate every input here.
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "")
@@ -23,6 +24,8 @@ const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slic
 export async function classifyBusiness(description: string) {
   const d = text(description, 500)
   if (!d) return null
+  const usesAi = hermitEnabled() || isLive("ai")
+  if (usesAi && !(await takeAiQuota("classify"))) return mock.ai.classify(d)
   if (hermitEnabled()) {
     try {
       return await classifyWithHermit(d)
@@ -101,7 +104,17 @@ export async function askHermit(input: {
   }
 
   let reply: HermitReply
-  if (hermitEnabled()) {
+  if (hermitEnabled() && !(await takeAiQuota("chat"))) {
+    reply = {
+      answer:
+        profile.lang === "en"
+          ? "You've reached Kuya Hermit's question limit for now. Please try again in about an hour. Your checklist, forms and calendar still work in the meantime."
+          : "Pasensya, naabot mo na ang limit ng tanong kay Kuya Hermit sa ngayon. Subukan ulit pagkalipas ng mga isang oras. Gumagana pa rin ang checklist, forms at kalendaryo mo.",
+      sources: [],
+      formIds: [],
+      saved: {},
+    }
+  } else if (hermitEnabled()) {
     try {
       reply = await askKuyaHermit(q, history, ctx)
     } catch (e) {
@@ -207,14 +220,18 @@ export async function readDocument(formData: FormData) {
     else storagePath = `${id}/${docId}`
   }
 
+  const done = (extracted: Extracted, reader: string | null, limited = false) =>
+    ({ ok: true as const, extracted, reader, storagePath, limited })
+  const usesAi = (hermitEnabled() && file.type === "application/pdf") || isLive("ai")
+  if (usesAi && !(await takeAiQuota("read"))) return done(await mock.ai.extractDocument(file), null, true)
   try {
     if (hermitEnabled() && file.type === "application/pdf") {
       const extracted = await extractPdfWithHermit(file)
-      if (extracted) return { ok: true as const, extracted, reader: "Kuya Hermit", storagePath }
+      if (extracted) return done(extracted, "Kuya Hermit")
     }
-    if (isLive("ai")) return { ok: true as const, extracted: await egov("ai").extractDocument(file), reader: "eGov AI", storagePath }
+    if (isLive("ai")) return done(await egov("ai").extractDocument(file), "eGov AI")
   } catch (e) {
     console.error("Document reading failed; falling back to filename", e)
   }
-  return { ok: true as const, extracted: await mock.ai.extractDocument(file), reader: null, storagePath }
+  return done(await mock.ai.extractDocument(file), null)
 }
