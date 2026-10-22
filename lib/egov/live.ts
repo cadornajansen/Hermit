@@ -1,0 +1,221 @@
+import { createHmac } from "node:crypto"
+import {
+  createClient,
+  eMessage,
+  eReport,
+  eVerify,
+  egovAi,
+  egovPay,
+  egovSso,
+  faceLiveness,
+} from "egov.js"
+
+import type { Category } from "@/lib/types"
+import type { Egov } from "./index"
+import { classifyByKeywords } from "./mock"
+
+// Real adapters over the egov.js SDK. Base URLs default to the documented
+// hackathon hosts; override with EGOV_<SERVICE>_BASE_URL.
+// ponytail: fetches a fresh access token per call; cache it until expires_at
+// if quotas or latency start to matter.
+
+const env = (k: string) => process.env[k] ?? ""
+const HOSTS = {
+  sso: "https://hackathon-sso.e.gov.ph",
+  liveness: "https://platforms-api.e.gov.ph/face-liveness",
+  everify: "https://platforms-api.e.gov.ph/everify",
+  emessage: "https://platforms-api.e.gov.ph/emessage",
+  ai: "https://platforms-api.e.gov.ph/egov-ai",
+  pay: "https://platforms-api.e.gov.ph/egovpay",
+  report: "https://platforms-api.e.gov.ph/ereport",
+}
+const client = (s: keyof typeof HOSTS, headers?: Record<string, string>) =>
+  createClient({ baseUrl: env(`EGOV_${s.toUpperCase()}_BASE_URL`) || HOSTS[s], headers })
+
+async function aiToken() {
+  const data = await egovAi.generateAccessToken({
+    client: client("ai"),
+    body: { access_code: env("EGOV_AI_ACCESS_CODE") },
+    throwOnError: true,
+  })
+  return data.access_token
+}
+
+async function aiPrompt(prompt: string) {
+  const data = await egovAi.generateAssistant({
+    client: client("ai"),
+    auth: await aiToken(),
+    body: { category: "general", prompt },
+    throwOnError: true,
+  })
+  return data.data
+}
+
+const CATEGORIES: Category[] = ["retail", "food_service", "packaged_food", "other"]
+
+export const live: Egov = {
+  sso: {
+    // ponytail: the SSO login page isn't in the OpenAPI spec; EGOV_SSO_LOGIN_URL
+    // takes a {callback} placeholder until DICT confirms the redirect contract.
+    loginUrl: (callbackUrl) =>
+      env("EGOV_SSO_LOGIN_URL").replace("{callback}", encodeURIComponent(callbackUrl)),
+    exchange: async (code) => {
+      const c = client("sso")
+      const tok = await egovSso.generateAccessToken({
+        client: c,
+        body: {
+          exchange_code: code,
+          partner_code: env("EGOV_SSO_PARTNER_CODE"),
+          partner_secret: env("EGOV_SSO_PARTNER_SECRET"),
+          scope: "SSO_AUTHENTICATION",
+        },
+        throwOnError: true,
+      })
+      const data = await egovSso.authenticate({ client: c, auth: tok.access_token, throwOnError: true })
+      const p = data.data
+      return {
+        firstName: p.first_name ?? "",
+        middleName: p.middle_name ?? "",
+        lastName: p.last_name ?? "",
+        birthDate: p.birth_date ?? "",
+        address: [p.street, p.address, p.barangay, p.municipality, p.province].filter(Boolean).join(", "),
+        barangay: p.barangay ?? "",
+        municipality: p.municipality ?? "",
+        mobile: p.mobile ?? "",
+        email: p.email ?? "",
+        gender: p.gender ?? "",
+        regionCode: p.region_code ?? "",
+        provinceCode: p.province_code ?? "",
+        municipalityCode: p.municipality_code ?? "",
+        barangayCode: p.barangay_code ?? "",
+      }
+    },
+  },
+  liveness: {
+    start: async (callbackUrl) => {
+      const data = await faceLiveness.createSession({
+        client: client("liveness", { "x-api-key": env("EGOV_LIVENESS_API_KEY") }),
+        body: { action: "redirect", callback_url: callbackUrl },
+        throwOnError: true,
+      })
+      return { sessionId: data.token, url: data.url }
+    },
+    result: async (sessionId) => {
+      const data = await faceLiveness.getVerificationResult({
+        client: client("liveness", { "x-api-key": env("EGOV_LIVENESS_API_KEY") }),
+        path: { sessionToken: sessionId },
+        throwOnError: true,
+      })
+      return { passed: data.status === "SUCCEEDED", score: data.confidence_score }
+    },
+  },
+  everify: {
+    verify: async (id, livenessSessionId) => {
+      const c = client("everify")
+      const auth = await eVerify.authenticate({
+        client: c,
+        body: { client_id: env("EGOV_EVERIFY_CLIENT_ID"), client_secret: env("EGOV_EVERIFY_CLIENT_SECRET") },
+        throwOnError: true,
+      })
+      const data = await eVerify.verifyPersonalInformation({
+        client: c,
+        auth: auth.data.access_token,
+        body: {
+          first_name: id.firstName,
+          middle_name: id.middleName || undefined,
+          last_name: id.lastName,
+          birth_date: id.birthDate,
+          face_liveness_session_id: livenessSessionId,
+        },
+        throwOnError: true,
+      })
+      // A failed face match comes back as 200 with { verified: false }.
+      if ("verified" in data.data) return { verified: false }
+      return { verified: true, fullAddress: data.data.present_full_address || data.data.full_address }
+    },
+  },
+  emessage: {
+    sendSms: async (number, message) => {
+      await eMessage.sendSms({
+        client: client("emessage", { "X-EMESSAGE-Auth": env("EGOV_EMESSAGE_TOKEN") }),
+        body: { number, message },
+        throwOnError: true,
+      })
+    },
+  },
+  ai: {
+    classify: async (description) => {
+      const fallback = classifyByKeywords(description)
+      try {
+        const raw = await aiPrompt(
+          `Classify this Philippine micro business. Reply with JSON only: {"category": one of ${JSON.stringify(CATEGORIES)}, "psic": 4-digit PSIC 2009 class code, "label": short English activity name}.\nDescription: ${description}`
+        )
+        const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1))
+        return CATEGORIES.includes(parsed.category) ? parsed : fallback
+      } catch {
+        return fallback
+      }
+    },
+    explain: (question, context) =>
+      aiPrompt(
+        `You are Kuya Hermit, a friendly assistant for Philippine MSME owners. Answer in simple Taglish using ONLY the facts below. Do not add requirements, fees or deadlines that are not listed. Do not give legal or tax advice; suggest the Negosyo Center or RDO when unsure.\n\nFACTS:\n${context}\n\nQUESTION: ${question}`
+      ),
+  },
+  pay: {
+    createPayment: async ({ txnid, amount, items, callbackUrl, redirectUrl }) => {
+      const token = env("EGOV_PAY_TOKEN")
+      const digest = createHmac("sha256", token.replace(/^test_/, ""))
+        .update(`${amount}|${txnid}`)
+        .digest("hex")
+      const data = await egovPay.generatePayment({
+        client: client("pay", { "X-eGovPay-Token": token }),
+        body: {
+          txnid,
+          amount,
+          items,
+          digest,
+          callback_url: callbackUrl,
+          redirect_url: redirectUrl,
+          settlement_template_uuid: env("EGOV_PAY_SETTLEMENT_TEMPLATE"),
+        },
+        throwOnError: true,
+      })
+      return { url: data.data.url, uuid: data.data.uuid }
+    },
+  },
+  report: {
+    submit: async ({ identity: id, subject, message, reportType }) => {
+      const c = client("report")
+      const tok = await eReport.generateToken({
+        client: c,
+        body: { access_code: env("EGOV_EREPORT_ACCESS_CODE") },
+        throwOnError: true,
+      })
+      const data = await eReport.submitComplaint({
+        client: c,
+        auth: tok.access_token,
+        body: {
+          first_name: id.firstName,
+          last_name: id.lastName,
+          gender: id.gender,
+          mobile: id.mobile,
+          complainant_email: id.email,
+          region_code: id.regionCode,
+          province_code: id.provinceCode,
+          municipality_code: id.municipalityCode,
+          barangay_code: id.barangayCode,
+          report_type: reportType,
+          subject,
+          message,
+        },
+        throwOnError: true,
+      })
+      return { caseNumber: data.case_number }
+    },
+  },
+  chain: {
+    anchor: async () => {
+      throw new Error("eGovChain anchoring needs a signing wallet; not wired yet (PRD F5 stretch).")
+    },
+  },
+}
