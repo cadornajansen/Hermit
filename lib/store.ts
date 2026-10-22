@@ -130,7 +130,8 @@ async function hydrate() {
 
 export function clearAll() {
   try {
-    localStorage.removeItem(KEY)
+    // Includes form-editor drafts (hermit:fill:*), which can hold a signature.
+    for (const k of Object.keys(localStorage)) if (k.startsWith("hermit:")) localStorage.removeItem(k)
   } catch {}
   clearFiles().catch(() => {})
   commit({ ...SERVER, ready: true, synced: true })
