@@ -130,7 +130,7 @@ export async function askHermit(input: {
     await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
     await sb.from("chat_messages").insert([
       { owner_id: id, role: "owner", text: q },
-      { owner_id: id, role: "hermit", text: reply.answer, sources: reply.sources, form_ids: reply.formIds },
+      { owner_id: id, role: "hermit", text: reply.answer, sources: reply.sources, form_ids: reply.formIds, packs: reply.packs?.length ? reply.packs : null },
     ])
   }
   return reply

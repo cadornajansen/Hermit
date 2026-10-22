@@ -28,6 +28,7 @@ export type ChatMessage = {
   text: string
   sources?: { name: string; url: string; lastVerified: string | null; copiedOn?: string }[]
   formIds?: string[]
+  packs?: string[] // document packets Kuya Hermit prepared
   at: string
 }
 

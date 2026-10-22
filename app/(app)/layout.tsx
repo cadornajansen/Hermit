@@ -3,6 +3,10 @@ import Link from "next/link"
 
 import { Nav } from "@/components/nav"
 
+// Kuya Hermit answers and AI document reading run as Server Actions on these
+// pages and can take 20–60 s; give them room instead of the platform default.
+export const maxDuration = 120
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto min-h-svh max-w-xl px-4 pt-4 pb-24 print:p-0">

@@ -99,6 +99,13 @@ eGovPay's checkout offers QR Ph, e-wallets, online banking, banks, LANDBANK QR a
 per channel. `EGOV_PAY_TOKEN` is the `test_`-prefixed token (test mode, no live funds); drop the prefix to go live.
 Without a token the terminal says online payment isn't available yet and points to BIR's own ePayment channels.
 
+**Offices near you:** with Google Maps keys set, Offices finds the nearest real offices the owner needs (barangay hall,
+city hall/BPLO, BIR RDO, BFP, health office, Negosyo Center, SSS, PhilHealth, Pag-IBIG, DOLE, FDA) around their phone's
+location or their geocoded business address, via Places API (New) Text Search on the server (`app/maps.ts`, rate-limited,
+Pro-tier fields only, location rounded to ~110 m). Results are name-checked per office type (`lib/nearby.ts`) and shown
+as colour-coded pins on a Google map with distance and directions. Where jurisdiction matters (RDO, city hall,
+barangay) the page says the nearest office isn't necessarily the one that handles the owner.
+
 **Start here:** `lib/processes.ts` lists, per requirement, the exact page that starts the process (BNRS, ORUS with its
 click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,
 DOLE, eFPS/eBIRForms) or the office to visit, each checked by hand on the date shown. The dashboard and Kuya Hermit

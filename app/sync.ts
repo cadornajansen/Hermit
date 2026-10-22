@@ -44,7 +44,7 @@ export async function pullState(): Promise<ServerState | null> {
     sb.from("owners").select("profile, items, last_diff").eq("id", id).maybeSingle(),
     sb.from("documents").select("*").eq("owner_id", id).order("uploaded_at", { ascending: false }),
     sb.from("vault_events").select("doc_id, doc_name, event, at").eq("owner_id", id).order("at", { ascending: false }).limit(500),
-    sb.from("chat_messages").select("role, text, sources, form_ids, at").eq("owner_id", id).order("at").limit(200),
+    sb.from("chat_messages").select("role, text, sources, form_ids, packs, at").eq("owner_id", id).order("at").limit(200),
   ])
   if (!o.data) return null
   return {
@@ -67,7 +67,7 @@ export async function pullState(): Promise<ServerState | null> {
       storagePath: r.storage_path ?? undefined,
     })),
     vaultLog: (e.data ?? []).map((r) => ({ docId: r.doc_id, docName: r.doc_name, event: r.event, at: r.at })),
-    chat: (c.data ?? []).map((r) => ({ role: r.role, text: r.text, sources: r.sources ?? undefined, formIds: r.form_ids ?? undefined, at: r.at })),
+    chat: (c.data ?? []).map((r) => ({ role: r.role, text: r.text, sources: r.sources ?? undefined, formIds: r.form_ids ?? undefined, packs: r.packs ?? undefined, at: r.at })),
   }
 }
 
