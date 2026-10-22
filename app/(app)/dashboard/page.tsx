@@ -7,6 +7,7 @@ import { DocSlots } from "@/components/doc-slots"
 import { buttonVariants } from "@/components/ui/button"
 import { buildCalendar, buildChecklist, defaultExpiry, healthScore } from "@/lib/engine"
 import { formsFor } from "@/lib/forms"
+import { processFor } from "@/lib/processes"
 import { update, useProfile } from "@/lib/store"
 import { STATUS_LABEL, type ComplianceItem, type Group, type Status } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -158,6 +159,7 @@ export default function Dashboard() {
                       <dt className="text-muted-foreground">Renewal</dt>
                       <dd>{item.renewal}</dd>
                     </dl>
+                    <StartHere requirementId={item.id} />
                     <DocSlots requirementId={item.id} docs={docs} />
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <AlertTriangle className="size-3.5" aria-hidden />
@@ -213,6 +215,33 @@ export default function Dashboard() {
           </section>
         )
       })}
+    </div>
+  )
+}
+
+// Exactly where to begin the paperwork for steps without a downloadable form.
+function StartHere({ requirementId }: { requirementId: string }) {
+  const p = processFor(requirementId)
+  if (!p || (!p.links.length && !p.office)) return null
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-primary/5 p-3">
+      <p className="text-xs font-semibold tracking-wide text-primary uppercase">Simulan dito · Start here</p>
+      {p.links.map((l) => (
+        <div key={l.label} className="flex flex-col gap-1">
+          <a href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline">
+            {l.label} <ExternalLink className="size-3.5" />
+          </a>
+          <span className="text-xs break-all text-muted-foreground">{l.url}</span>
+          <ol className="list-decimal pl-5 text-xs">
+            {l.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
+      ))}
+      {p.office && <p className="text-xs">Opisina: {p.office}</p>}
+      {p.note && <p className="text-xs text-amber-700 dark:text-amber-400">{p.note}</p>}
+      <p className="text-[11px] text-muted-foreground">Na-check ni Hermit ang mga link noong {p.verifiedOn}.</p>
     </div>
   )
 }

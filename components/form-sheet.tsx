@@ -57,14 +57,22 @@ export function FormSheet({ id }: { id: string }) {
                     </a>
                   </span>
                 </span>
-                <a href={c.url} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>
-                  I-download
-                </a>
+                <span className="flex shrink-0 flex-col gap-1">
+                  {c.kind === "form" && c.path.endsWith(".pdf") && (
+                    <Link href={`/forms/${form.id}/fill?file=${encodeURIComponent(c.path)}`} className={buttonVariants({ size: "sm" })}>
+                      Punan
+                    </Link>
+                  )}
+                  <a href={c.url} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>
+                    Blank
+                  </a>
+                </span>
               </li>
             ))}
           </ul>
           <p className="text-[11px] text-muted-foreground">
-            Kopya mula sa website ng ahensya. Gamitin ang field sheet sa baba para kopyahin ang sagot mo sa form.
+            Kopya mula sa website ng ahensya. Pindutin ang &quot;Punan&quot; para ilagay ni Hermit ang mga sagot mo sa mismong
+            form — puwede mong i-edit, ilipat at pirmahan bago i-download.
           </p>
         </section>
       )}

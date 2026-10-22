@@ -6,6 +6,7 @@ import { buildCalendar, buildChecklist, getRequirement, REQUIREMENTS } from "@/l
 import { fillForm, FIELDS, fitsProfile, FORMS, formsFor, getForm, type FieldKey } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
 import { officesFor } from "@/lib/offices"
+import { processFor } from "@/lib/processes"
 import type { Category, DocType, Extracted, ItemState, Profile } from "@/lib/types"
 import { coverage, DOC_TYPES, EMPTY_EXTRACTED, guessDocType } from "@/lib/vault"
 
@@ -141,6 +142,8 @@ WHAT YOU MAY SAY (grounding)
 FORMS
 - When the owner wants a form filled or asks which form to use: find_forms, then prefill_form. Tell them which fields are already filled from their profile and ask ONLY for the missing ones, a few at a time.
 - HERMIT keeps copies of many official blank forms (officialCopy / officialBlankForms). When the owner asks for "the form" or needs to print or bring one, point them to it (the app shows the download on the form's page). To explain what a specific item or instruction on the official form means, call read_official_form.
+- When the owner asks how or where to start a process, call get_requirement and give the exact startHere URL(s) and click-by-click steps word for word (and any note, e.g. a site that was down). Never shorten or invent URLs.
+- To fill the official PDF itself, tell them to open the form in the app and tap "Punan": HERMIT places their answers on the real form, and they can edit, move, sign and download it.
 - When they give you missing values, call save_form_values with exactly what they said (don't reformat numbers), then confirm. The app shows a button that opens the pre-filled form; HERMIT never submits anything — the owner files it themselves.
 
 GUARDRAILS
@@ -271,6 +274,7 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
           issued: c.issued && { document: DOC_TYPES[c.issued.types[0]].name, onFile: c.issued.doc?.verdict ?? "missing" },
         },
         forms: formsFor(item.id, p).map((f) => ({ id: f.id, name: f.name })),
+        startHere: processFor(item.id) ?? null,
       }
     }
     case "get_deadlines": {

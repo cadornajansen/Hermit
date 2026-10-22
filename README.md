@@ -51,7 +51,19 @@ remembered for every later form.
 `files:` in `lib/forms.ts`, checks it's a real PDF/Excel file, stores it in Supabase Storage (public `forms` bucket) with
 its extracted text, and writes `lib/form-files.json` (sha256, size, retrieved date). Form pages offer the download;
 Kuya Hermit reads the stored text (`read_official_form`) to explain items and attachments. Re-run the sync to detect new
-versions: it reports files whose hash changed. Currently 31 files for 24 forms (BIR, SSS, PhilHealth, Taguig); Pag-IBIG
+versions: it reports files whose hash changed.
+
+**Filling the real form:** each stored PDF has an editor at `/forms/<id>/fill`. `pnpm forms:layout` (once per file
+version) has Kuya Hermit match HERMIT's fields to the labels printed on the form; the coordinates are computed from the
+PDF's own text layer (fillable PDFs map to their real fields), saved in `lib/form-layouts.json`. The editor renders the
+official pages with pdf.js, places the owner's answers, and lets them edit, drag, delete, add text, tap any of their
+saved values onto the page, draw a signature, and download the finished PDF (pdf-lib). It all runs on the device; the
+signature and the filled PDF are never uploaded.
+
+**Start here:** `lib/processes.ts` lists, per requirement, the exact page that starts the process (BNRS, ORUS with its
+click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,
+DOLE, eFPS/eBIRForms) or the office to visit, each checked by hand on the date shown. The dashboard and Kuya Hermit
+give these word for word. Currently 31 files for 24 forms (BIR, SSS, PhilHealth, Taguig); Pag-IBIG
 (reCAPTCHA), BFP and DOLE (bot-blocked) and the DTI BMBE flyer (server unreachable) stay link-only for now.
 
 ## What's in it

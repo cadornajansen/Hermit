@@ -107,7 +107,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
                 : "mr-6 flex flex-col gap-2 rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-sm"
             }
           >
-            <p className="whitespace-pre-wrap">{m.text.replaceAll("**", "").replace(/^#+ /gm, "")}</p>
+            <p className="break-words whitespace-pre-wrap">{linkify(m.text.replaceAll("**", "").replace(/^#+ /gm, ""))}</p>
             {m.formIds?.map((f) => (
               <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
                 Pre-fill {getForm(f)?.short}
@@ -156,5 +156,18 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
         </Button>
       </form>
     </div>
+  )
+}
+
+// Make the exact URLs Kuya Hermit gives tappable.
+function linkify(text: string) {
+  return text.split(/(https?:\/\/[^\s)<>"]+)/g).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a key={i} href={part.replace(/[.,;:]+$/, "")} target="_blank" rel="noreferrer" className="underline">
+        {part}
+      </a>
+    ) : (
+      part
+    )
   )
 }

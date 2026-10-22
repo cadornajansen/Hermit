@@ -36,3 +36,13 @@ test("every stored official copy belongs to a catalog form and source", async ()
     }
   }
 })
+
+test("every start-here link is for a real requirement and uses https", async () => {
+  const { PROCESSES } = await import("./processes.ts")
+  const reqs = new Set(REQUIREMENTS.map((r) => r.id))
+  for (const [id, p] of Object.entries(PROCESSES)) {
+    assert.ok(reqs.has(id), `unknown requirement ${id}`)
+    assert.ok(p.links.length || p.office, `${id} has neither a link nor an office`)
+    for (const l of p.links) assert.match(l.url, /^https:\/\/[a-z0-9.-]+\.[a-z]{2,}/, `${id}: ${l.url}`)
+  }
+})
