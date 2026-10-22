@@ -19,7 +19,7 @@ const GROUPS: [FormTemplate["group"], string][] = [
 
 // The full forms catalog, ready to pre-fill and hand off.
 export default function FormsPage() {
-  const { profile, items } = useProfile()
+  const { profile, items, formMemory, formEdits } = useProfile()
   const [q, setQ] = useState("")
   if (!profile) return null
 
@@ -52,7 +52,7 @@ export default function FormsPage() {
             <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">{title}</h2>
             <ul className="flex flex-col divide-y rounded-2xl border">
               {list.map((f) => {
-                const fields = fillForm(f, profile)
+                const fields = fillForm(f, profile, formMemory, formEdits[f.id])
                 const filled = fields.filter((x) => !x.missing).length
                 const forYou = fitsProfile(f, profile) && f.requirementIds.some((r) => mine.has(r))
                 return (
@@ -61,12 +61,13 @@ export default function FormsPage() {
                       <span className="min-w-0">
                         <span className="block font-medium">{f.name}</span>
                         <span className="block text-xs text-muted-foreground">
-                          {f.agency} · {HANDOFF_LABEL[f.handoff].split(" · ")[1]}
+                          {f.agency} ·{" "}
+                          {HANDOFF_LABEL[f.handoff].split(" · ")[1]}
                           {forYou && <span className="text-primary"> · para sa iyo</span>}
                           {hasLibraryCopy(f.id) && <span> · may opisyal na kopya</span>}
                         </span>
                       </span>
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                         {filled}/{fields.length}
                       </span>
                     </Link>

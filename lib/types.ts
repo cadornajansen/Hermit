@@ -49,7 +49,7 @@ export type Profile = {
   have: string[] // requirement ids the owner already holds
   lang: "fil" | "en"
   reminders: ("sms" | "push")[]
-  // Values typed into form field sheets, remembered for the next form.
+  // Legacy / vault metadata. Never treated as consented reusable form answers.
   extra: Record<string, string>
 }
 

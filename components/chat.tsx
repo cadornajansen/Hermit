@@ -29,7 +29,7 @@ const SUGGESTIONS = {
 }
 
 export function Chat({ initialQuestion }: { initialQuestion: string }) {
-  const { profile, chat, items, docs } = useProfile()
+  const { profile, chat, items, docs, ownerId } = useProfile()
   const [q, setQ] = useState(initialQuestion)
   const [pending, start] = useTransition()
   if (!profile) return null
@@ -41,6 +41,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
     setQ("")
     start(async () => {
       const r = await askHermit({
+        expectedOwnerId: ownerId!,
         question,
         history: chat.map((m) => ({ role: m.role, text: m.text })),
         profile: profile!,
@@ -56,11 +57,25 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
       const answer: ChatMessage = r
         ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, packs: r.packs, at: new Date().toISOString() }
         : { role: "hermit", text: "Pasensya, hindi kita ma-reach ngayon. Subukan ulit mamaya. · Sorry, I can't connect right now.", at: new Date().toISOString() }
-      update((s) => ({
-        chat: [...s.chat, answer],
-        // Values the owner gave Kuya Hermit for missing form fields.
-        profile: r && Object.keys(r.saved).length && s.profile ? { ...s.profile, extra: { ...s.profile.extra, ...r.saved } } : s.profile,
-      }))
+      update((s) =>
+        s.ownerId !== ownerId
+          ? {}
+          : {
+              chat: [...s.chat, answer],
+              // Chat suggestions are current-form edits, never consent for reuse.
+              formEdits: r
+                ? {
+                    ...s.formEdits,
+                    ...Object.fromEntries(
+                      r.formIds.map((id) => [
+                        id,
+                        { ...r.saved, ...s.formEdits[id] },
+                      ])
+                    ),
+                  }
+                : s.formEdits,
+            }
+      )
     })
   }
 
@@ -127,7 +142,8 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
                     <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary">
                       {s.name} <ExternalLink className="size-3" />
                     </a>{" "}
-                    · {s.copiedOn ? `official copy, ${s.copiedOn}` : s.lastVerified ? `verified ${s.lastVerified}` : "not yet verified"}
+                    ·{" "}
+                    {s.copiedOn ? `official copy, ${s.copiedOn}` : s.lastVerified ? `verified ${s.lastVerified}` : "not yet verified"}
                   </li>
                 ))}
               </ul>
@@ -179,10 +195,17 @@ function linkify(text: string) {
 // The filled document packet the owner said yes to. Built on the device from
 // their profile, form edits and vault files; nothing is uploaded.
 function PacketCard({ requirementId }: { requirementId: string }) {
-  const { profile, docs } = useProfile()
+  const { profile, docs, formMemory, formEdits, ownerId, pdfDrafts } =
+    useProfile()
   const [status, setStatus] = useState<string>()
   const [busy, setBusy] = useState(false)
-  const plan = profile && packetPlan(requirementId, profile, docs)
+  const context = {
+    memory: formMemory,
+    edits: formEdits,
+    ownerId,
+    drafts: pdfDrafts,
+  }
+  const plan = profile && packetPlan(requirementId, profile, docs, context)
   if (!profile || !plan) return null
   const en = profile.lang === "en"
 
@@ -190,12 +213,17 @@ function PacketCard({ requirementId }: { requirementId: string }) {
     setBusy(true)
     setStatus(undefined)
     try {
-      const bytes = await buildPacket(plan!, profile!, async (d) => {
-        const local = await getFile(d.id).catch(() => undefined)
-        if (local) return local
-        const url = await documentUrl(d.id)
-        return url ? (await fetch(url)).blob() : undefined
-      })
+      const bytes = await buildPacket(
+        plan!,
+        profile!,
+        async (d) => {
+          const local = await getFile(d.id).catch(() => undefined)
+          if (local) return local
+          const url = await documentUrl(d.id)
+          return url ? (await fetch(url)).blob() : undefined
+        },
+        context
+      )
       const url = URL.createObjectURL(new Blob([bytes.slice().buffer], { type: "application/pdf" }))
       Object.assign(document.createElement("a"), { href: url, download: `HERMIT-${plan!.requirement.id}-packet.pdf` }).click()
       setTimeout(() => URL.revokeObjectURL(url), 10_000)
@@ -211,19 +239,31 @@ function PacketCard({ requirementId }: { requirementId: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-xl border bg-background p-3 text-xs">
       <p className="flex items-center gap-2 text-sm font-medium">
-        <FileText className="size-4" /> {en ? "Document packet" : "Document packet"}: {plan.requirement.name}
+        <FileText className="size-4" />{" "}
+        {en ? "Document packet" : "Document packet"}: {plan.requirement.name}
       </p>
       <ul className="flex flex-col gap-0.5">
         {plan.forms.map((f) => (
           <li key={f.form.id}>
-            ✓ {f.form.name}
+            ✓ {f.form.name}{" "}
+            <Link
+              href={`/forms/${f.form.id}`}
+              className="text-primary underline"
+            >
+              Review / edit / save answers
+            </Link>
             <span className="text-muted-foreground">
               {f.file && f.layout ? (en ? " · filled in" : " · napunan na") : en ? " · info sheet" : " · info sheet"}
               {f.missing.length ? ` · ${f.missing.length} ${en ? "blank" : "blanko pa"}` : ""}
             </span>
           </li>
         ))}
-        {plan.letter && <li>✓ {en ? "Property owner's consent letter (for them to sign)" : "Liham ng pahintulot ng may-ari ng lugar (papirmahan)"}</li>}
+        {plan.letter && (
+          <li>
+            ✓{" "}
+            {en ? "Property owner's consent letter (for them to sign)" : "Liham ng pahintulot ng may-ari ng lugar (papirmahan)"}
+          </li>
+        )}
         {plan.needs.map((s) => (
           <li key={s.types.join()} className={usable(s) ? undefined : "text-amber-700 dark:text-amber-400"}>
             {usable(s) ? "✓" : "✗"} {slotName(s)}
@@ -232,7 +272,8 @@ function PacketCard({ requirementId }: { requirementId: string }) {
         ))}
       </ul>
       <Button size="sm" onClick={download} disabled={busy}>
-        <Download /> {busy ? (en ? "Preparing…" : "Inihahanda…") : en ? "Download PDF packet" : "I-download ang PDF packet"}
+        <Download />{" "}
+        {busy ? (en ? "Preparing…" : "Inihahanda…") : en ? "Download PDF packet" : "I-download ang PDF packet"}
       </Button>
       {plan.forms
         .filter((f) => f.file && f.layout)

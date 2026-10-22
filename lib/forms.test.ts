@@ -14,11 +14,11 @@ test("every form points at real requirements and fields, with unique ids", () =>
   }
 })
 
-test("pre-fill uses the profile first, then remembered values; forms follow ownership type", () => {
+test("pre-fill uses account facts but never treats legacy extras as consent; forms follow ownership type", () => {
   const p = { ...EMPTY_PROFILE, structure: "sole" as const, ownerName: "Juana Dela Cruz", extra: { tin: "123" } }
   const fields = fillForm(FORMS.find((f) => f.id === "bir_1901")!, p)
   assert.equal(fields.find((f) => f.key === "owner_name")?.value, "Juana Dela Cruz")
-  assert.equal(fields.find((f) => f.key === "tin")?.value, "123")
+  assert.equal(fields.find((f) => f.key === "tin")?.value, "")
   assert.ok(fields.find((f) => f.key === "rdo_code") === undefined || fields.find((f) => f.key === "rdo_code")?.missing)
   const birForms = formsFor("bir_cor", p).map((f) => f.id)
   assert.ok(birForms.includes("bir_1901") && !birForms.includes("bir_1903"))

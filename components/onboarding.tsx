@@ -7,6 +7,7 @@ import { useState, useTransition } from "react"
 import { classifyBusiness } from "@/app/actions"
 import { EgovLogin, NationalIdCheck } from "@/components/egov-auth"
 import { LocationFields } from "@/components/location-fields"
+import { OwnerStatus } from "@/components/owner-status"
 import { Button } from "@/components/ui/button"
 import { buildChecklist, diffChecklists, EMPTY_PROFILE } from "@/lib/engine"
 import { PILOT_CITY } from "@/lib/offices"
@@ -79,7 +80,8 @@ type Step = (typeof STEPS)[number]
 const input = "h-11 w-full rounded-xl border bg-background px-3 text-base"
 
 export function Onboarding({ identity, sso, authError }: { identity: IdentityPrefill | null; sso: boolean; authError?: string }) {
-  const { ready, synced, profile } = useHermit()
+  const { ready, synced, profile, scopeError } = useHermit()
+  if (scopeError) return <OwnerStatus />
   if (!ready || !synced) return null
   return <Wizard saved={profile} identity={identity} sso={sso} authError={authError} />
 }

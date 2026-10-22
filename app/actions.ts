@@ -84,12 +84,15 @@ function keywordAnswer(q: string, profile: Profile): HermitReply {
 }
 
 export async function askHermit(input: {
+  expectedOwnerId: string
   question: string
   history: { role: "owner" | "hermit"; text: string }[]
   profile: Profile
   items: HermitContext["items"]
   docs: HermitContext["docs"]
 }): Promise<HermitReply | null> {
+  if (!input?.expectedOwnerId || (await ownerId()) !== input.expectedOwnerId)
+    throw new Error("Account changed. Reload before asking.")
   const q = text(input?.question, 1000)
   if (!q) return null
   const profile = { ...EMPTY_PROFILE, ...input.profile, flags: { ...input.profile?.flags }, extra: { ...input.profile?.extra } }

@@ -2,6 +2,7 @@ import { FileText, UserRound, Wallet } from "lucide-react"
 import Link from "next/link"
 
 import { Nav } from "@/components/nav"
+import { OwnerStatus } from "@/components/owner-status"
 
 // Kuya Hermit answers and AI document reading run as Server Actions on these
 // pages and can take 20–60 s; give them room instead of the platform default.
@@ -26,6 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Link>
         </nav>
       </header>
+      <OwnerStatus />
       {children}
       <Nav />
     </div>

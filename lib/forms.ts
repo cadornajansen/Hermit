@@ -1,13 +1,13 @@
 import type { Profile } from "./types"
+import {
+  matchReusableField,
+  resolveFormValue,
+  type FormMemory,
+} from "./form-memory.ts"
 
 // Forms catalog: every agency form an MSME is likely to need, with where the
 // blank form lives, where it's filed, and which fields HERMIT can pre-fill.
-// Fields come from one shared library: what the profile knows is filled in;
-// anything else is asked once (on a form sheet or by Kuya Hermit) and
-// remembered in profile.extra for every later form.
-// ponytail: field sheets, not filled official PDFs. Add a PDF filler (pdf-lib
-// over versioned templates) per form once the templates are scraped and
-// checked for each version (PRD §9 "forms library").
+// Account facts, consented reusable answers, and current-form edits are separate.
 
 type FieldDef = { label: string; source?: (p: Profile) => string; hint?: string }
 
@@ -30,7 +30,7 @@ export const FIELDS = {
   business_name: { label: "Business / trade name", source: (p) => p.businessName },
   business_address: {
     label: "Business address",
-    source: (p) => [p.businessAddress, p.barangay && `Brgy. ${p.barangay}`, p.city].filter(Boolean).join(", "),
+    source: (p) => [p.businessAddress, p.barangay && `Brgy. ${p.barangay}`, p.city, p.province].filter(Boolean).join(", "),
   },
   barangay: { label: "Barangay", source: (p) => p.barangay },
   city: { label: "City / municipality", source: (p) => p.city },
@@ -158,11 +158,35 @@ export const fitsProfile = (f: FormTemplate, p: Profile) =>
 export const formsFor = (requirementId: string, p?: Profile) =>
   FORMS.filter((f) => f.requirementIds.includes(requirementId) && (!p || fitsProfile(f, p)))
 
-export function fillForm(form: FormTemplate, p: Profile) {
+export function fillForm(
+  form: FormTemplate,
+  p: Profile,
+  memory?: FormMemory,
+  current: Record<string, string> = {}
+) {
   return form.fields.map((key) => {
     const def: FieldDef = FIELDS[key]
-    const value = def.source?.(p) || p.extra[key] || ""
-    return { key, label: def.label, hint: def.hint, fromProfile: Boolean(def.source?.(p)), value, missing: !value }
+    const account = def.source?.(p)?.trim() || ""
+    const reusableKey = matchReusableField(key)
+    const saved =
+      memory?.consentedAt && reusableKey
+        ? (memory.answers[reusableKey]?.value ?? "")
+        : ""
+    const resolved = resolveFormValue(
+      account,
+      saved,
+      Object.hasOwn(current, key) ? current[key] : undefined
+    )
+    return {
+      key,
+      label: def.label,
+      hint: def.hint,
+      fromProfile: resolved.source === "account",
+      ...resolved,
+      saved,
+      account,
+      missing: !resolved.value.trim(),
+    }
   })
 }
 

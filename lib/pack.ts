@@ -2,6 +2,7 @@ import { getRequirement } from "./engine"
 import { draftKey, initialBoxes, pdfSafe, type Box, type Layout } from "./fill"
 import layouts from "./form-layouts.json"
 import { fillForm, formsFor, type FormTemplate } from "./forms"
+import type { FormMemory } from "./form-memory"
 import { libraryFiles, type LibraryFile } from "./library"
 import { officesFor } from "./offices"
 import { processFor } from "./processes"
@@ -23,13 +24,32 @@ export type PacketPlan = {
 export const usable = (s: SlotStatus) => Boolean(s.doc && s.doc.verdict !== "rejected")
 export const slotName = (s: SlotStatus) => s.types.map((t) => DOC_TYPES[t].name).join(" / ")
 
-export function packetPlan(requirementId: string, profile: Profile, docs: VaultDoc[]): PacketPlan | null {
+export type FormContext = {
+  memory?: FormMemory
+  edits?: Record<string, Record<string, string>>
+  ownerId?: string | null
+  drafts?: Record<string, Box[]>
+}
+
+export function packetPlan(
+  requirementId: string,
+  profile: Profile,
+  docs: VaultDoc[],
+  context: FormContext = {}
+): PacketPlan | null {
   const requirement = getRequirement(requirementId)
   if (!requirement) return null
   const forms = formsFor(requirementId, profile).map((form) => {
     const file = libraryFiles(form.id).find((f) => f.kind === "form" && f.path.endsWith(".pdf"))
     const layout = file ? (layouts as Record<string, Layout>)[file.path] : undefined
-    return { form, file, layout, missing: fillForm(form, profile).filter((f) => f.missing).map((f) => f.label) }
+    return {
+      form,
+      file,
+      layout,
+      missing: fillForm(form, profile, context.memory, context.edits?.[form.id])
+        .filter((f) => f.missing)
+        .map((f) => f.label),
+    }
   })
   const needs = coverage(requirementId, docs)?.needs ?? []
   const letter = profile.premises !== "owned" && needs.some((s) => s.types.includes("lease") && !usable(s))
@@ -38,7 +58,12 @@ export function packetPlan(requirementId: string, profile: Profile, docs: VaultD
 
 const A4: [number, number] = [595.28, 841.89]
 
-export async function buildPacket(plan: PacketPlan, profile: Profile, fetchDoc: (d: VaultDoc) => Promise<Blob | undefined>) {
+export async function buildPacket(
+  plan: PacketPlan,
+  profile: Profile,
+  fetchDoc: (d: VaultDoc) => Promise<Blob | undefined>,
+  context: FormContext = {}
+) {
   const { PDFDocument, StandardFonts } = await import("pdf-lib")
   const { drawBoxes } = await import("./pdf-draw")
   const en = profile.lang === "en"
@@ -46,7 +71,10 @@ export async function buildPacket(plan: PacketPlan, profile: Profile, fetchDoc: 
   const out = await PDFDocument.create()
   const font = await out.embedFont(StandardFonts.Helvetica)
   const bold = await out.embedFont(StandardFonts.HelveticaBold)
-  const values = (f: FormTemplate) => Object.fromEntries(fillForm(f, profile).map((v) => [v.key, v.value]))
+  const values = (f: FormTemplate) =>
+    Object.fromEntries(
+      fillForm(f, profile, context.memory, context.edits?.[f.id]).map((v) => [v.key, v.value])
+    )
   const today = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" })
 
   // Flowing text on A4 pages.
@@ -131,10 +159,9 @@ export async function buildPacket(plan: PacketPlan, profile: Profile, fetchDoc: 
         const res = await fetch(f.file.url)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const src = await PDFDocument.load(await res.arrayBuffer(), { ignoreEncryption: true })
-        let boxes: Box[] | null = null
-        try {
-          boxes = JSON.parse(localStorage.getItem(draftKey(f.file.path, f.layout)) ?? "null")
-        } catch {}
+        const boxes = context.ownerId
+          ? context.drafts?.[draftKey(context.ownerId, f.file.path, f.layout)]
+          : undefined
         const srcFont = await src.embedFont(StandardFonts.Helvetica)
         const acro = await drawBoxes(src, boxes ?? initialBoxes(f.layout, values(f.form)).boxes, srcFont)
         try {
@@ -152,7 +179,12 @@ export async function buildPacket(plan: PacketPlan, profile: Profile, fetchDoc: 
     s.line(`${f.form.agency} · ${t("Saan", "Where")}: ${f.form.portal}`, { size: 9 })
     s.line(t("Kopyahin ang mga sagot na ito sa form ng opisina.", "Copy these answers onto the office's form."), { size: 9 })
     s.space(10)
-    for (const v of fillForm(f.form, profile)) {
+    for (const v of fillForm(
+      f.form,
+      profile,
+      context.memory,
+      context.edits?.[f.form.id]
+    )) {
       s.line(v.label, { size: 9, b: true })
       s.line(v.value || "______________________________", { indent: 8 })
       s.space(3)

@@ -146,7 +146,7 @@ FORMS
 - HERMIT keeps copies of many official blank forms (officialCopy / officialBlankForms). When the owner asks for "the form" or needs to print or bring one, point them to it (the app shows the download on the form's page). To explain what a specific item or instruction on the official form means, call read_official_form.
 - When the owner asks how or where to start a process, call get_requirement and give the exact startHere URL(s) and click-by-click steps word for word (and any note, e.g. a site that was down). Never shorten or invent URLs.
 - To fill the official PDF itself, tell them to open the form in the app and tap "Punan": HERMIT places their answers on the real form, and they can edit, move, sign and download it.
-- When they give you missing values, call save_form_values with exactly what they said (don't reformat numbers), then confirm. The app shows a button that opens the pre-filled form; HERMIT never submits anything — the owner files it themselves.
+- When they give you missing values, call save_form_values with exactly what they said (don't reformat numbers). These are temporary suggestions for the current form only. Tell them to review/edit the field sheet; only its unchecked opt-in choice can save eligible answers for future forms. Never claim that chat grants consent for reuse. The owner files the form themselves.
 
 DOCUMENT PACKETS
 - After you explain a requirement that has forms to fill or documents to bring, end by offering ONCE to fill in and prepare those documents as one PDF ready to print (e.g. "Gusto mo bang ihanda ko na ang mga form at dokumento para dito, napunan na at naka-PDF?"). Do not prepare it in that same reply.
@@ -221,7 +221,7 @@ const TOOLS = [
   },
   {
     name: "save_form_values",
-    description: "Remember values the owner just told you for missing form fields (use the exact field keys from prefill_form), so they pre-fill this and every future form. Profile facts (name, address, business details) can't be changed here; tell the owner to edit their profile.",
+    description: "Stage values the owner just gave for the current form only, using the field keys from prefill_form. Return a form link for review. This tool does not save reusable information or grant consent; the user must opt in on the field sheet. Profile facts are edited in Profile.",
     parameters: {
       type: "object",
       properties: {
@@ -241,7 +241,6 @@ const TOOLS = [
     parameters: { type: "object", properties: { requirement_id: { type: "string", description: "Requirement id from get_checklist" } }, required: ["requirement_id"] },
   },
 ].map((t) => ({ type: "function" as const, function: t }))
-
 
 async function readOfficialForm(formId: string, out: HermitReply) {
   const form = getForm(formId)
@@ -315,13 +314,12 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
       if (!form) return { error: "Unknown form id. Call find_forms first." }
       if (!out.formIds.includes(form.id)) out.formIds.push(form.id)
       if (!out.sources.some((s) => s.url === form.source)) out.sources.push({ name: form.name, url: form.source, lastVerified: null })
-      const merged = { ...p, extra: { ...p.extra, ...out.saved } }
       return {
         form: form.name,
         howToFile: form.handoff,
         fileAt: form.portal,
         officialBlankForms: libraryFiles(form.id).map((c) => ({ label: c.label, kind: c.kind, download: c.url, copiedOn: c.retrievedAt.slice(0, 10) })),
-        fields: fillForm(form, merged).map((f) => ({ key: f.key, label: f.label, value: f.value || null, missing: f.missing })),
+        fields: fillForm(form, p, undefined, out.saved).map((f) => ({ key: f.key, label: f.label, value: f.value || null, missing: f.missing })),
       }
     }
     case "save_form_values": {
@@ -335,13 +333,13 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
         } else rejected.push(k)
       }
       return {
-        saved,
+        staged: saved,
         rejected,
-        note: rejected.length ? `Only these keys can be saved: ${SAVABLE_KEYS.join(", ")}. Others are profile facts the owner edits in their profile.` : undefined,
+        note: `Temporary suggestions only. Review the form and opt in there to save eligible answers for reuse.${rejected.length ? ` Accepted keys: ${SAVABLE_KEYS.join(", ")}.` : ""}`,
       }
     }
     case "prepare_documents": {
-      const plan = packetPlan(String(args.requirement_id), { ...p, extra: { ...p.extra, ...out.saved } }, vaultDocs)
+      const plan = packetPlan(String(args.requirement_id), p, vaultDocs)
       if (!plan) return { error: "Unknown requirement id. Call get_checklist for valid ids." }
       if (!plan.forms.length && !plan.needs.length) return { error: "HERMIT has no forms or documents to prepare for this requirement. Give the steps and startHere links instead." }
       out.packs = [...new Set([...(out.packs ?? []), plan.requirement.id])]

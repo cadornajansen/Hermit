@@ -18,13 +18,20 @@ function capped<T>(value: T, maxBytes: number): T {
   return value
 }
 
-async function owner() {
+async function owner(expectedOwnerId: string) {
+  const id = await ownerId()
+  if (!id || id !== expectedOwnerId)
+    throw new Error("Account changed. Reload before saving.")
   const sb = db()
   if (!sb) return null
-  const id = await ownerId(true)
-  if (!id) return null
   await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
   return { sb, id }
+}
+
+export async function currentOwnerId(): Promise<string> {
+  const id = await ownerId(true)
+  if (!id) throw new Error("Could not resolve account")
+  return id
 }
 
 export type ServerState = {
@@ -36,9 +43,13 @@ export type ServerState = {
   chat: ChatMessage[]
 }
 
-export async function pullState(): Promise<ServerState | null> {
+export async function pullState(
+  expectedOwnerId: string
+): Promise<ServerState | null> {
   const sb = db()
   const id = await ownerId()
+  if (id !== expectedOwnerId)
+    throw new Error("Account changed. Reload before saving.")
   if (!sb || !id) return null
   const [o, d, e, c] = await Promise.all([
     sb.from("owners").select("profile, items, last_diff").eq("id", id).maybeSingle(),
@@ -46,6 +57,8 @@ export async function pullState(): Promise<ServerState | null> {
     sb.from("vault_events").select("doc_id, doc_name, event, at").eq("owner_id", id).order("at", { ascending: false }).limit(500),
     sb.from("chat_messages").select("role, text, sources, form_ids, packs, at").eq("owner_id", id).order("at").limit(200),
   ])
+  for (const result of [o, d, e, c])
+    if (result.error) throw new Error("Could not restore account data.")
   if (!o.data) return null
   return {
     profile: o.data.profile,
@@ -71,8 +84,11 @@ export async function pullState(): Promise<ServerState | null> {
   }
 }
 
-export async function pushOwner(state: Pick<ServerState, "profile" | "items" | "lastDiff">) {
-  const o = await owner()
+export async function pushOwner(
+  state: Pick<ServerState, "profile" | "items" | "lastDiff">,
+  expectedOwnerId: string
+) {
+  const o = await owner(expectedOwnerId)
   if (!o) return
   await o.sb
     .from("owners")
@@ -85,8 +101,8 @@ export async function pushOwner(state: Pick<ServerState, "profile" | "items" | "
     .eq("id", o.id)
 }
 
-export async function saveDocuments(docs: VaultDoc[]) {
-  const o = await owner()
+export async function saveDocuments(docs: VaultDoc[], expectedOwnerId: string) {
+  const o = await owner(expectedOwnerId)
   if (!o || !Array.isArray(docs) || docs.length > 200) return
   const rows = docs
     .filter((d) => UUID.test(d.id) && VERDICTS.has(d.verdict))
@@ -109,8 +125,11 @@ export async function saveDocuments(docs: VaultDoc[]) {
   if (rows.length) await o.sb.from("documents").upsert(rows, { onConflict: "owner_id,id" })
 }
 
-export async function appendVaultEvents(events: VaultEvent[]) {
-  const o = await owner()
+export async function appendVaultEvents(
+  events: VaultEvent[],
+  expectedOwnerId: string
+) {
+  const o = await owner(expectedOwnerId)
   if (!o || !Array.isArray(events) || events.length > 100) return
   const rows = events.map((e) => ({
     owner_id: o.id,
@@ -122,8 +141,8 @@ export async function appendVaultEvents(events: VaultEvent[]) {
   if (rows.length) await o.sb.from("vault_events").insert(rows)
 }
 
-export async function deleteDocument(docId: string) {
-  const o = await owner()
+export async function deleteDocument(docId: string, expectedOwnerId: string) {
+  const o = await owner(expectedOwnerId)
   if (!o || !UUID.test(docId)) return
   await o.sb.storage.from(BUCKET).remove([`${o.id}/${docId}`])
   await o.sb.from("documents").delete().eq("owner_id", o.id).eq("id", docId)
@@ -140,15 +159,16 @@ export async function documentUrl(docId: string) {
   return signed.data?.signedUrl ?? null
 }
 
-export async function clearChat() {
-  const o = await owner()
+export async function clearChat(expectedOwnerId: string) {
+  const o = await owner(expectedOwnerId)
   if (o) await o.sb.from("chat_messages").delete().eq("owner_id", o.id)
 }
 
 // "Delete all my data": files, rows (cascade) and cookies.
-export async function deleteAllData() {
-  const sb = db()
+export async function deleteAllData(expectedOwnerId: string) {
   const id = await ownerId()
+  if (!id || id !== expectedOwnerId) throw new Error("Account changed. Reload before deleting.")
+  const sb = db()
   if (sb && id) {
     const { data } = await sb.storage.from(BUCKET).list(id, { limit: 1000 })
     if (data?.length) await sb.storage.from(BUCKET).remove(data.map((f) => `${id}/${f.name}`))

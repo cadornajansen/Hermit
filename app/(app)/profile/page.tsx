@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { integrationStatus } from "@/app/actions"
 import { deleteAllData } from "@/app/sync"
 import { NationalIdCheck } from "@/components/egov-auth"
+import { SavedFormInfo } from "@/components/saved-form-info"
 import { label } from "@/components/onboarding"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { clearAll, update, useProfile } from "@/lib/store"
@@ -31,9 +32,13 @@ export default function ProfilePage() {
 
   async function deleteEverything() {
     if (!confirm("Burahin lahat ng data mo sa HERMIT? Hindi na ito maibabalik.")) return
-    await deleteAllData()
-    clearAll()
-    router.push("/")
+    try {
+      await deleteAllData(s.ownerId!)
+      clearAll()
+      router.push("/")
+    } catch {
+      update(() => ({ scopeError: "Could not delete data. Reload to verify your account and try again." }))
+    }
   }
 
   const rows: [string, string][] = [
@@ -80,6 +85,8 @@ export default function ProfilePage() {
         </Button>
       </div>
 
+      <SavedFormInfo />
+
       <section className="flex flex-col gap-2 text-sm">
         <h2 className="font-semibold">Usapan · Conversation memory</h2>
         <p className="text-muted-foreground">{s.chat.length} na mensahe kay Kuya Hermit.</p>
@@ -94,7 +101,8 @@ export default function ProfilePage() {
           {modes &&
             Object.entries(modes).map(([k, v]) => (
               <li key={k} className="flex justify-between rounded-lg bg-muted px-2 py-1">
-                {k} <span className={v === "live" ? "text-primary" : "text-muted-foreground"}>{v}</span>
+                {k}{" "}
+                <span className={v === "live" ? "text-primary" : "text-muted-foreground"}>{v}</span>
               </li>
             ))}
         </ul>

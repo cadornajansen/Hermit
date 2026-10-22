@@ -27,6 +27,7 @@ export type Layout = {
 }
 
 export type Box = {
+  reusable?: boolean // full mapped answer, never a split name or unlabelled text
   id: string
   page: number
   x: number
@@ -44,9 +45,14 @@ export type Box = {
 export type SignatureSlot = { page: number; x: number; y: number; width: number }
 
 let n = 0
-// The owner's edits to a filled form, saved on the device. Tied to the layout
-// version, so improved placements replace stale drafts.
-export const draftKey = (path: string, layout: Layout | null) => `hermit:fill:${path}:${(layout as { generatedAt?: string } | null)?.generatedAt ?? "manual"}`
+// Session drafts are scoped to the owner and layout version; legacy unscoped
+// localStorage drafts are never read (they may belong to another owner).
+export const draftKey = (
+  ownerId: string,
+  path: string,
+  layout: Layout | null
+) =>
+  `hermit:fill:${ownerId}:${path}:${layout?.sha256 ?? "manual"}:${(layout as { generatedAt?: string } | null)?.generatedAt ?? "manual"}`
 
 export const boxId = () => `b${Date.now().toString(36)}${(n++).toString(36)}`
 
@@ -117,9 +123,25 @@ export function initialBoxes(layout: Layout, values: Record<string, string>, tod
       pitch: cells,
       key: e.key,
       pdfField: e.pdfField,
+      reusable: !e.part || e.part === "full",
     })
   }
   return { boxes, signature }
+}
+
+// Only whole mapped answers are safe to reuse. Split names and conflicting
+// repeated boxes need explicit review on the field sheet instead of guessing.
+export function answersFromBoxes(boxes: Box[]) {
+  const values: Record<string, string> = {}
+  const conflicts = new Set<string>()
+  for (const box of boxes) {
+    if (box.kind !== "text" || !box.key || !box.reusable) continue
+    if (Object.hasOwn(values, box.key) && values[box.key] !== box.text)
+      conflicts.add(box.key)
+    values[box.key] = box.text
+  }
+  for (const key of conflicts) delete values[key]
+  return values
 }
 
 // The standard PDF fonts only cover WinAnsi (Latin-1-ish). Keep ñ/é etc.,

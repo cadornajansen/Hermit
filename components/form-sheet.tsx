@@ -4,22 +4,27 @@ import Link from "next/link"
 import { useState } from "react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
+import { useFormConsent } from "@/components/form-consent"
 import { fillForm, getForm, HANDOFF_LABEL } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
-import { update, useProfile } from "@/lib/store"
+import { setFormAnswer, update, useProfile } from "@/lib/store"
 
 // Side-by-side review before hand-off. HERMIT never submits: the owner files
 // online, prints, or brings it to the office themselves.
 export function FormSheet({ id }: { id: string }) {
-  const { profile } = useProfile()
+  const { profile, formMemory, formEdits } = useProfile()
   const [copied, setCopied] = useState(false)
   const form = getForm(id)!
+  const fields = profile
+    ? fillForm(form, profile, formMemory, formEdits[id])
+    : []
+  const { choice, remember } = useFormConsent(
+    Object.fromEntries(fields.map((f) => [f.key, f.value])),
+    id
+  )
   if (!profile) return null
 
-  const fields = fillForm(form, profile)
   const missing = fields.filter((f) => f.missing).length
-  const remember = (key: string, value: string) =>
-    update((s) => ({ profile: s.profile && { ...s.profile, extra: { ...s.profile.extra, [key]: value } } }))
   const portalIsUrl = form.portal.startsWith("http")
   const copies = libraryFiles(form.id)
 
@@ -37,7 +42,7 @@ export function FormSheet({ id }: { id: string }) {
         </p>
         <p className="text-sm print:hidden">
           {missing
-            ? `${missing} field ang kulang — punan sa baba (o sabihin kay Kuya Hermit). Tatandaan ito para sa susunod na form.`
+            ? `${missing} field ang kulang — punan sa baba. Saving for future forms is optional.`
             : "Kumpleto na! I-review bago i-file."}
         </p>
       </div>
@@ -50,7 +55,8 @@ export function FormSheet({ id }: { id: string }) {
                 <span className="min-w-0">
                   <span className="block">{c.label}</span>
                   <span className="block text-xs text-muted-foreground">
-                    {c.kind === "guide" ? "Gabay · Guide" : "Blank form"} · {(c.bytes / 1024).toFixed(0)} KB · kinopya{" "}
+                    {c.kind === "guide" ? "Gabay · Guide" : "Blank form"} ·{" "}
+                    {(c.bytes / 1024).toFixed(0)} KB · kinopya{" "}
                     {c.retrievedAt.slice(0, 10)} ·{" "}
                     <a href={c.sourceUrl} target="_blank" rel="noreferrer" className="text-primary">
                       official source
@@ -85,24 +91,68 @@ export function FormSheet({ id }: { id: string }) {
                 {f.hint && <span className="block text-[11px]">{f.hint}</span>}
               </th>
               <td className="py-2">
-                {f.fromProfile ? (
-                  <span>{f.value}</span>
-                ) : (
-                  <input
-                    className="h-9 w-full rounded-lg border bg-background px-2 print:border-0"
-                    defaultValue={f.value}
-                    onBlur={(e) => e.target.value.trim() !== f.value && remember(f.key, e.target.value.trim())}
-                    aria-label={f.label}
-                  />
+                <input
+                  className="h-9 w-full rounded-lg border bg-background px-2 print:border-0"
+                  value={f.value}
+                  onChange={(e) => setFormAnswer(id, f.key, e.target.value)}
+                  aria-label={f.label}
+                />
+                {f.source && (
+                  <span className="text-[11px] text-muted-foreground">
+                    From {f.source}. Editable for this form.
+                  </span>
+                )}
+                {f.conflict && (
+                  <div className="mt-1 text-xs">
+                    <p>
+                      Account and saved answer differ. Account: {f.account}.
+                      Saved: {f.saved}.
+                    </p>
+                    <button
+                      type="button"
+                      className="text-primary underline"
+                      onClick={() => setFormAnswer(id, f.key, f.saved)}
+                    >
+                      Use saved answer
+                    </button>
+                  </div>
                 )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      {choice}
       <div className="flex flex-wrap gap-2 print:hidden">
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (
+              !confirm(
+                "Clear this session's answers and PDF edits for this form? Saved reusable information stays in Profile."
+              )
+            )
+              return
+            update((s) => ({
+              formEdits: { ...s.formEdits, [id]: {} },
+              pdfDrafts: Object.fromEntries(
+                Object.entries(s.pdfDrafts).filter(
+                  ([key]) => !key.includes(`:${id}/`)
+                )
+              ),
+            }))
+          }}
+        >
+          Start a fresh form
+        </Button>
         {portalIsUrl && (
-          <a href={form.portal} target="_blank" rel="noreferrer" className={buttonVariants()}>
+          <a
+            href={form.portal}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonVariants()}
+            onClick={() => void remember()}
+          >
             {form.handoff === "portal" ? "Buksan ang portal at i-file" : `Open ${form.agency}`}
           </a>
         )}
@@ -111,11 +161,18 @@ export function FormSheet({ id }: { id: string }) {
           onClick={async () => {
             await navigator.clipboard.writeText(fields.map((f) => `${f.label}: ${f.value}`).join("\n"))
             setCopied(true)
+            await remember()
           }}
         >
           {copied ? "Nakopya ✓" : "Copy field sheet"}
         </Button>
-        <Button variant="outline" onClick={() => window.print()}>
+        <Button
+          variant="outline"
+          onClick={() => {
+            window.print()
+            void remember()
+          }}
+        >
           Print / Save as PDF
         </Button>
         {form.source !== form.portal && (
