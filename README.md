@@ -1,7 +1,7 @@
 # HERMIT
 
 **Your business, remembered.** A compliance home base for Philippine MSME owners: one checklist of the permits,
-registrations and tax filings a business needs, what's done, what's due, and an assistant that pre-fills the forms.
+registrations and tax filings a business needs, what's done, what's due, and an assistant that pre-fills the forms, submits it for you to the concerned agencies, and enables you to pay your bills and taxes; all in one place.
 
 This is the early-phase build of the PRD MVP. Every eGov API is wired behind an adapter and runs on a mock, so the whole
 flow works today; drop credentials into `.env.local` and each service switches to the real
