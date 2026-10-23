@@ -99,7 +99,7 @@ For a populated showcase, open [`/demo`](http://localhost:3000/demo) **after con
 
 **Suggested judge tour:** try a demo business  → onboarding → roadmap → Kuya Hermit → forms and document vault → payment and filing hub → eGov integration status in Profile.
 
-**Features**
+## Features
 
 Branch Booking and Mapping: This feature displays an integrated map and location list to help users find the nearest government branches, such as BIR RDO offices. It also includes a scheduling interface that allows users to book appointments and see available time slots for their visits.
 
