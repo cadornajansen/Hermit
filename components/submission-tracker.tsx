@@ -9,6 +9,14 @@ import { update } from "@/lib/store"
 import { track, type Submission, type SubmissionKind } from "@/lib/submissions"
 import { cn } from "@/lib/utils"
 
+// Time today, date otherwise.
+const when = (iso: string) => {
+  const d = new Date(iso)
+  return d.toDateString() === new Date().toDateString()
+    ? d.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })
+    : d.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })
+}
+
 // Live status of one filing. Re-checks every few seconds while it moves.
 export function SubmissionTracker({ s }: { s: Submission }) {
   const [now, setNow] = useState(() => Date.now())
@@ -38,7 +46,7 @@ export function SubmissionTracker({ s }: { s: Submission }) {
               {step.done && <Check className="size-3" />}
             </span>
             <span className={step.done ? undefined : "text-muted-foreground"}>{step.label}</span>
-            {step.done && <span className="ml-auto text-xs text-muted-foreground">{new Date(step.at).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}</span>}
+            {step.done && <span className="ml-auto text-xs text-muted-foreground">{when(step.at)}</span>}
           </li>
         ))}
       </ol>

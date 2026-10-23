@@ -119,7 +119,10 @@ export default function Page() {
                   Build my roadmap
                 </Link>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Free and easy to use
+                  Free and easy to use ·{" "}
+                  <a href="/demo" className="font-medium text-primary underline-offset-4 hover:underline">
+                    Try a demo business
+                  </a>
                 </p>
               </div>
             </div>

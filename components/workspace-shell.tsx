@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { WorkspaceSearch } from "@/components/workspace-search"
+import { DEMO_OWNER } from "@/lib/demo-id"
 import { useHermit } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
@@ -29,7 +30,7 @@ function BusinessLink({ name, collapsed = false, onNavigate }: { name: string; c
 }
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
-  const { profile } = useHermit()
+  const { profile, ownerId } = useHermit()
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -88,6 +89,19 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           <WorkspaceSearch compact />
         </header>
 
+        {ownerId === DEMO_OWNER && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-100 px-4 py-2 text-center text-sm text-amber-950 print:hidden">
+            <span>
+              <strong>Demo business</strong> · sample data, shared with everyone who opens the demo
+            </span>
+            <a href="/demo" className="underline underline-offset-2">
+              Reset demo
+            </a>
+            <a href="/demo/exit" className="underline underline-offset-2">
+              Exit demo
+            </a>
+          </div>
+        )}
         <main id="workspace-content" tabIndex={-1} className={cn("mx-auto w-full min-w-0 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8 print:max-w-none print:p-0", wide ? "max-w-[1440px]" : "max-w-3xl")}>
           {children}
         </main>
