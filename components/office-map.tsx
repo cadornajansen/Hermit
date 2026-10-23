@@ -1,123 +1,97 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
-import { directionsUrl, OFFICE_SEARCH, type NearbyOffice } from "@/lib/nearby"
-import type { OfficeType } from "@/lib/types"
+import { Button } from "@/components/ui/button"
+import { loadGoogleMaps } from "@/lib/google-maps-loader"
+import type { Point } from "@/lib/nearby"
 
 const KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
-// A Map ID enables Advanced Markers; DEMO_MAP_ID works until one is created.
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID"
 
-export const COLORS: Partial<Record<OfficeType, string>> = {
-  barangay: "#0f766e",
-  bplo: "#1d4ed8",
-  bir_rdo: "#b91c1c",
-  bfp: "#ea580c",
-  health: "#15803d",
-  cenro: "#4d7c0f",
-  negosyo_center: "#7c3aed",
-  sss: "#0369a1",
-  philhealth: "#16a34a",
-  pagibig: "#c2410c",
-  dole: "#475569",
-  fda: "#be185d",
+function detachMarkers(markers: google.maps.marker.AdvancedMarkerElement[]) {
+  for (const marker of markers) marker.map = null
 }
 
-let loader: Promise<void> | null = null
-function loadMaps() {
-  if (loader) return loader
-  loader = new Promise<void>((resolve, reject) => {
-    const w = window as unknown as Record<string, unknown>
-    w.__hermitMapsReady = () => resolve()
-    const s = Object.assign(document.createElement("script"), {
-      src: `https://maps.googleapis.com/maps/api/js?key=${KEY}&v=weekly&loading=async&callback=__hermitMapsReady`,
-      async: true,
-    })
-    s.onerror = () => {
-      loader = null
-      reject(new Error("Google Maps failed to load"))
-    }
-    document.head.appendChild(s)
-  })
-  return loader
-}
-
-export const mapsOnPage = Boolean(KEY)
-
-export function OfficeMap({
-  center,
-  offices,
-  selected,
-  onSelect,
-}: {
-  center: { lat: number; lng: number }
-  offices: NearbyOffice[]
-  selected?: string
-  onSelect: (placeId: string) => void
+export function OfficeMap({ origin, office }: {
+  origin?: { point: Point; label: string }
+  office?: { point: Point; name: string }
 }) {
-  const el = useRef<HTMLDivElement>(null)
+  const element = useRef<HTMLDivElement>(null)
+  const initialCenter = useRef(origin?.point ?? office?.point)
   const map = useRef<google.maps.Map | null>(null)
-  const markers = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map())
-  const info = useRef<google.maps.InfoWindow | null>(null)
+  const markers = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const [attempt, setAttempt] = useState(0)
+  const [ready, setReady] = useState(false)
+  const [tilesReady, setTilesReady] = useState(false)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
-    if (!KEY || !el.current) return
+    if (!KEY || !element.current) return
     let cancelled = false
+    let authFailure: (() => void) | undefined
+    const target = window as unknown as Record<string, unknown>
+    const previousAuthFailure = target.gm_authFailure
+    const tileTimeout = setTimeout(() => { if (!cancelled) setError(true) }, 15_000)
     ;(async () => {
-      await loadMaps()
-      const [{ Map: GMap, InfoWindow }, { AdvancedMarkerElement, PinElement }] = await Promise.all([
+      await loadGoogleMaps(KEY)
+      const [{ Map: GoogleMap }] = await Promise.all([
         google.maps.importLibrary("maps") as Promise<google.maps.MapsLibrary>,
-        google.maps.importLibrary("marker") as Promise<google.maps.MarkerLibrary>,
+        google.maps.importLibrary("marker"),
       ])
-      if (cancelled || !el.current) return
-      map.current ??= new GMap(el.current, { center, zoom: 13, mapId: MAP_ID, clickableIcons: false, gestureHandling: "greedy" })
-      info.current ??= new InfoWindow()
-      for (const m of markers.current.values()) m.map = null
-      markers.current.clear()
-
-      const you = new PinElement({ background: "#111827", borderColor: "#ffffff", glyphColor: "#ffffff", glyphText: "•" })
-      new AdvancedMarkerElement({ map: map.current, position: center, title: "Ikaw · You", content: you.element, zIndex: 1000 })
-
-      const bounds = new google.maps.LatLngBounds(center)
-      for (const o of offices) {
-        const pin = new PinElement({
-          background: COLORS[o.type] ?? "#334155",
-          borderColor: "#ffffff",
-          glyphColor: "#ffffff",
-          glyphText: OFFICE_SEARCH[o.type]?.label.charAt(0) ?? "•",
-        })
-        const m = new AdvancedMarkerElement({ map: map.current, position: { lat: o.lat, lng: o.lng }, title: o.name, content: pin.element, gmpClickable: true })
-        m.addListener("click", () => onSelect(o.placeId))
-        markers.current.set(o.placeId, m)
-        bounds.extend({ lat: o.lat, lng: o.lng })
-      }
-      if (offices.length) map.current.fitBounds(bounds, 48)
-      else map.current.setCenter(center)
-    })().catch((e) => console.error(e))
+      if (cancelled || !element.current) return
+      map.current = new GoogleMap(element.current, {
+        center: initialCenter.current, zoom: 13, mapId: MAP_ID, clickableIcons: false, gestureHandling: "cooperative",
+      })
+      authFailure = () => { if (!cancelled) setError(true) }
+      target.gm_authFailure = authFailure
+      google.maps.event.addListenerOnce(map.current, "tilesloaded", () => {
+        clearTimeout(tileTimeout)
+        if (!cancelled) { setTilesReady(true); setError(false) }
+      })
+      setReady(true)
+    })().catch(() => { if (!cancelled) setError(true) })
     return () => {
       cancelled = true
+      clearTimeout(tileTimeout)
+      if (authFailure && target.gm_authFailure === authFailure) target.gm_authFailure = previousAuthFailure
+      detachMarkers(markers.current)
+      markers.current = []
+      if (map.current) google.maps.event.clearInstanceListeners(map.current)
+      map.current = null
     }
-    // onSelect is stable enough for markers; re-run only when the data changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center.lat, center.lng, offices])
+  }, [attempt])
 
-  // Show the selected office's card on the map.
   useEffect(() => {
-    const o = offices.find((x) => x.placeId === selected)
-    const m = selected ? markers.current.get(selected) : undefined
-    if (!o || !m || !info.current || !map.current) return
-    const box = document.createElement("div")
-    box.style.cssText = "font: 13px system-ui; color: #111; max-width: 220px"
-    const title = Object.assign(document.createElement("strong"), { textContent: o.name })
-    const addr = Object.assign(document.createElement("div"), { textContent: `${o.address} · ${o.km} km` })
-    const link = Object.assign(document.createElement("a"), { href: directionsUrl(o), target: "_blank", rel: "noreferrer", textContent: "Directions →" })
-    link.style.color = "#1d4ed8"
-    box.append(title, addr, link)
-    info.current.setContent(box)
-    info.current.open({ map: map.current, anchor: m })
-  }, [selected, offices])
+    if (!ready || !map.current) return
+    detachMarkers(markers.current)
+    markers.current = []
+    const bounds = new google.maps.LatLngBounds()
+    for (const entry of [origin && { point: origin.point, name: origin.label }, office]) {
+      if (!entry) continue
+      const marker = new google.maps.marker.AdvancedMarkerElement({ map: map.current, position: entry.point, title: entry.name })
+      markers.current.push(marker)
+      bounds.extend(entry.point)
+    }
+    if (!bounds.isEmpty()) {
+      if (origin && office) map.current.fitBounds(bounds, 48)
+      else { map.current.setCenter((origin?.point ?? office?.point)!); map.current.setZoom(13) }
+    }
+  }, [ready, origin, office])
 
-  if (!KEY) return null
-  return <div ref={el} className="h-80 w-full overflow-hidden rounded-2xl border bg-muted" role="region" aria-label="Map of nearby offices" />
+  return (
+    <section aria-label="Office proximity map" className="min-w-0 overflow-hidden rounded-xl border bg-background">
+      <div className="relative">
+        <div ref={element} className="h-80 w-full lg:h-[32rem]" role="region" aria-label="Google map of the starting point and selected office" />
+        {KEY && !tilesReady && !error && <p role="status" className="absolute top-3 left-3 rounded-lg bg-background p-3 text-sm">Loading Google map…</p>}
+      </div>
+      {(!KEY || error) && (
+        <div role="alert" className="flex flex-col items-start gap-3 border-t p-4 text-sm">
+          <p>{KEY ? "The map could not load. Addresses, office selection, and directions remain available in the list." : "The Google map is not configured. The office list remains available."}</p>
+          {KEY && <Button variant="outline" onClick={() => { setError(false); setReady(false); setTilesReady(false); setAttempt((value) => value + 1) }}>Retry map</Button>}
+        </div>
+      )}
+      <p className="border-t p-3 text-sm text-muted-foreground">{office ? `Selected office: ${office.name}.` : "No selected office has a verified map location."} {origin ? `Starting point: ${origin.label}.` : "Choose a starting point to compare distances."}</p>
+    </section>
+  )
 }

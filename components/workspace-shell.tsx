@@ -35,7 +35,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const reduceMotion = useReducedMotion()
   const businessName = profile?.businessName.trim() || "Your business"
-  const wide = pathname === "/dashboard" || pathname === "/roadmap"
+  const wide = pathname === "/dashboard" || pathname === "/roadmap" || pathname === "/offices"
   const sidebarTransition = { duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] as const }
 
   return (

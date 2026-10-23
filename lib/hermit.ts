@@ -5,7 +5,7 @@ import { extractText, getDocumentProxy } from "unpdf"
 import { buildCalendar, buildChecklist, getRequirement, REQUIREMENTS } from "@/lib/engine"
 import { fillForm, FIELDS, fitsProfile, formForLocation, FORMS, formsFor, getForm, type FieldKey } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
-import { officesFor } from "@/lib/offices"
+import { eligibleOffices } from "@/lib/office-finder"
 import { packetPlan, slotName, usable } from "@/lib/pack"
 import { processFor } from "@/lib/processes"
 import type { Category, DocType, Extracted, ItemState, Profile } from "@/lib/types"
@@ -190,8 +190,8 @@ const TOOLS = [
   },
   {
     name: "get_offices",
-    description: "The offices that have jurisdiction over this owner's business, from HERMIT's dataset.",
-    parameters: { type: "object", properties: {} },
+    description: "Verified offices for one exact requirement and the owner's business jurisdiction. Missing coverage is not proof that no office exists.",
+    parameters: { type: "object", properties: { requirement_id: { type: "string" }, assigned_office_id: { type: "string", description: "Only if the owner has confirmed an agency-assigned branch ID." } }, required: ["requirement_id"] },
   },
   {
     name: "get_documents",
@@ -293,8 +293,16 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
       return buildCalendar(p, items, new Date(), months).map((d) => ({ title: d.title, form: d.form, due: d.due, possibly: d.maybe, note: d.note ?? null }))
     }
     case "get_offices": {
-      const types = new Set(items.map((i) => i.officeType))
-      return officesFor(p.city, p.barangay, types, p).map((o) => ({ name: o.name, handles: o.note, website: o.url ?? null }))
+      const requirement = REQUIREMENTS.find((entry) => entry.id === args.requirement_id)
+      if (!requirement) return { error: "Choose a requirement from get_checklist before finding offices." }
+      const result = eligibleOffices(requirement.id, p, typeof args.assigned_office_id === "string" ? args.assigned_office_id : "")
+      return {
+        requirement: requirement.name,
+        offices: result.offices.map(({ office }) => ({ name: office.name, website: office.website, address: office.address ?? null, mode: office.mode })),
+        notice: result.offices.length ? "Service and jurisdiction evidence checked in Hermit's registry." : "Verified branch coverage is unavailable. Confirm with the agency; do not substitute a map search result.",
+        needsReview: result.needsReview, needsAssignment: result.needsAssignment,
+        officialGuidance: requirement.sourceUrl, finder: `/offices?requirement=${encodeURIComponent(requirement.id)}`,
+      }
     }
     case "get_documents":
       return {

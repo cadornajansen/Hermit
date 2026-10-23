@@ -1,114 +1,86 @@
 import assert from "node:assert/strict"
 import { test, type TestContext } from "node:test"
-import type { ReactElement, ReactNode } from "react"
-import { renderToStaticMarkup } from "react-dom/server"
 import { dataModule, loadRuntime } from "../test-support/runtime.mjs"
-import { businessSearchAddress } from "./nearby.ts"
+import { parseGeocodeResponse } from "./google-geocoding.ts"
 
-const input = { address: "Synthetic San Jose, Tarlac", city: "San Jose", barangay: "", types: ["bplo", "sss"] }
-const center = { lat: 15.4421, lng: 120.4672 }
-const place = { id: "synthetic", displayName: { text: "Synthetic City Hall" }, formattedAddress: "Synthetic address", location: { latitude: center.lat, longitude: center.lng } }
-async function maps(t: TestContext) {
-  t.mock.method(console, "error", () => {})
-  const previous = process.env.GOOGLE_MAPS_SERVER_KEY
-  process.env.GOOGLE_MAPS_SERVER_KEY = "synthetic-not-a-key"
-  t.after(() => { if (previous === undefined) delete process.env.GOOGLE_MAPS_SERVER_KEY; else process.env.GOOGLE_MAPS_SERVER_KEY = previous })
-  return loadRuntime("app/maps.ts", { "@/lib/ratelimit": dataModule("export const takeAiQuota = async () => true;") })
+const match = {
+  formatted_address: "Synthetic address, Philippines", geometry: { location: { lat: 14.6, lng: 120.98 }, location_type: "ROOFTOP" },
+  address_components: [{ short_name: "PH", types: ["country"] }],
 }
-test("address cache retains the geocoded center and offices; coordinates remain normalized", async (t) => {
-  const api = await maps(t)
-  let requests = 0
-  t.mock.method(globalThis, "fetch", async (url: string) => {
-    requests++
-    return Response.json(String(url).includes("geocode") ? { status: "OK", results: [{ geometry: { location: center } }] } : { places: [place] })
+
+async function action(t: TestContext, quota = "return {ok:true}") {
+  const previous = { key: process.env.GOOGLE_MAPS_SERVER_KEY, flag: process.env.OFFICE_FINDER_ENABLED }
+  process.env.GOOGLE_MAPS_SERVER_KEY = "synthetic-not-a-key"
+  process.env.OFFICE_FINDER_ENABLED = "true"
+  t.after(() => {
+    if (previous.key === undefined) delete process.env.GOOGLE_MAPS_SERVER_KEY; else process.env.GOOGLE_MAPS_SERVER_KEY = previous.key
+    if (previous.flag === undefined) delete process.env.OFFICE_FINDER_ENABLED; else process.env.OFFICE_FINDER_ENABLED = previous.flag
   })
-  const first = await api.findNearbyOffices(input)
-  const calls = requests
-  const second = await api.findNearbyOffices(input)
-  assert.equal(first.ok, true)
-  assert.equal(second.cached, true)
-  assert.deepEqual(second.center, center)
-  assert.deepEqual(second.offices, first.offices)
-  assert.equal(requests, calls)
-  const coordinates = { ...input, lat: 15.442123, lng: 120.467234 }
-  const third = await api.findNearbyOffices(coordinates)
-  const fourth = await api.findNearbyOffices(coordinates)
-  assert.deepEqual(third.center, { lat: 15.442, lng: 120.467 })
-  assert.deepEqual(fourth.center, third.center)
-  assert.equal(fourth.cached, true)
+  return loadRuntime("app/maps.ts", { "@/lib/ratelimit": dataModule(`export const takeGoogleGeocodeQuota=async()=>{${quota}};`) })
+}
+
+test("geocoding distinguishes ambiguous, approximate, partial, zero and invalid responses", () => {
+  assert.deepEqual(parseGeocodeResponse({ status: "ZERO_RESULTS", results: [] }), { ok: true, candidates: [], partial: false })
+  const response = parseGeocodeResponse({ status: "OK", results: [match, { ...match, partial_match: true }, { ...match, geometry: { ...match.geometry, location_type: "APPROXIMATE" } }, { ...match, geometry: { location: { lat: Infinity, lng: 0 } } }] })
+  assert.equal(response.ok, true)
+  if (!response.ok) return
+  assert.equal(response.candidates.length, 3)
+  assert.deepEqual(response.candidates.map((entry) => entry.approximate), [false, true, true])
+  assert.equal(response.partial, true)
+  for (const invalid of [null, {}, { status: "OK", results: [] }, { status: "OK", results: [null] }, { status: "OK", results: [{ ...match, address_components: [{ short_name: "US", types: ["country"] }] }] }]) assert.equal(parseGeocodeResponse(invalid).ok, false)
+  assert.deepEqual(parseGeocodeResponse({ status: "OVER_QUERY_LIMIT" }), { ok: false, error: "quota", retryAfterSeconds: 60 })
 })
 
-test("Places total failures, partial failures, successful empties and retry are distinct", async (t) => {
-  const api = await maps(t)
-  let mode = "failed"
-  t.mock.method(globalThis, "fetch", async (_url: string, init: RequestInit) => {
-    const text = JSON.parse(String(init.body)).textQuery
-    if (mode === "failed" || (mode === "mixed" && text.startsWith("SSS"))) return new Response("unavailable", { status: 503 })
-    return Response.json({ places: mode === "empty" ? [] : [place] })
+test("one upstream request per attempt, no server caching, and no Places or Routes calls", async (t) => {
+  const api = await action(t)
+  let calls = 0
+  t.mock.method(globalThis, "fetch", async (url: URL, options: RequestInit) => {
+    calls++
+    assert.equal(url.hostname, "maps.googleapis.com")
+    assert.equal(url.pathname, "/maps/api/geocode/json")
+    assert.equal(url.searchParams.get("components"), "country:PH")
+    assert.equal(options.cache, "no-store")
+    return Response.json({ status: "OK", results: [match] })
   })
-  const coordinates = { ...input, lat: center.lat, lng: center.lng }
-  assert.equal((await api.findNearbyOffices(coordinates)).ok, false)
-  mode = "mixed"
-  const partial = await api.findNearbyOffices(coordinates)
-  assert.equal(partial.ok, true)
-  assert.equal(partial.offices.length, 1)
-  assert.deepEqual(partial.failedTypes, ["sss"])
-  mode = "empty"
-  const empty = await api.findNearbyOffices(coordinates)
-  assert.equal(empty.ok, true)
-  assert.equal(empty.cached, false, "partial failures must be retried")
-  assert.deepEqual(empty.offices, [])
-  assert.deepEqual(empty.failedTypes, [])
-  assert.equal((await api.findNearbyOffices(coordinates)).cached, true)
+  assert.equal((await api.geocodeOrigin("Synthetic city")).ok, true)
+  assert.equal((await api.geocodeOrigin("Synthetic city")).ok, true)
+  assert.equal(calls, 2)
 })
 
-test("geocoding HTTP errors are unavailable rather than empty places", async (t) => {
-  const api = await maps(t)
-  t.mock.method(globalThis, "fetch", async () => new Response("unavailable", { status: 503 }))
-  const result = await api.findNearbyOffices(input)
-  assert.equal(result.ok, false)
-  assert.match(result.error, /Google Maps/)
+test("invalid inputs, feature flag and missing credentials never call the provider", async (t) => {
+  const api = await action(t, "throw Error('Quota must not be used')")
+  t.mock.method(globalThis, "fetch", async () => { throw Error("Provider must not be called") })
+  for (const input of [null, {}, 10, "", "ab", "x".repeat(301), "abc\nprivate"]) assert.deepEqual(await api.geocodeOrigin(input), { ok: false, error: "invalid" })
+  process.env.OFFICE_FINDER_ENABLED = "false"
+  assert.deepEqual(await api.geocodeOrigin("Synthetic city"), { ok: false, error: "disabled" })
+  process.env.OFFICE_FINDER_ENABLED = "true"
+  delete process.env.GOOGLE_MAPS_SERVER_KEY
+  assert.deepEqual(await api.geocodeOrigin("Synthetic city"), { ok: false, error: "no_key" })
 })
 
-test("Maps address retains province/region without duplicating freeform locality", () => {
-  const p = { businessAddress: "12 Synthetic Road, Brgy. Example, San Jose, Tarlac", barangay: "Example", city: "San Jose", province: "Tarlac", region: "Central Luzon (Region III)" }
-  const address = businessSearchAddress(p)
-  assert.equal(address, `${p.businessAddress}, ${p.region}, Philippines`)
-  assert.equal(businessSearchAddress({ businessAddress: "12 Road", barangay: "", city: "San Jose", province: "Tarlac", region: "" }), "12 Road, San Jose, Tarlac, Philippines")
-  assert.equal(businessSearchAddress({ businessAddress: "12 Road", barangay: "", city: "Taguig" }), "12 Road, Taguig, Philippines")
-})
-
-test("office UI distinguishes unavailable, partial and no-matches states and exposes retry", async () => {
-  const fixture = { slots: [] as unknown[], cursor: 0, response: {} as unknown, pending: Promise.resolve() }
-  Object.assign(globalThis, { __hermitMapsUi: fixture })
-  const ui = await loadRuntime("app/(app)/offices/page.tsx", {
-    react: dataModule(`const f=globalThis.__hermitMapsUi;export const useState=(initial)=>{const i=f.cursor++;if(!(i in f.slots))f.slots[i]=initial;return [f.slots[i],v=>{f.slots[i]=v}]};export const useTransition=()=>[false,fn=>{f.pending=fn()}];`),
-    "@/app/maps": dataModule("export const findNearbyOffices=async()=>globalThis.__hermitMapsUi.response;"),
-    "@/app/actions": dataModule("export const reportProblem=async()=>{};"),
-    "@/components/office-map": dataModule("export const mapsOnPage=true;export const COLORS={bplo:'blue'};export const OfficeMap=()=>null;"),
-    "@/components/ui/button": dataModule("export const Button=({children,...props})=>children;export const buttonVariants=()=>'';"),
-    "@/lib/store": dataModule("export const useProfile=()=>({});"),
-  })
-  const render = () => { fixture.cursor = 0; return ui.NearMe({ types: ["bplo"], city: "San Jose", barangay: "", address: "Synthetic address" }) }
-  function elements(node: ReactNode): ReactElement<Record<string, unknown>>[] {
-    if (!node || typeof node !== "object") return []
-    if (Array.isArray(node)) return node.flatMap(elements)
-    const element = node as ReactElement<Record<string, unknown>>
-    return [element, ...elements(element.props?.children as ReactNode)]
+test("quota rejection and limiter failure prevent all provider calls", async (t) => {
+  let calls = 0
+  t.mock.method(globalThis, "fetch", async () => { calls++; throw Error("unexpected") })
+  for (const quota of ["return {ok:false,error:'quota'}", "return {ok:false,error:'unavailable'}", "throw Error('offline')"]) {
+    const api = await action(t, quota)
+    assert.equal((await api.geocodeOrigin("Synthetic city")).ok, false)
   }
-  for (const [response, expected, absent] of [
-    [{ ok: false, error: "Google Maps failed" }, /Maps unavailable/, /No matches|Partial results/],
-    [{ ok: true, center, offices: [], failedTypes: [] }, /No matches/, /Maps unavailable|Partial results/],
-    [{ ok: true, center, offices: [{ type: "bplo", placeId: "synthetic", name: "Synthetic Hall", km: 1, address: "Synthetic" }], failedTypes: ["sss"] }, /Partial results/, /Maps unavailable|No matches/],
-  ] as const) {
-    fixture.response = response
-    const button = elements(render()).find((node) => String(node.props?.children).includes("Gamitin ang address"))
-    assert.ok(button)
-    ;(button.props.onClick as () => void)()
-    await fixture.pending
-    const html = renderToStaticMarkup(render())
-    assert.match(html, expected)
-    assert.doesNotMatch(html, absent)
-    assert.match(html, /Retry/)
+  assert.equal(calls, 0)
+})
+
+test("provider 429, HTTP failures, malformed JSON and timeouts return safe errors without logs", async (t) => {
+  const api = await action(t)
+  let logs = 0
+  t.mock.method(console, "error", () => { logs++ })
+  t.mock.method(console, "warn", () => { logs++ })
+  for (const mode of ["429", "503", "json", "timeout"]) {
+    t.mock.method(globalThis, "fetch", async () => {
+      if (mode === "timeout") throw Error("private URL containing synthetic-not-a-key")
+      return new Response("private provider body", { status: mode === "json" ? 200 : Number(mode) })
+    })
+    const result = await api.geocodeOrigin("Synthetic private address")
+    assert.equal(result.ok, false)
+    assert.doesNotMatch(JSON.stringify(result), /private|synthetic-not-a-key/)
   }
+  assert.equal(logs, 0)
 })

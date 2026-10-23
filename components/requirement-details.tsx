@@ -86,6 +86,7 @@ export function RequirementDetails({ item, items, docs, profile, onClose }: {
             <dt className="text-muted-foreground">Processing</dt><dd>{item.processingTime}</dd>
             <dt className="text-muted-foreground">Renewal</dt><dd>{item.renewal}</dd>
           </dl>
+          <Link href={`/offices?requirement=${encodeURIComponent(item.id)}`} className={buttonVariants({ variant: "outline" })}>Find an eligible office<ArrowUpRight data-icon="inline-end" /></Link>
           <DocSlots requirementId={item.id} docs={docs} />
           <Separator />
           <FieldGroup className="gap-4">

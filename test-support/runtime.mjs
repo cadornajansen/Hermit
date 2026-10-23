@@ -30,7 +30,7 @@ export function loadRuntime(path, stubs = {}) {
       compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
     }).outputText
     const code = source
-      .replace(/from (["'])([^"']+)\1(?: with \{ type: ["']json["'] \})?/g, (_, _quote, spec) => `from ${JSON.stringify(resolve(spec, url))}`)
+      .replace(/^((?:import|export)\b[^\n]*?\bfrom )(["'])([^"']+)\2(?: with \{ type: ["']json["'] \})?/gm, (_, prefix, _quote, spec) => `${prefix}${JSON.stringify(resolve(spec, url))}`)
       .replace(/(^|\n)import (["'])([^"']+)\2;/g, (_, prefix, _quote, spec) => `${prefix}import ${JSON.stringify(resolve(spec, url))};`)
       .replace(/import\((["'])([^"']+)\1\)/g, (_, _quote, spec) => `import(${JSON.stringify(resolve(spec, url))})`)
     const result = dataModule(`${code}\n// runtime ${instance}`)

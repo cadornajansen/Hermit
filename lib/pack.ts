@@ -4,7 +4,7 @@ import layouts from "./form-layouts.json"
 import { fillForm, filingTask, formsFor, type FilingTask, type FormTemplate } from "./forms"
 import type { FormMemory } from "./form-memory"
 import { libraryFiles, type LibraryFile } from "./library"
-import { officesFor } from "./offices"
+import { eligibleOffices } from "./office-finder"
 import { jurisdictionLabel } from "./locations"
 import { processFor } from "./processes"
 import type { Profile, VaultDoc } from "./types"
@@ -194,7 +194,9 @@ export async function buildPacket(
   c.space()
   c.line(t("SAAN MAG-FILE", "WHERE TO FILE"), { b: true })
   c.line(plan.requirement.whereToFile, { indent: 8 })
-  for (const o of officesFor(profile.city, profile.barangay, new Set([plan.requirement.officeType]), profile)) c.line(`${o.name}${o.url ? ` · ${o.url}` : ""}`, { indent: 8 })
+  const officeMatches = eligibleOffices(plan.requirement.id, profile)
+  for (const { office } of officeMatches.offices) c.line(`${office.name} · ${office.website}`, { indent: 8 })
+  if (!officeMatches.offices.length) c.line("Verified branch coverage unavailable. Confirm the assigned office with the agency.", { indent: 8 })
   const process = processFor(plan.requirement.id, profile, plan.task)
   if (process?.office) c.line(process.office, { indent: 8 })
   if (process?.note) c.line(process.note, { indent: 8, size: 9 })

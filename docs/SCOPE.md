@@ -32,7 +32,9 @@ Closure means a sourced roadmap for ending applicable registrations and permits.
 - English-only sourced AI roadmap Q&A with transient conversation context.
 - AssemblyAI transcription in AI chat only, followed by editable text and explicit sending.
 - Reviewed published fees and processing times, with missing information labelled.
-- Pale-blue design, desktop sidebar, compact mobile navigation, and an empty Office Locator page.
+- Pale-blue design, desktop sidebar, and compact mobile navigation. The 23 October 2026 office-finder
+  request extends the earlier empty Office Locator target: exact-service/area eligibility, a selectable
+  map/list, and Google-only mapping/geocoding. See [implementation and rollout](office-finder-plan.md).
 - Next.js server deployment with protected server routes; static-export-only hosting is superseded.
 
 ## Deferred or excluded from the target MVP

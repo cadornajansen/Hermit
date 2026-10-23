@@ -168,16 +168,27 @@ eGovPay's checkout offers QR Ph, e-wallets, online banking, banks, LANDBANK QR a
 per channel. `EGOV_PAY_TOKEN` is the `test_`-prefixed token (test mode, no live funds); drop the prefix to go live.
 Without a token the terminal says online payment isn't available yet and points to BIR's own ePayment channels.
 
-**Offices near you:** with Google Maps keys set, Offices finds the nearest real offices the owner needs (barangay hall,
-city hall/BPLO, BIR RDO, BFP, health office, Negosyo Center, SSS, PhilHealth, Pag-IBIG, DOLE, FDA) around their phone's
-location or their geocoded business address, via Places API (New) Text Search on the server (`app/maps.ts`, rate-limited,
-Pro-tier fields only, location rounded to ~110 m). Results are name-checked per office type (`lib/nearby.ts`) and shown
-as colour-coded pins on a Google map with distance and directions. Where jurisdiction matters (RDO, city hall,
-barangay) the page says the nearest office isn't necessarily the one that handles the owner.
-Business-address searches retain province and region and avoid repeating locality text already in the address.
-Cached address searches retain the geocoded center. Successful empty searches show “No matches”; partial results name
-the office types that failed; total upstream failure shows “Maps unavailable”. Empty, partial and unavailable states
-offer retry, and incomplete results are not cached.
+**Office finder:** choose a document/service and confirm the business jurisdiction before comparing offices.
+Only active, current registry records with evidence of that exact service and area coverage are eligible.
+The maintained registry (`lib/office-registry.ts`) is intentionally empty pending independent verification;
+legacy Taguig seeds remain labelled unverified, not promoted to eligible branches. The assistant and packet
+branch lookup use the same resolver. Requirement details link directly to the relevant office search.
+
+The approved provider is Google only: Maps JavaScript for display, server-side Geocoding for an explicitly
+submitted starting address, and external Google Maps directions links. No Places discovery or Routes calls
+are made. Device location is requested on demand, denial preserves the choice, and address matches require
+confirmation. Distances say “Approximate straight-line distance”; missing/stale coordinates stay unranked.
+The map and selected office list synchronize, with the scrollable list on the right on desktop and below
+the map on small screens. Textual results remain available when the map fails.
+
+Live map/address features default off (`OFFICE_FINDER_ENABLED=false`). Before enabling, supply independently
+reviewed office records, restricted Google browser/server keys and a production map ID, publish appropriate
+terms/privacy disclosures, and configure provider-side quotas. Geocoding also requires the existing Supabase
+`take_ai_quota` RPC: each upstream attempt reserves owner/IP/project quota and fails closed if unavailable.
+The default rolling project cap is 250 geocodes/day (`GOOGLE_MAPS_GEOCODE_DAILY_LIMIT`); browser map loads
+need separate Google Cloud limits. Precise origins and entered addresses are transient and are not cached
+server-side or saved to the business profile. No billing/resources are enabled by this code.
+See [office finder setup, data review, verification and future staggered scaling](docs/office-finder-plan.md).
 
 **Start here:** `lib/processes.ts` lists, per requirement and filing task, the page that starts the process (BNRS, ORUS with its
 click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,

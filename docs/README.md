@@ -19,9 +19,9 @@ remain available, but their presence does not establish target approval or verif
 
 The [blue design reference](references/blue-design-reference.png) is the screenshot supplied by the owner.
 
-The [office finder proposal and provider decision](office-finder-plan.md) records the current
-implementation findings, provider costs, proposed behavior, and approval gates. It is a draft for
-review, not a finalized plan or an implemented feature.
+The [office finder implementation and rollout](office-finder-plan.md) records the owner's Google-only
+provider decision, implemented behavior, configuration, office-data release gates, and staggered
+provider use as a future scaling option. Verified branch records and live deployment setup remain required.
 
 ## Authority and change boundaries
 
