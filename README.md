@@ -99,6 +99,22 @@ For a populated showcase, open [`/demo`](http://localhost:3000/demo) **after con
 
 **Suggested judge tour:** try a demo business  → onboarding → roadmap → Kuya Hermit → forms and document vault → payment and filing hub → eGov integration status in Profile.
 
+**Features**
+
+Branch Booking and Mapping: This feature displays an integrated map and location list to help users find the nearest government branches, such as BIR RDO offices. It also includes a scheduling interface that allows users to book appointments and see available time slots for their visits.
+
+<img width="720" height="379" alt="image" src="https://github.com/user-attachments/assets/3fcfeb2b-c40a-451a-be41-97c14405a1dc" />
+
+Tax Computations and Payments: This highlights a built-in calculator for tax returns, showing an example of computing a 3% percentage tax based on inputted quarterly gross sales. It seamlessly connects to a payment checkout flow, demonstrating a QR Ph integration via eGovPay to settle the calculated tax due.
+
+<img width="663" height="379" alt="image" src="https://github.com/user-attachments/assets/00789ee4-19f8-4cda-a25d-7d2b3fb383d4" />
+
+
+Form Prefilling and Documents: This demonstrates the platform's smart assistant helping users fill out government forms, like a Cedula (Community Tax Certificate). It automatically maps existing profile data (like name, date of birth, and address) onto the form, clearly identifies which fields still need manual input, and generates a downloadable PDF answer sheet.
+
+<img width="444" height="418" alt="image" src="https://github.com/user-attachments/assets/77a53a63-9535-4330-b3b8-edb6dd558361" />
+
+
 ## Built today, building toward tomorrow
 
 The current prototype focuses new onboarding on the **City of Manila**. It includes a working product journey and adapter-backed eGov flows, but government access depends on credentials and the specific service. eGovPay is in test mode. Agency filing and its progress timeline are demos. Requirements, fees, and dates in the seed library still need review against current official sources and the relevant Manila offices before they can be treated as authoritative guidance.
