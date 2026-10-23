@@ -1,14 +1,17 @@
 # Hermit documentation
 
-Hermit helps City of Manila small-business owners understand relevant registration and permit requirements, choose a next action, and track their work using reviewed official guidance.
+Hermit aims to help City of Manila small-business owners understand relevant registration and permit requirements, choose a next action, and track their work using reviewed official guidance.
 
-**These documents describe the approved target, not a claim that the current app implements it.** The documentation checkpoint leaves existing application features, routes, actions, and saved data intact, including features deferred from the target MVP.
+The PRD, specification, design philosophy, sources, and approved-scope sections describe the target MVP.
+[Current implementation](IMPLEMENTATION.md) describes the merged app. Existing features beyond the target
+remain available, but their presence does not establish target approval or verified official guidance.
 
 ## Read in this order
 
 | Document | Use it to answer |
 | --- | --- |
 | [PRD](PRD.md) | Who is this for, what should it do, and what counts as success? |
+| [Current implementation](IMPLEMENTATION.md) | What is actually present after merging main into early-phase? |
 | [Scope and implementation inventory](SCOPE.md) | What is approved, what is deferred, and what currently differs? |
 | [Specification](SPECIFICATION.md) | How should answers, rules, accounts, progress, dates, AI, and offline reading work together? |
 | [Design philosophy](DESIGN-PHILOSOPHY.md) | How should Hermit look, read, and behave? |
@@ -28,19 +31,11 @@ Explicit owner decisions govern the target scope. The linked Google Doc is a bro
 
 If these documents disagree, flag the conflict rather than silently expanding scope. New feature work requires a separately requested, small checkpoint. A feature marked deferred is not permission to remove or disable its existing implementation.
 
-## Repository baseline
+## Repository context
 
-- Project: `C:\Development\hackathons\Hermit`.
-- Repository: [cadornajansen/Hermit](https://github.com/cadornajansen/Hermit).
-- Inspected commit: `10426a1` (`feat: document vault with AI reading and rule-based verification`).
-- Documentation decisions recorded: 22 October 2026.
-- Observed stack: Next.js 16.4.0, React 19.3.0, TypeScript, Tailwind CSS 4, and shadcn/ui.
-- Existing baseline: 15 unit tests passed; TypeScript checking passed after Next.js route-type generation during the preceding inspection. Those results do not establish legal accuracy, live API readiness, or target-MVP acceptance.
-
-The application already contains work from the broader proposal. Consult the inventory before interpreting these documents as a description of its current screens. The repository root README remains an earlier implementation description and is unchanged by this checkpoint.
-
-## Current checkpoint
-
-Create these six Markdown documents and preserve the supplied screenshot. No application, dependency declaration, database schema, or runtime behavior changes are part of this checkpoint. No new project is created at the previously proposed `C:\Development\asikaso` path.
-
-To review the result, open this file, follow each document link, and compare the inventory with the linked source files. The remaining implementation dependencies are recorded in the [specification](SPECIFICATION.md#implementation-dependencies).
+The target decisions and historical baseline inventory were recorded on 22 October 2026 at commit
+`10426a1`. That inventory remains in [Scope](SCOPE.md#historical-implementation-inventory) for
+comparison. The current branch merges main's interface and Supabase email-auth screens with the
+early-phase workflows. See [Current implementation](IMPLEMENTATION.md) for actual routes, account
+boundaries, known gaps, and verification results. The root [README](../README.md) has current setup
+instructions. Remaining target dependencies are in the [specification](SPECIFICATION.md#implementation-dependencies).

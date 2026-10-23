@@ -1,6 +1,7 @@
 # Hermit — Product requirements
 
-Status: approved target MVP. This is a product contract, not a completed-feature report. See [Scope](SCOPE.md) for the current code inventory and deferred features.
+Status: approved target MVP. This is a product contract, not a completed-feature report. See
+[Scope](SCOPE.md) for target decisions and [Current implementation](IMPLEMENTATION.md) for the merged code.
 
 ## Problem and goal
 

@@ -1,6 +1,8 @@
 # Hermit — Design philosophy
 
-Status: approved target direction. The current green/Taglish interface remains unchanged by this documentation checkpoint.
+Status: approved target direction. The merged landing page and workspace use main's pale-blue visual
+system; [Current implementation](IMPLEMENTATION.md) records what is actually present. Some older
+features and content still differ from this target.
 
 ## Purpose
 
@@ -25,7 +27,7 @@ These are chosen design values inspired by the screenshot, not a claim of exact 
 
 Use white text on ink primary buttons. Pale blue is mainly a surface/accent color; do not assume white labels on light blue have sufficient contrast. Check each actual text, border, focus and status combination during implementation. Semantic success, warning and error indicators may use suitable colors, but must also include text or an icon. Never make color the only explanation of a status.
 
-Start with the approved light appearance. A dark-mode redesign or new theme-switching requirement is not part of this checkpoint. Preserve existing theme functionality until separately revised.
+Start with the approved light appearance. Preserve existing theme functionality until separately revised.
 
 ## Typography and spacing
 

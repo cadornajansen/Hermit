@@ -603,7 +603,7 @@ function ClosingInvitation(): ReactElement {
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
           <Link
-            href="/onboarding"
+            href="/register"
             className={cn(
               buttonVariants({ size: "lg", variant: "ink" }),
               "gap-2.5"

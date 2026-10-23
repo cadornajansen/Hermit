@@ -109,7 +109,7 @@ export default function Page() {
                   what comes next, and track your progress in one place.
                 </p>
                 <Link
-                  href="/onboarding"
+                  href="/register"
                   className={cn(
                     buttonVariants({ size: "lg", variant: "ink" }),
                     "mt-8 h-12 gap-2.5 px-6 text-sm"
@@ -189,7 +189,7 @@ export default function Page() {
               className="flex flex-wrap items-center gap-5 text-sm"
             >
               <Link
-                href="/onboarding"
+                href="/register"
                 className="rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Build my roadmap

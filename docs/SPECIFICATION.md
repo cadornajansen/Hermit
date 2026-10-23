@@ -1,6 +1,7 @@
 # Hermit — Functional specification
 
-Status: intended target behavior. This document does not describe a completed migration. Existing contracts and application behavior remain unchanged in this checkpoint; compare them with [the implementation inventory](SCOPE.md#current-implementation-inventory).
+Status: intended target behavior. This document does not describe a completed migration. Compare it with
+[the merged implementation](IMPLEMENTATION.md) and the [historical baseline inventory](SCOPE.md#historical-implementation-inventory).
 
 ## Data flow and architecture
 

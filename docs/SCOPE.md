@@ -1,6 +1,9 @@
 # Hermit — Scope and implementation inventory
 
-This file owns feature inclusion and deferral. **All existing app features stay as they are during this documentation checkpoint.** The inventory describes differences; it is not an instruction to remove, disable, migrate, or redesign them.
+This file owns target feature inclusion and deferral. Its detailed inventory below is a **historical
+baseline at commit `10426a1`**, before the main/early-phase merge. For current behavior, use
+[Current implementation](IMPLEMENTATION.md). The target comparison is not an instruction to
+remove existing routes, data, or integrations.
 
 ## Approved coverage
 
@@ -53,7 +56,7 @@ Closure means a sourced roadmap for ending applicable registrations and permits.
 | Direct calendar synchronization and automatic recurring calendar events | Outside the approved export scope. |
 | Automated filing, other LGUs, and Negosyo Quest | Outside the MVP. |
 
-## Current implementation inventory
+## Historical implementation inventory
 
 Baseline: commit `10426a1`, inspected 22 October 2026. “Implemented” means a code path exists, not that a live government integration or its legal claims were verified. Mock means simulated behavior; unreviewed means content has not passed the publication gate. Deferred features may currently be implemented.
 
@@ -93,4 +96,4 @@ Baseline: commit `10426a1`, inspected 22 October 2026. “Implemented” means a
 
 Older assumptions of one business, local-only storage, no accounts, no AI, three journeys, and static-export-only hosting are superseded by explicit owner approvals. The earlier `asikaso` project location is also superseded by this existing repository.
 
-Future code work must be requested and handled in small, focused changes. Preserve working behavior until a specific revision is authorized. Do not delete existing browser data, upload files, routes, integrations, or tests simply because this file records a target mismatch. Update this inventory when behavior actually changes, with its new commit and verification evidence.
+Future code work must be requested and handled in small, focused changes. Preserve working behavior until a specific revision is authorized. Do not delete existing browser data, upload files, routes, integrations, or tests simply because this file records a target mismatch. Record new behavior in [Current implementation](IMPLEMENTATION.md); retain this table as historical comparison evidence.

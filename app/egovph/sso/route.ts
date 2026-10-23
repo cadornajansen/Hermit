@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto"
 import { db } from "@/lib/db"
 import { egov } from "@/lib/egov"
 import { ownerId, readSession, setOwner, writeSession } from "@/lib/session"
+import { createSupabaseServerClient, getAccountUser } from "@/lib/supabase"
 
 // eGovPH SSO entry point. eGovPH opens HERMIT inside its app as
 //   https://<hermit>/egovph/sso?exchange_code=…
@@ -18,6 +19,11 @@ export async function GET(request: Request) {
   try {
     const identity = await egov("sso").exchange(code)
     const previous = await readSession()
+    if (await getAccountUser()) {
+      const account = await createSupabaseServerClient()
+      const { error } = await account!.auth.signOut({ scope: "local" })
+      if (error) throw error
+    }
 
     const sb = db()
     if (sb && identity.uniqid) {

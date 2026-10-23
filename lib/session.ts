@@ -4,6 +4,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto"
 import { cookies } from "next/headers"
 
 import type { Identity } from "@/lib/egov"
+import { getAccountUser } from "@/lib/supabase"
 
 // Signed, httpOnly cookies:
 // - hermit_session: verified identity from eGovPH SSO + eVerify
@@ -60,6 +61,8 @@ export const readSession = () => readSigned<Session>(SESSION)
 
 // Existing owner id, or a new one when create is set (only from Server Actions / Route Handlers).
 export async function ownerId(create = false): Promise<string | null> {
+  const account = await getAccountUser()
+  if (account) return account.id
   const id = await readSigned<string>(OWNER)
   if (id || !create) return id
   const fresh = randomUUID()

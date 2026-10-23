@@ -1,6 +1,7 @@
 "use client"
 
 import { BadgeCheck, ScanFace } from "lucide-react"
+import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
 
 import { verifyNationalId } from "@/app/actions"
@@ -43,7 +44,7 @@ function loadScript(src: string) {
 
 // "Login as eGov" (official eGovPH widget). It runs mobile/email → OTP → PIN
 // with eGovPH and hands back an exchange code; /egovph/sso redeems it.
-export function EgovLogin() {
+export function EgovLogin({ disabled = false }: { disabled?: boolean }) {
   const target = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string>()
 
@@ -74,13 +75,13 @@ export function EgovLogin() {
 
   if (!PARTNER || !SSO_HOST)
     return (
-      <a href="/egovph/sso?exchange_code=mock" className="flex h-12 items-center justify-center rounded-xl bg-primary font-medium text-primary-foreground">
-        Mag-sign in gamit ang eGovPH (demo)
+      <a href="/egovph/sso?exchange_code=mock" aria-disabled={disabled} tabIndex={disabled ? -1 : undefined} onClick={(event) => { if (disabled) event.preventDefault() }} className={`inline-flex h-12 shrink-0 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-base tracking-tight text-ink shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/30 ${disabled ? "pointer-events-none opacity-50" : ""}`}>
+        Continue with <Image src="/brand/egov.png" alt="eGovPH" width={94} height={28} className="h-7 w-auto object-contain" />
       </a>
     )
   return (
-    <div className="flex flex-col gap-2">
-      <div ref={target} id="egov-login" className="min-h-12" />
+    <div className={`flex flex-col gap-2 ${disabled ? "pointer-events-none opacity-50" : ""}`}>
+      <div ref={target} id="egov-login" className="min-h-12 rounded-full bg-white text-ink shadow-sm" />
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   )
