@@ -66,6 +66,9 @@ export default function ProfilePage() {
     ["Ownership", label("structure", p.structure)],
     ["Lugar", [p.businessAddress, p.barangay, p.city, p.province, p.region].filter(Boolean).join(", ") || "—"],
     ["Empleyado", label("employees", p.employees)],
+    ["TIN", p.tin || "—"],
+    ["RDO code", p.rdoCode || "—"],
+    ["DTI / SEC no.", p.dtiNo || "—"],
     ...Object.entries(p.extra).map(([k, v]): [string, string] => [k, v]),
   ]
 

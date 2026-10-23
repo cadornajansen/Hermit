@@ -3,6 +3,8 @@
 import {
   ArrowLeft,
   ArrowRight,
+  BadgeCheck,
+  Sparkles,
   BriefcaseBusiness,
   Droplets,
   Factory,
@@ -21,7 +23,12 @@ import {
   Wrench,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
+
+import { classifyBusiness } from "@/app/actions"
+import { EgovLogin, NationalIdCheck } from "@/components/egov-auth"
+import { LocationFields } from "@/components/location-fields"
+import { OwnerStatus } from "@/components/owner-status"
 
 import {
   BirthDateField,
@@ -64,7 +71,9 @@ import {
   type DocumentGroup,
   type DocumentOption,
 } from "@/lib/onboarding-options"
-import { currentStorageKey, update, useHermit } from "@/lib/store"
+import { isTaguigJurisdiction, restoreLocation } from "@/lib/locations"
+import { PILOT_CITY } from "@/lib/offices"
+import { update, useHermit } from "@/lib/store"
 import type { Activity, Flag, Profile } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -151,6 +160,7 @@ const ACTIVITY_ICONS = {
   other: Store,
 }
 const STEPS = [
+  "identity",
   "business",
   "setup",
   "location",
@@ -166,6 +176,7 @@ type ReviewEdit = {
   reviewed: Partial<Record<Step, Profile>>
 }
 const TITLES: Record<Step, string> = {
+  identity: "Who are you?",
   business: "Add your business",
   setup: "Registration",
   location: "Business location",
@@ -177,14 +188,16 @@ const TITLES: Record<Step, string> = {
 
 export function Onboarding({
   identity,
+  sso,
   authError,
 }: {
   identity: IdentityPrefill | null
+  sso: boolean
   authError?: string
 }) {
-  const { ready, synced, ownerId, scopeError, profile } = useHermit()
-  if (scopeError) return <p role="alert" className="py-24 text-center text-sm text-destructive">{scopeError}</p>
-  if (!ready || !synced || !ownerId)
+  const { ready, synced, profile, scopeError } = useHermit()
+  if (scopeError) return <OwnerStatus />
+  if (!ready || !synced)
     return (
       <p
         className="py-24 text-center text-sm text-muted-foreground"
@@ -193,16 +206,18 @@ export function Onboarding({
         Loading your saved details…
       </p>
     )
-  return <Wizard saved={profile} identity={identity} authError={authError} />
+  return <Wizard saved={profile} identity={identity} sso={sso} authError={authError} />
 }
 
 function Wizard({
   saved,
   identity,
+  sso,
   authError,
 }: {
   saved: Profile | null
   identity: IdentityPrefill | null
+  sso: boolean
   authError?: string
 }) {
   const router = useRouter()
@@ -211,29 +226,33 @@ function Wizard({
       ? normalizeProfile(saved)
       : {
           ...EMPTY_PROFILE,
-          city: "Manila",
-          lang: "en" as const,
+          city: PILOT_CITY,
           reminders: [],
           activities: [],
           flags: Object.fromEntries(
             Object.keys(FLAG_LABELS).map((key) => [key, "unknown"])
           ) as Profile["flags"],
         }
-    return identity
-      ? {
-          ...base,
-          ...identity,
-          ownerName: base.ownerName || identity.ownerName,
-          email: base.email || identity.email,
-          birthDate: base.birthDate || identity.birthDate,
-          homeAddress: base.homeAddress || identity.homeAddress,
-          mobile: base.mobile || identity.mobile,
-          barangay: base.barangay || identity.barangay,
-          city: (saved && base.city) || "Manila",
-        }
-      : base
+    // eGovPH / National ID details fill in what the owner hasn't typed yet.
+    return restoreLocation(
+      identity
+        ? {
+            ...base,
+            ...identity,
+            ownerName: base.ownerName || identity.ownerName,
+            email: base.email || identity.email,
+            birthDate: base.birthDate || identity.birthDate,
+            homeAddress: base.homeAddress || identity.homeAddress,
+            mobile: base.mobile || identity.mobile,
+            barangay: base.barangay || identity.barangay,
+            city: (saved && base.city) || identity.city || base.city,
+            identityVerified: base.identityVerified || identity.identityVerified,
+          }
+        : base
+    )
   })
-  const [step, setStep] = useState<Step>(saved ? "review" : "business")
+  // Returning owners land on review, unless they just signed in with eGovPH and still need the National ID check.
+  const [step, setStep] = useState<Step>(saved && !(sso && !saved.identityVerified) ? "review" : "identity")
   const [error, setError] = useState("")
   const [saveError, setSaveError] = useState("")
   const [reviewEdit, setReviewEdit] = useState<ReviewEdit | null>(null)
@@ -277,12 +296,8 @@ function Wizard({
 
   function continueForm(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (
-      (step === "location" || step === "review") &&
-      p.city.trim().toLowerCase() !== "manila"
-    ) {
-      if (step === "review") goTo("location")
-      setError("Business intake is currently limited to the City of Manila.")
+    if (step === "identity" && !p.ownerName.trim()) {
+      setError("Enter your full name, or sign in with eGovPH.")
       return
     }
     if (
@@ -309,40 +324,27 @@ function Wizard({
       goTo(STEPS[index + 1])
       return
     }
-    const profile = normalizeProfile({
+    const normalized = normalizeProfile({
       ...p,
       ownerName: p.ownerName.trim(),
       businessName: p.businessName.trim(),
     })
+    // Kuya Hermit, forms and older screens still read the single category.
+    const profile = restoreLocation({ ...normalized, category: categoryFor(normalized) })
     update(() => ({
       profile,
       lastDiff: saved ? diffChecklists(saved, profile) : null,
     }))
-    try {
-      const persisted = JSON.parse(
-        localStorage.getItem(currentStorageKey()) ?? "null"
-      ) as { profile?: Profile } | null
-      if (JSON.stringify(persisted?.profile) !== JSON.stringify(profile)) {
-        setSaveError(
-          "Your browser could not save these details. Free some storage or allow site storage, then try again. Your answers remain here."
-        )
-        return
-      }
-    } catch {
-      setSaveError(
-        "Your browser blocked saving. Allow site storage and try again. Your answers remain here."
-      )
-      return
-    }
     router.push("/dashboard")
   }
 
   const screens: Record<Step, React.ReactNode> = {
+    identity: <IdentityStep p={p} set={set} sso={sso} error={error} />,
     business: (
       <BusinessStep p={p} set={set} error={error} setError={setError} />
     ),
     setup: <SetupStep p={p} set={set} />,
-    location: <LocationStep p={p} set={set} error={error} setError={setError} />,
+    location: <LocationStep p={p} set={set} />,
     operations: <OperationsStep p={p} set={set} />,
     details: <DetailsStep p={p} set={set} />,
     documents: (
@@ -434,28 +436,52 @@ function Wizard({
 
 type ProfileStepProps = { p: Profile; set: (patch: Partial<Profile>) => void }
 
-function OwnerDetails({ p, set }: ProfileStepProps) {
+function IdentityStep({ p, set, sso, error }: ProfileStepProps & { sso: boolean; error: string }) {
+  if (p.identityVerified)
+    return (
+      <div className="flex gap-3 rounded-2xl border border-primary/40 bg-accent p-4">
+        <BadgeCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+        <div className="text-sm">
+          <p className="font-medium">Verified with your National ID{sso ? " · signed in with eGovPH" : ""}</p>
+          <p>{p.ownerName}</p>
+          <p className="text-muted-foreground">
+            {[p.birthDate, p.homeAddress].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+      </div>
+    )
+  if (sso)
+    return (
+      <FieldGroup>
+        <div className="rounded-2xl border p-4 text-sm">
+          <p className="font-medium">Signed in with eGovPH</p>
+          <p>{p.ownerName}</p>
+          <p className="text-muted-foreground">{[p.birthDate, p.homeAddress].filter(Boolean).join(" · ")}</p>
+        </div>
+        <NationalIdCheck profile={p} sso onVerified={(patch) => set(patch)} />
+      </FieldGroup>
+    )
   return (
     <FieldGroup>
+      <FieldDescription>
+        We use your name, birthday and address from your National ID so you never retype them on a form.
+      </FieldDescription>
+      <EgovLogin />
+      <p className="text-center text-xs text-muted-foreground">or enter your details and verify with your National ID</p>
       <TextField
         icon={UserRound}
-        label="Full name"
+        label="Full name (as on your ID)"
         value={p.ownerName}
         onChange={(event) => set({ ownerName: event.target.value })}
         autoComplete="name"
       />
-      <TextField
-        icon={Mail}
-        label="Email address"
-        type="email"
-        value={p.email}
-        onChange={(event) => set({ email: event.target.value })}
-        autoComplete="email"
-      />
-      <BirthDateField
-        value={p.birthDate}
-        onChange={(birthDate) => set({ birthDate })}
-      />
+      {error && (
+        <p role="alert" className="-mt-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      <BirthDateField value={p.birthDate} onChange={(birthDate) => set({ birthDate })} />
+      <NationalIdCheck profile={p} sso={false} onVerified={(patch) => set(patch)} />
       <TextField
         icon={MapPin}
         label="Home address"
@@ -464,13 +490,72 @@ function OwnerDetails({ p, set }: ProfileStepProps) {
         autoComplete="street-address"
       />
       <TextField
-        label="Mobile number"
-        type="tel"
-        value={p.mobile}
-        onChange={(event) => set({ mobile: event.target.value })}
-        autoComplete="tel"
+        icon={Mail}
+        label="Email address (optional)"
+        type="email"
+        value={p.email}
+        onChange={(event) => set({ email: event.target.value })}
+        autoComplete="email"
       />
+      <FieldDescription>
+        Use the same name on your DTI, BIR and permit filings, or they can be rejected. You can continue before verifying.
+      </FieldDescription>
     </FieldGroup>
+  )
+}
+
+// The AI's suggestion, in the activity model. The owner still confirms.
+const SUGGESTED: Record<string, Partial<Profile>> = {
+  retail: { activities: ["retail"] },
+  food_service: { activities: ["food_service"] },
+  packaged_food: { activities: ["manufacturing"], packagedFood: true },
+  other: { activities: ["other"] },
+}
+
+function categoryFor(p: Profile): Profile["category"] {
+  const a = getActivities(p)
+  if (a === "unknown" || a.length === 0) return p.category
+  if (a.includes("food_service")) return "food_service"
+  if (a.includes("manufacturing") && p.packagedFood === true) return "packaged_food"
+  if (a.includes("retail")) return "retail"
+  return "other"
+}
+
+function SuggestActivities({ p, set }: ProfileStepProps) {
+  const [busy, start] = useTransition()
+  const [guess, setGuess] = useState("")
+  return (
+    <Field>
+      <FieldLabel htmlFor="business-description">Describe your business in your own words (optional)</FieldLabel>
+      <Textarea
+        id="business-description"
+        placeholder="e.g. Nagtitinda ako ng lutong ulam sa harap ng bahay"
+        value={p.description}
+        onChange={(event) => set({ description: event.target.value })}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        className="self-start"
+        disabled={!p.description.trim() || busy}
+        onClick={() =>
+          start(async () => {
+            const c = await classifyBusiness(p.description)
+            if (!c) return
+            set({ category: c.category, psic: c.psic, ...SUGGESTED[c.category] })
+            setGuess(`${c.label}${c.psic ? ` (PSIC ${c.psic})` : ""}`)
+          })
+        }
+      >
+        <Sparkles data-icon="inline-start" />
+        {busy ? "Thinking…" : "Suggest my activities"}
+      </Button>
+      {guess && (
+        <FieldDescription role="status">
+          Looks like <strong>{guess}</strong>. Check the activities below.
+        </FieldDescription>
+      )}
+    </Field>
   )
 }
 
@@ -500,6 +585,7 @@ function BusinessStep({
         onChange={(event) => set({ businessName: event.target.value })}
         maxLength={200}
       />
+      <SuggestActivities p={p} set={set} />
       <FieldSet
         aria-describedby="activity-hint activity-error"
         data-invalid={Boolean(error)}
@@ -555,19 +641,7 @@ function BusinessStep({
           {error}
         </p>
       </FieldSet>
-      {selected.includes("other") && (
-        <Field>
-          <FieldLabel htmlFor="business-description">
-            What does your business do? (optional)
-          </FieldLabel>
-          <Textarea
-            id="business-description"
-            placeholder="Describe the goods or services you offer."
-            value={p.description}
-            onChange={(event) => set({ description: event.target.value })}
-          />
-        </Field>
-      )}
+
     </FieldGroup>
   )
 }
@@ -593,12 +667,7 @@ function SetupStep({ p, set }: ProfileStepProps) {
   )
 }
 
-function LocationStep({
-  p,
-  set,
-  error,
-  setError,
-}: ProfileStepProps & { error: string; setError: (error: string) => void }) {
+function LocationStep({ p, set }: ProfileStepProps) {
   return (
     <FieldGroup>
       <TextField
@@ -608,25 +677,14 @@ function LocationStep({
         onChange={(event) => set({ businessAddress: event.target.value })}
         placeholder="Street, building or unit"
       />
-      <div className="grid gap-5 sm:grid-cols-2">
-        <TextField
-          icon={MapPin}
-          label="Barangay"
-          value={p.barangay}
-          onChange={(event) => set({ barangay: event.target.value })}
-          placeholder="e.g. Barangay 100"
-        />
-        <TextField
-          icon={Building2}
-          label="City / municipality"
-          value={p.city}
-          onChange={(event) => {
-            set({ city: event.target.value })
-            setError("")
-          }}
-        />
-      </div>
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <LocationFields value={p} onChange={set} />
+      <TextField
+        icon={MapPin}
+        label="Barangay"
+        value={p.barangay}
+        onChange={(event) => set({ barangay: event.target.value })}
+        placeholder="e.g. Western Bicutan"
+      />
       <ChoiceField
         icon={Building2}
         label="Premises"
@@ -634,9 +692,9 @@ function LocationStep({
         options={LABELS.premises}
         onChange={(value) => set({ premises: value as Profile["premises"] })}
       />
-      {p.city.trim().toLowerCase() !== "manila" && (
+      {!isTaguigJurisdiction(p) && (
         <FieldDescription>
-          Local guidance is limited to the City of Manila.
+          City-specific offices and links cover {PILOT_CITY} for now; national requirements apply everywhere.
         </FieldDescription>
       )}
     </FieldGroup>
@@ -922,6 +980,7 @@ function ReviewStep({
       <dl className="divide-y">
         {(
           [
+            ["identity", "Owner", `${p.ownerName || "Not provided"}${p.identityVerified ? " · verified" : ""}`],
             ["business", "Business activities", activitySummary(p)],
             [
               "setup",
@@ -968,15 +1027,6 @@ function ReviewStep({
           </div>
         ))}
       </dl>
-      <details className="rounded-xl border p-3">
-        <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-          <UserRound className="size-4" aria-hidden="true" />
-          Owner details (optional)
-        </summary>
-        <FieldGroup className="mt-4">
-          <OwnerDetails p={p} set={set} />
-        </FieldGroup>
-      </details>
       <CoverageNotice />
       <details className="rounded-2xl border p-4">
         <summary className="cursor-pointer text-sm font-medium">

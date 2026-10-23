@@ -21,6 +21,7 @@ export type PaymentRow = {
   refno: string | null
   paid_at: string | null
   created_at: string
+  demo: boolean
 }
 
 // Re-reads a pending payment from eGovPay and saves what it says. Used by the

@@ -1,7 +1,7 @@
 import { getRequirement } from "./engine"
 import { draftKey, initialBoxes, pdfSafe, type Box, type Layout } from "./fill"
 import layouts from "./form-layouts.json"
-import { fillForm, filingTask, formsFor, type FilingTask, type FormTemplate } from "./forms"
+import { fillForm, filingTask, formsFor, getForm, type FilingTask, type FormTemplate } from "./forms"
 import type { FormMemory } from "./form-memory"
 import { libraryFiles, type LibraryFile } from "./library"
 import { officesFor } from "./offices"
@@ -47,7 +47,7 @@ export function packetPlan(
   const task = context.task ?? filingTask(requirementId)
   const forms = formsFor(requirementId, profile, task).map((form) => {
     const file = libraryFiles(form.id, profile).find((f) => f.kind === "form" && f.path.endsWith(".pdf"))
-    const layout = file ? (layouts as Record<string, Layout>)[file.path] : undefined
+    const layout = mappedLayout(file?.path)
     return {
       form,
       reason: `${task}: ${form.purpose}`,
@@ -61,6 +61,13 @@ export function packetPlan(
   const needs = coverage(requirementId, docs)?.needs ?? []
   const letter = profile.premises !== "owned" && needs.some((s) => s.types.includes("lease") && !usable(s))
   return { requirement, task, forms, needs, letter }
+}
+
+// A layout only counts when it places at least one of the owner's answers;
+// otherwise the "filled" PDF would be blank, and an answer sheet is better.
+function mappedLayout(path?: string) {
+  const layout = path ? (layouts as Record<string, Layout>)[path] : undefined
+  return layout?.entries.some((e) => !e.key.startsWith("__")) ? layout : undefined
 }
 
 const A4: [number, number] = [595.28, 841.89]
@@ -262,4 +269,63 @@ export async function buildPacket(
   for (const a of attached) for (const page of a.pages) out.addPage(page)
 
   return out.save()
+}
+
+// One form, filled and ready to download on its own: the official PDF with the
+// owner's details (and their own edits/signature from the editor, if any), or
+// a one-page answer sheet when HERMIT has no mapped official copy.
+export async function buildFilledForm(f: PacketPlan["forms"][number], profile: Profile, context: FormContext = {}) {
+  const { PDFDocument, StandardFonts } = await import("pdf-lib")
+  const values = Object.fromEntries(fillForm(f.form, profile, context.memory, context.edits?.[f.form.id]).map((v) => [v.key, v.value]))
+  if (f.file && f.layout) {
+    try {
+      const { drawBoxes } = await import("./pdf-draw")
+      const res = await fetch(f.file.url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const src = await PDFDocument.load(await res.arrayBuffer(), { ignoreEncryption: true })
+      const font = await src.embedFont(StandardFonts.Helvetica)
+      const boxes = context.ownerId ? context.drafts?.[draftKey(context.ownerId, f.file.path, f.layout)] : undefined
+      const acro = await drawBoxes(src, boxes ?? initialBoxes(f.layout, values).boxes, font)
+      try {
+        acro?.updateFieldAppearances(font)
+        acro?.flatten()
+      } catch {}
+      return { bytes: await src.save(), official: true }
+    } catch (e) {
+      console.warn(`${f.form.id}: official PDF failed, using an answer sheet`, e)
+    }
+  }
+  const doc = await PDFDocument.create()
+  const font = await doc.embedFont(StandardFonts.Helvetica)
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold)
+  let page = doc.addPage(A4)
+  let y = 790
+  const line = (text: string, size = 10.5, b = false, indent = 0) => {
+    if (y < 60) {
+      page = doc.addPage(A4)
+      y = 790
+    }
+    page.drawText(pdfSafe(text).slice(0, 110), { x: 50 + indent, y, size, font: b ? bold : font })
+    y -= size + 5
+  }
+  line(f.form.name, 15, true)
+  line(`${f.form.agency} · File at: ${f.form.portal}`, 9)
+  line("HERMIT answer sheet: copy these onto the office's own form.", 9)
+  y -= 10
+  for (const v of fillForm(f.form, profile, context.memory, context.edits?.[f.form.id])) {
+    line(v.label, 9, true)
+    line(v.value || "______________________________", 10.5, false, 8)
+    y -= 3
+  }
+  return { bytes: await doc.save(), official: false }
+}
+
+// One form on its own (when the owner asks for a specific form).
+export function formPlan(formId: string, profile: Profile, context: FormContext = {}): PacketPlan["forms"][number] | null {
+  const form = getForm(formId)
+  if (!form) return null
+  const file = libraryFiles(form.id, profile).find((f) => f.kind === "form" && f.path.endsWith(".pdf"))
+  const layout = mappedLayout(file?.path)
+  const missing = fillForm(form, profile, context.memory, context.edits?.[form.id]).filter((f) => f.missing).map((f) => f.label)
+  return { form, reason: form.purpose, file, layout, missing }
 }

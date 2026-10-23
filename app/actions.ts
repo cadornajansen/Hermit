@@ -13,6 +13,7 @@ import {
   hermitEnabled,
   type HermitContext,
   type HermitReply,
+  type HermitStep,
 } from "@/lib/hermit"
 import { takeAiQuota } from "@/lib/ratelimit"
 import { ownerId, readSession, writeSession } from "@/lib/session"
@@ -91,7 +92,7 @@ export async function askHermit(input: {
   profile: Profile
   items: HermitContext["items"]
   docs: HermitContext["docs"]
-}): Promise<HermitReply | null> {
+}, onStep?: (s: HermitStep) => void): Promise<HermitReply | null> {
   if (!input?.expectedOwnerId || (await ownerId()) !== input.expectedOwnerId)
     throw new Error("Account changed. Reload before asking.")
   const q = text(input?.question, 1000)
@@ -120,7 +121,7 @@ export async function askHermit(input: {
     }
   } else if (hermitEnabled()) {
     try {
-      reply = await askKuyaHermit(q, history, ctx)
+      reply = await askKuyaHermit(q, history, ctx, onStep)
     } catch (e) {
       console.error("Kuya Hermit failed; using keyword answer", e)
       reply = keywordAnswer(q, profile)
@@ -134,7 +135,7 @@ export async function askHermit(input: {
     await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
     await sb.from("chat_messages").insert([
       { owner_id: id, role: "owner", text: q },
-      { owner_id: id, role: "hermit", text: reply.answer, sources: reply.sources, form_ids: reply.formIds, packs: reply.packs?.length ? reply.packs : null },
+      { owner_id: id, role: "hermit", text: reply.answer, sources: reply.sources, form_ids: reply.formIds, packs: reply.packs?.length ? reply.packs : null, steps: reply.steps?.length ? reply.steps : null, cards: reply.cards?.length ? reply.cards : null },
     ])
   }
   return reply
@@ -169,7 +170,7 @@ export async function sendReminderSms(input: { title: string; due: string; mobil
 
 // --- eReport ----------------------------------------------------------------
 
-export async function reportProblem(input: { office: string; message: string }) {
+export async function reportProblem(input: { office: string; message: string; subject?: string }) {
   const office = text(input.office, 120)
   const message = text(input.message, 2000)
   if (!office || !message) return { ok: false, error: "Please describe the problem" }
@@ -178,7 +179,7 @@ export async function reportProblem(input: { office: string; message: string }) 
   try {
     const { caseNumber } = await egov("report").submit({
       identity: s?.identity ?? ({} as never),
-      subject: `Red tape at ${office}`,
+      subject: text(input.subject, 120) || `Red tape at ${office}`,
       message,
       reportType: process.env.EGOV_EREPORT_REPORT_TYPE ?? "",
     })

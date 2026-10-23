@@ -1,14 +1,17 @@
 "use client"
 
-import { Download, ExternalLink, FileText, Send } from "lucide-react"
+import { Brain, Download, ExternalLink, FileText, ImagePlus, Mic, Send, X } from "lucide-react"
 import Link from "next/link"
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
-import { askHermit } from "@/app/actions"
 import { documentUrl } from "@/app/sync"
+import { HermitCards, StepTimeline } from "@/components/chat-cards"
+import { FormFile } from "@/components/form-file"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { readExif } from "@/lib/exif"
 import { getFile } from "@/lib/files"
-import { getForm } from "@/lib/forms"
+import { setChanges } from "@/lib/profile-edit"
+import type { HermitReply, HermitStep } from "@/lib/hermit"
 import { buildPacket, packetPlan, slotAvailability, slotName, usable } from "@/lib/pack"
 import { update, useProfile, type ChatMessage } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -31,16 +34,31 @@ const SUGGESTIONS = {
 export function Chat({ initialQuestion }: { initialQuestion: string }) {
   const { profile, chat, items, docs, ownerId } = useProfile()
   const [q, setQ] = useState(initialQuestion)
-  const [pending, start] = useTransition()
+  const [pending, setPending] = useState(false)
+  const [live, setLive] = useState<HermitStep[]>([])
+  const [attached, setAttached] = useState<{ thumb: string; note: string } | null>(null)
+  const voice = useVoice(profile?.lang === "en" ? "en-PH" : "fil-PH", (t) => setQ(t))
+  // Follow the conversation and Kuya Hermit's live steps.
+  const end = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end", behavior: "smooth" })
+  }, [chat.length, live.length, pending])
   if (!profile) return null
+  const en = profile.lang === "en"
 
-  function ask(question: string) {
-    if (!question.trim()) return
-    const mine: ChatMessage = { role: "owner", text: question, at: new Date().toISOString() }
+  async function ask(question: string) {
+    if (!question.trim() || pending) return
+    const photo = attached
+    if (photo) question = `${question}\n\n${photo.note}`
+    setAttached(null)
+    const mine: ChatMessage = { role: "owner", text: question, photo: photo?.thumb, at: new Date().toISOString() }
     update((s) => ({ chat: [...s.chat, mine] }))
     setQ("")
-    start(async () => {
-      const r = await askHermit({
+    setPending(true)
+    setLive([])
+    {
+      const r = await streamHermit(
+        {
         expectedOwnerId: ownerId!,
         question,
         history: chat.map((m) => ({ role: m.role, text: m.text })),
@@ -53,30 +71,36 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
           requirementId: d.requirementId,
           fileName: d.fileName,
         })),
-      }).catch(() => null)
+        },
+        (step) => setLive((l) => [...l.filter((x) => x.id !== step.id), step])
+      ).catch(() => null)
+      setPending(false)
+      setLive([])
       const answer: ChatMessage = r
-        ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, packs: r.packs, at: new Date().toISOString() }
+        ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, packs: r.packs, steps: r.steps, cards: r.cards, ms: r.ms, at: new Date().toISOString() }
         : { role: "hermit", text: "Pasensya, hindi kita ma-reach ngayon. Subukan ulit mamaya. · Sorry, I can't connect right now.", at: new Date().toISOString() }
-      update((s) =>
-        s.ownerId !== ownerId
-          ? {}
-          : {
-              chat: [...s.chat, answer],
-              // Chat suggestions are current-form edits, never consent for reuse.
-              formEdits: r
-                ? {
-                    ...s.formEdits,
-                    ...Object.fromEntries(
-                      r.formIds.map((id) => [
-                        id,
-                        { ...r.saved, ...s.formEdits[id] },
-                      ])
-                    ),
-                  }
-                : s.formEdits,
-            }
-      )
-    })
+      update((s) => {
+        if (s.ownerId !== ownerId) return {}
+        // Details Kuya Hermit changed (Undo on the card), then facts it was asked to keep.
+        let prof = r?.profileChanges?.length && s.profile ? setChanges(s.profile, r.profileChanges, "to") : s.profile
+        if (r?.remembered?.length && prof)
+          prof = {
+            ...prof,
+            memory: [
+              ...(prof.memory ?? []),
+              ...r.remembered
+                .filter((t) => !prof!.memory?.some((m) => m.text === t))
+                .map((text) => ({ id: crypto.randomUUID(), text, source: "chat" as const, at: new Date().toISOString() })),
+            ].slice(-50),
+          }
+        return {
+          chat: [...s.chat, answer],
+          profile: prof,
+          // Chat suggestions are current-form edits, never consent for reuse.
+          formEdits: r ? { ...s.formEdits, ...Object.fromEntries(r.formIds.map((id) => [id, { ...r.saved, ...s.formEdits[id] }])) } : s.formEdits,
+        }
+      })
+    }
   }
 
   return (
@@ -84,6 +108,9 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
       <div>
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">Kuya Hermit</h1>
+          <Link href="/memory" className="ml-auto flex items-center gap-1 text-xs text-muted-foreground" aria-label="Memory">
+            <Brain className="size-4" aria-hidden /> {en ? "Memory" : "Naaalala"}
+          </Link>
           <div role="radiogroup" aria-label="Wika · Language" className="flex rounded-full border p-0.5 text-xs">
             {(["fil", "en"] as const).map((l) => (
               <button
@@ -125,13 +152,21 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
                 : "mr-6 flex flex-col gap-2 rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-sm"
             }
           >
-            <p className="break-words whitespace-pre-wrap">{linkify(m.text.replaceAll("**", "").replace(/^#+ /gm, ""))}</p>
-            {m.formIds?.map((f) => (
-              <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
-                Pre-fill {getForm(f)?.short}
-              </Link>
-            ))}
+            {m.role === "hermit" && m.steps && <StepTimeline steps={m.steps} ms={m.ms} en={en} />}
+            {m.photo && (
+              // eslint-disable-next-line @next/next/no-img-element -- local data URL
+              <img src={m.photo} alt={en ? "Attached photo" : "Nakalakip na litrato"} className="max-h-40 self-end rounded-xl" />
+            )}
+            <p className="break-words whitespace-pre-wrap">{linkify(m.text.replace(/\n\n\[Photo attached:[^\]]*\]$/, "").replaceAll("**", "").replace(/^#+ /gm, ""))}</p>
+            {/* Forms Kuya Hermit worked on: each as a filled, downloadable PDF. */}
+            {!m.packs?.length && m.formIds?.map((f) => <FormFile key={f} formId={f} />)}
             {m.packs?.map((id) => <PacketCard key={id} requirementId={id} />)}
+            {m.cards && <HermitCards cards={m.cards} onAsk={ask} photo={chat.slice(0, i).findLast((x) => x.role === "owner")?.photo} />}
+            {m.steps?.some((st) => st.tool === "remember" && st.ok) && (
+              <Link href="/memory" className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Brain className="size-3.5" /> {en ? "Saved to memory · view or delete" : "Naitala sa memory · tingnan o burahin"}
+              </Link>
+            )}
             {m.role === "hermit" && (
               <p className="text-[11px] text-muted-foreground">Hindi ito legal o tax advice · Not legal or tax advice</p>
             )}
@@ -151,32 +186,135 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
           </li>
         ))}
         {pending && (
-          <li className="mr-6 rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">
-            {profile.lang === "en" ? "Thinking…" : "Nag-iisip…"}
+          <li className="mr-6 rounded-2xl bg-muted px-4 py-3 text-sm" aria-live="polite">
+            <StepTimeline steps={live} live en={en} />
           </li>
         )}
       </ol>
+      <div ref={end} />
 
+      {attached && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {/* eslint-disable-next-line @next/next/no-img-element -- local data URL */}
+          <img src={attached.thumb} alt="" className="size-12 rounded-lg object-cover" />
+          <span className="flex-1">{attached.note.slice(1, -1)}</span>
+          <Button size="icon-sm" variant="ghost" aria-label={en ? "Remove photo" : "Alisin ang litrato"} onClick={() => setAttached(null)}>
+            <X />
+          </Button>
+        </div>
+      )}
       <form
-        className="sticky bottom-20 flex gap-2 bg-background py-2"
+        className="sticky bottom-0 flex gap-2 bg-canvas py-3"
         onSubmit={(e) => {
           e.preventDefault()
           ask(q)
         }}
       >
         <input
-          className="h-11 flex-1 rounded-xl border bg-background px-3 text-base"
+          className="h-11 min-w-0 flex-1 rounded-xl border bg-background px-3 text-base"
           placeholder={profile.lang === "en" ? "Ask anything…" : "Magtanong…"}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           aria-label="Your question"
         />
-        <Button type="submit" size="icon-lg" disabled={pending || !q.trim()} aria-label="Send">
+        <label className={cn(buttonVariants({ size: "icon", variant: "outline" }), "cursor-pointer")} aria-label={en ? "Attach a photo" : "Maglakip ng litrato"}>
+          <ImagePlus />
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={async (e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ""
+              if (f) setAttached(await photoNote(f).catch(() => null))
+            }}
+          />
+        </label>
+        {voice.supported && (
+          <Button
+            type="button"
+            size="icon"
+            variant={voice.listening ? "default" : "outline"}
+            onClick={voice.toggle}
+            aria-label={voice.listening ? "Stop listening" : en ? "Speak your question" : "Sabihin ang tanong"}
+            aria-pressed={voice.listening}
+          >
+            <Mic className={cn(voice.listening && "animate-pulse")} />
+          </Button>
+        )}
+        <Button type="submit" size="icon" disabled={pending || !q.trim()} aria-label="Send">
           <Send />
         </Button>
       </form>
     </div>
   )
+}
+
+// A small thumbnail for the chat, and when/where the photo was taken for
+// Kuya Hermit (it can't see images). The photo itself never leaves the device.
+async function photoNote(file: File) {
+  const meta = file.type === "image/jpeg" ? readExif(await file.arrayBuffer()) : {}
+  const bmp = await createImageBitmap(file)
+  const k = Math.min(1, 480 / Math.max(bmp.width, bmp.height))
+  const c = Object.assign(document.createElement("canvas"), { width: Math.round(bmp.width * k), height: Math.round(bmp.height * k) })
+  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height)
+  const d = new Date(file.lastModified)
+  const taken = meta.takenAt ?? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+  const where = meta.lat !== undefined ? `, GPS ${meta.lat}, ${meta.lng} (https://maps.google.com/?q=${meta.lat},${meta.lng})` : ", no location in the photo"
+  return { thumb: c.toDataURL("image/jpeg", 0.7), note: `[Photo attached: taken ${taken.replace("T", " ")}${where}]` }
+}
+
+// POST to the streaming endpoint; report each step as it happens.
+async function streamHermit(input: unknown, onStep: (s: HermitStep) => void): Promise<HermitReply | null> {
+  const res = await fetch("/api/hermit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) })
+  if (!res.ok || !res.body) return null
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buf = ""
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) return null
+    buf += value
+    const lines = buf.split("\n")
+    buf = lines.pop()!
+    for (const line of lines) {
+      if (!line.trim()) continue
+      const ev = JSON.parse(line)
+      if (ev.type === "step") onStep(ev.step)
+      else if (ev.type === "done") return ev.reply
+      else if (ev.type === "error") throw new Error(ev.message)
+    }
+  }
+}
+
+type Recognizer = { lang: string; interimResults: boolean; continuous: boolean; start(): void; stop(): void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null }
+
+// Speak instead of type: the browser's own speech recognition (Chrome, Edge,
+// Safari), Filipino or English. Hidden where the browser has none.
+function useVoice(lang: string, onText: (t: string) => void) {
+  const rec = useRef<Recognizer | null>(null)
+  const supported = useSyncExternalStore(
+    () => () => {},
+    () => "SpeechRecognition" in window || "webkitSpeechRecognition" in window,
+    () => false
+  )
+  const [listening, setListening] = useState(false)
+  useEffect(() => () => rec.current?.stop(), [])
+  function toggle() {
+    if (listening) return rec.current?.stop()
+    const w = window as unknown as { SpeechRecognition?: new () => Recognizer; webkitSpeechRecognition?: new () => Recognizer }
+    const R = w.SpeechRecognition ?? w.webkitSpeechRecognition
+    if (!R) return
+    const r = new R()
+    r.lang = lang
+    r.interimResults = true
+    r.continuous = false
+    r.onresult = (e) => onText(Array.from(e.results, (x) => x[0].transcript).join(""))
+    r.onend = () => setListening(false)
+    rec.current = r
+    r.start()
+    setListening(true)
+  }
+  return { supported, listening, toggle }
 }
 
 // Make the exact URLs Kuya Hermit gives tappable.
@@ -256,23 +394,12 @@ function PacketCard({ requirementId }: { requirementId: string }) {
           </select>
         </label>
       )}
-      <ul className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-2">
         {plan.forms.map((f) => (
-          <li key={f.form.id}>
-            ✓ {f.form.name}{" "}
-            <Link
-              href={`/forms/${f.form.id}`}
-              className="text-primary underline"
-            >
-              Review / edit / save answers
-            </Link>
-            <span className="text-muted-foreground">
-              {f.file && f.layout ? " · official PDF if available; info sheet on failure" : " · info sheet"}
-              {` · ${f.reason}`}
-              {f.missing.length ? ` · ${f.missing.length} ${en ? "blank" : "blanko pa"}` : ""}
-            </span>
-          </li>
+          <FormFile key={f.form.id} plan={f} />
         ))}
+      </div>
+      <ul className="flex flex-col gap-0.5">
         {plan.letter && (
           <li>
             ✓{" "}
@@ -288,7 +415,7 @@ function PacketCard({ requirementId }: { requirementId: string }) {
       </ul>
       <Button size="sm" onClick={download} disabled={busy}>
         <Download />{" "}
-        {busy ? (en ? "Preparing…" : "Inihahanda…") : en ? "Download PDF packet" : "I-download ang PDF packet"}
+        {busy ? (en ? "Preparing…" : "Inihahanda…") : en ? "Download everything as one PDF" : "I-download lahat sa isang PDF"}
       </Button>
       {plan.forms
         .filter((f) => f.file && f.layout)

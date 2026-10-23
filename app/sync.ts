@@ -59,7 +59,7 @@ export async function pullState(
     sb.from("owners").select("profile, items, last_diff").eq("id", id).maybeSingle(),
     sb.from("documents").select("*").eq("owner_id", id).order("uploaded_at", { ascending: false }),
     sb.from("vault_events").select("doc_id, doc_name, event, at").eq("owner_id", id).order("at", { ascending: false }).limit(500),
-    sb.from("chat_messages").select("role, text, sources, form_ids, packs, at").eq("owner_id", id).order("at").limit(200),
+    sb.from("chat_messages").select("role, text, sources, form_ids, packs, steps, cards, at").eq("owner_id", id).order("at").limit(200),
   ])
   for (const result of [o, d, e, c])
     if (result.error) throw new Error("Could not restore account data.")
@@ -84,7 +84,7 @@ export async function pullState(
       storagePath: r.storage_path ?? undefined,
     })),
     vaultLog: (e.data ?? []).map((r) => ({ docId: r.doc_id, docName: r.doc_name, event: r.event, at: r.at })),
-    chat: (c.data ?? []).map((r) => ({ role: r.role, text: r.text, sources: r.sources ?? undefined, formIds: r.form_ids ?? undefined, packs: r.packs ?? undefined, at: r.at })),
+    chat: (c.data ?? []).map((r) => ({ role: r.role, text: r.text, sources: r.sources ?? undefined, formIds: r.form_ids ?? undefined, packs: r.packs ?? undefined, steps: r.steps ?? undefined, cards: r.cards ?? undefined, at: r.at })),
   }
 }
 

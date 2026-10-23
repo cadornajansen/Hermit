@@ -1,3 +1,5 @@
+import type { Appointment } from "./agencies"
+
 // "unknown" is the "Hindi ko alam" answer: the engine treats it as "possibly required".
 export type Unknown = "unknown"
 
@@ -37,6 +39,10 @@ export type Profile = {
   mobile: string
   email: string
   identityVerified: boolean
+  // Registration numbers (account details: fill every form; Kuya Hermit can change them when asked).
+  tin?: string
+  rdoCode?: string
+  dtiNo?: string
 
   businessName: string
   description: string
@@ -64,7 +70,13 @@ export type Profile = {
   reminders: ("sms" | "push")[]
   // Legacy / vault metadata. Never treated as consented reusable form answers.
   extra: Record<string, string>
+  // Facts the owner told Kuya Hermit to keep (Memory page); editable and deletable.
+  memory?: MemoryFact[]
+  // Appointments booked through Kuya Hermit (demo bookings, see lib/agencies.ts).
+  appointments?: Appointment[]
 }
+
+export type MemoryFact = { id: string; text: string; source: "chat" | "owner"; at: string }
 
 export type Tri = boolean | "maybe"
 

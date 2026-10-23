@@ -91,7 +91,7 @@ export function Roadmap() {
         )
       })}
       {!visible.length && <Empty><EmptyHeader><EmptyMedia variant="icon"><ListChecks /></EmptyMedia><EmptyTitle>No matching requirements</EmptyTitle><EmptyDescription>Try another search or reset the status filter.</EmptyDescription></EmptyHeader><Button variant="outline" onClick={() => { setQuery(""); setFilter("all") }}>Clear filters</Button></Empty>}
-      {selected && <RequirementDetails key={selected.id} item={selected} items={items} docs={docs} profile={profile} onClose={closeRequirement} />}
+      {selected && <RequirementDetails key={selected.id} item={selected} items={items} docs={docs} onClose={closeRequirement} />}
     </div>
   )
 }

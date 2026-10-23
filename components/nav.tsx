@@ -1,6 +1,6 @@
 "use client"
 
-import { CalendarDays, FileCheck2, FileText, LayoutDashboard, ListChecks, MapPin, MessageCircle, UserRound, Wallet } from "lucide-react"
+import { Brain, CalendarDays, FileCheck2, FileText, LayoutDashboard, ListChecks, MapPin, MessageCircle, UserRound, Wallet } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -13,12 +13,13 @@ export const WORKSPACE_PAGES = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/vault", label: "Documents", icon: FileCheck2 },
   { href: "/forms", label: "Forms", icon: FileText },
-  { href: "/pay", label: "Payments", icon: Wallet },
+  { href: "/hub", label: "File & pay", icon: Wallet },
   { href: "/offices", label: "Office Locator", icon: MapPin },
 ] as const
 
 export const ACCOUNT_PAGES = [
-  { href: "/assistant", label: "Ask Hermit", icon: MessageCircle },
+  { href: "/assistant", label: "Kuya Hermit", icon: MessageCircle },
+  { href: "/memory", label: "Memory", icon: Brain },
   { href: "/profile", label: "Profile", icon: UserRound },
 ] as const
 

@@ -6,6 +6,7 @@ import { headers } from "next/headers"
 import { db } from "@/lib/db"
 import { egov, isLive } from "@/lib/egov"
 import { refreshPayment, type PaymentRow } from "@/lib/pay-server"
+import { SERVICES, type ServiceId } from "@/lib/agencies"
 import { getPayable, parseAmount, periodsFor } from "@/lib/payments"
 import { ownerId } from "@/lib/session"
 
@@ -24,6 +25,7 @@ const view = (r: PaymentRow) => ({
   paidAt: r.paid_at,
   createdAt: r.created_at,
   paymentUrl: r.status === "pending" ? r.payment_url : null,
+  demo: r.demo,
 })
 export type PaymentView = ReturnType<typeof view>
 
@@ -89,6 +91,101 @@ export async function startTaxPayment(input: {
     await sb.from("payments").update({ status: "failed", updated_at: new Date().toISOString() }).eq("txnid", txnid)
     return { ok: false as const, error: "Hindi ma-reach ang payment gateway ngayon. Subukan ulit mamaya." }
   }
+}
+
+// Government service fees started from Kuya Hermit (e.g. NBI clearance).
+// The amount comes from the server's catalog, never from the browser.
+export async function startServicePayment(input: { service: string; purpose: string }) {
+  const id_ = text(input?.service, 40) as ServiceId
+  const svc = SERVICES[id_]
+  if (!svc) return { ok: false as const, error: "Unknown service" }
+  const purpose = text(input?.purpose, 80) || "General"
+  const sb = db()
+  if (!isLive("pay") || !sb) return { ok: false as const, error: "not_connected" }
+
+  const id = (await ownerId(true))!
+  await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
+  const txnid = `HRM-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`
+  const amount = svc.fee + svc.eFee
+  const description = `${svc.name} · ${purpose}`
+  const { error: insertError } = await sb.from("payments").insert({ owner_id: id, txnid, form_id: id_, description, period: null, amount })
+  if (insertError) {
+    console.error("payments insert failed", insertError)
+    return { ok: false as const, error: "Hindi masimulan ang bayad. Subukan ulit." }
+  }
+  const h = await headers()
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`
+  try {
+    const p = await egov("pay").createPayment({
+      txnid,
+      amount,
+      items: [
+        { name: `${svc.name} fee`, amount: svc.fee },
+        { name: "e-payment fee", amount: svc.eFee },
+      ],
+      callbackUrl: `${origin}/api/pay/callback`,
+      redirectUrl: `${origin}/pay?txn=${txnid}`,
+    })
+    await sb.from("payments").update({ gateway_uuid: p.uuid, payment_url: p.url }).eq("txnid", txnid)
+    return { ok: true as const, txnid, url: p.url, amount }
+  } catch (e) {
+    console.error("eGovPay create failed", e)
+    await sb.from("payments").update({ status: "failed", updated_at: new Date().toISOString() }).eq("txnid", txnid)
+    return { ok: false as const, error: "Hindi ma-reach ang payment gateway ngayon. Subukan ulit mamaya." }
+  }
+}
+
+// ---- Demo QR checkout (prototype) -------------------------------------------
+// Shows the whole flow (scan → pay → receipt → file) without a real gateway.
+// Demo rows move no money and are marked demo everywhere they appear.
+
+export async function startDemoPayment(input: { formId: string; period: string; amount: string }) {
+  const payable = getPayable(text(input?.formId, 40))
+  const service = SERVICES[text(input?.formId, 40) as ServiceId]
+  const amount = service ? service.fee + service.eFee : parseAmount(text(input?.amount, 20))
+  const period = text(input?.period, 10)
+  if (!payable && !service) return { ok: false as const, error: "Piliin kung ano ang babayaran." }
+  if (!amount) return { ok: false as const, error: "Ilagay ang halaga (hal. 1,250.00)." }
+  const sb = db()
+  if (!sb) return { ok: false as const, error: "not_connected" }
+  const id = (await ownerId(true))!
+  await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
+  const txnid = `HRM-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`
+  const description = payable ? `BIR ${payable.code} · ${payable.label}` : `${service!.name} fee`
+  const { error } = await sb.from("payments").insert({ owner_id: id, txnid, form_id: payable?.formId ?? input.formId, description, period: period || null, amount, demo: true })
+  if (error) {
+    console.error("demo payment insert failed", error)
+    return { ok: false as const, error: "Hindi masimulan ang bayad. Subukan ulit." }
+  }
+  const h = await headers()
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`
+  return { ok: true as const, txnid, url: `${origin}/pay/demo/${txnid}`, amount }
+}
+
+// The demo checkout page is opened by scanning, often on another phone with
+// no HERMIT session, so it works by transaction id, and only for demo rows.
+async function demoRow(txnid: string) {
+  const sb = db()
+  if (!sb || !/^HRM-[A-Z0-9-]{6,40}$/.test(txnid)) return null
+  const { data } = await sb.from("payments").select("*").eq("txnid", txnid).eq("demo", true).maybeSingle()
+  return data as PaymentRow | null
+}
+
+export async function demoCheckout(txnid: string) {
+  const r = await demoRow(text(txnid, 60))
+  return r && { txnid: r.txnid, description: r.description, period: r.period, amount: Number(r.amount), status: r.status, refno: r.refno, paidAt: r.paid_at }
+}
+
+export async function completeDemoPayment(txnid: string) {
+  const r = await demoRow(text(txnid, 60))
+  if (!r) return { ok: false as const }
+  if (r.status !== "pending") return { ok: true as const }
+  await db()!
+    .from("payments")
+    .update({ status: "paid", channel: "QR Ph (demo, no money moved)", refno: `DEMO-${randomBytes(4).toString("hex").toUpperCase()}`, paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", r.id)
+    .eq("status", "pending")
+  return { ok: true as const }
 }
 
 async function ownRow(txnid: string) {

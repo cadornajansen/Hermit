@@ -16,22 +16,24 @@ import { Separator } from "@/components/ui/separator"
 import { getBlockers, getUncertainPrerequisites } from "@/lib/dashboard-summary"
 import { defaultExpiry } from "@/lib/engine"
 import { formsFor } from "@/lib/forms"
-import { update } from "@/lib/store"
-import { STATUS_LABEL, type ComplianceItem, type Profile, type Status, type VaultDoc } from "@/lib/types"
+import { processFor } from "@/lib/processes"
+import { update, useProfile } from "@/lib/store"
+import { STATUS_LABEL, type ComplianceItem, type Status, type VaultDoc } from "@/lib/types"
 
 const EDITABLE_STATUSES: Status[] = ["not_started", "in_progress", "submitted", "approved"]
 
-export function RequirementDetails({ item, items, docs, profile, onClose }: {
+export function RequirementDetails({ item, items, docs, onClose }: {
   item: ComplianceItem
   items: ComplianceItem[]
   docs: VaultDoc[]
-  profile: Profile
   onClose: () => void
 }) {
-  const relatedForms = formsFor(item.id, profile)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const blockers = getBlockers(item, items)
   const uncertain = getUncertainPrerequisites(item, items)
+  const { profile } = useProfile()
+  const forms = formsFor(item.id, profile ?? undefined)
+  const start = profile ? processFor(item.id, profile) : undefined
 
   function setStatus(value: string | null): void {
     if (!value || !EDITABLE_STATUSES.includes(value as Status)) return
@@ -105,11 +107,23 @@ export function RequirementDetails({ item, items, docs, profile, onClose }: {
               </Field>
             )}
           </FieldGroup>
-          {relatedForms.length > 0 && (
+          {!!start?.links.length && (
+            <section className="flex flex-col gap-2" aria-label="Where to start">
+              <h2 className="font-semibold">Where to start</h2>
+              {start.links.map((l) => (
+                <div key={l.url} className="flex flex-col gap-1 text-sm">
+                  <a href={l.url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: "outline", className: "self-start" })}>{l.label}<ExternalLink data-icon="inline-end" /></a>
+                  <ol className="list-decimal pl-5 text-muted-foreground">{l.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+                </div>
+              ))}
+              {start.note && <p className="text-xs text-muted-foreground">{start.note}</p>}
+            </section>
+          )}
+          {forms.length > 0 && (
             <section className="flex flex-col gap-2" aria-label="Related forms">
               <h2 className="font-semibold">Related forms</h2>
-              <div className="flex flex-wrap gap-2">{relatedForms.map((form) => (
-                <Link key={form.id} href={`/forms/${form.id}`} className={buttonVariants({ variant: "outline" })}>Pre-fill {form.short}<ArrowUpRight data-icon="inline-end" /></Link>
+              <div className="flex flex-wrap gap-2">{forms.map((f) => (
+                <Link key={f.id} href={`/forms/${f.id}`} className={buttonVariants({ variant: "outline" })}>Pre-fill {f.short}<ArrowUpRight data-icon="inline-end" /></Link>
               ))}</div>
             </section>
           )}

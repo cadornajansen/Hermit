@@ -45,6 +45,20 @@ export default function CalendarPage() {
           Monday; check BIR for holiday extensions.
         </p>
       </div>
+      {!!profile.appointments?.length && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">Mga appointment</h2>
+          {[...profile.appointments].sort((x, y) => x.at.localeCompare(y.at)).map((a) => (
+            <div key={a.id} className="flex justify-between gap-3 rounded-2xl border p-4 text-sm">
+              <span>
+                <span className="font-medium">{a.purpose}</span>
+                <span className="block text-xs text-muted-foreground">{a.office} · booked through Kuya Hermit (prototype)</span>
+              </span>
+              <span className="shrink-0 font-medium tabular-nums">{a.at.replace("T", " ")}</span>
+            </div>
+          ))}
+        </section>
+      )}
       {deadlines.length === 0 && <p className="text-sm">Walang deadline sa susunod na 12 buwan.</p>}
       {[...byMonth].map(([m, list]) => (
         <section key={m} className="flex flex-col gap-2">

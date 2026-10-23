@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useState, type ReactElement } from "react"
 
 import { AgencyMark } from "@/components/agency-mark"
+import { FormsLibrary } from "@/components/forms-library"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -103,7 +104,7 @@ export default function FormsPage(): ReactElement | null {
                         <p className="text-sm leading-relaxed text-muted-foreground">{form.purpose}</p>
                         <div className="mt-auto flex flex-wrap gap-2 pt-1 text-xs">
                           {forYou && <span className="rounded-md bg-accent px-2 py-1 font-medium text-accent-foreground">For your business</span>}
-                          {hasLibraryCopy(form.id, profile) && <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">Official copy available</span>}
+                          {hasLibraryCopy(form.id, profile) && <span className="rounded-md bg-muted px-2 py-1 text-muted-foreground">Library copy available</span>}
                         </div>
                         <p className="text-xs leading-relaxed text-muted-foreground">
                           {HANDOFF_LABEL[form.handoff].split(" · ")[1]} · <span className="tabular-nums">{filled}/{fields.length}</span> fields filled
@@ -122,6 +123,7 @@ export default function FormsPage(): ReactElement | null {
           </section>
         )
       })}
+      <FormsLibrary query={query} />
     </div>
   )
 }
