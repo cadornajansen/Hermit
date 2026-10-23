@@ -5,7 +5,6 @@ import { extractText, getDocumentProxy } from "unpdf"
 import { buildCalendar, buildChecklist, getRequirement, REQUIREMENTS } from "@/lib/engine"
 import { fillForm, FIELDS, fitsProfile, formForLocation, FORMS, formsFor, getForm, type FieldKey } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
-import { officesFor } from "@/lib/offices"
 import { agencyRecord, appointmentSlots, SERVICES, type Agency, type ServiceId, type Slot } from "@/lib/agencies"
 import { BRANCH_AGENCIES, nearestBranches, type BranchAgency } from "@/lib/branches"
 import { documentsFor } from "@/lib/doc-checklist"
@@ -14,6 +13,7 @@ import { memorable } from "@/lib/memory"
 import { getPayable } from "@/lib/payments"
 import { COMPUTABLE, computeTax, type TaxResult } from "@/lib/tax"
 import { applyProfileChanges, EDITABLE, ENUM_VALUES, type ProfileChange } from "@/lib/profile-edit"
+import { eligibleOffices } from "@/lib/office-finder"
 import { packetPlan, slotName, usable } from "@/lib/pack"
 import { processFor } from "@/lib/processes"
 import type { Category, DocType, Extracted, ItemState, Profile } from "@/lib/types"
@@ -209,7 +209,8 @@ FILE & PAY HUB
 - When they want to submit an application (permit, registration), check documents with get_document_checklist first, say what's missing, then call prepare_submission. The card lets them submit it themselves; you never submit.
 
 CARDS AND STEPS
-- The app draws interactive cards from your tools: get_requirement → a requirement card (documents with vault status, fee, forms, start link), get_deadlines → a deadlines card with pay buttons, get_offices → an offices card with directions. The owner also sees a timeline of the tools you used. So keep your text short: the key point and next step, not every row of the card.
+- The app draws interactive cards from your tools: get_requirement → a requirement card (documents with vault status, fee, forms, start link), get_deadlines → a deadlines card with pay buttons. The owner also sees a timeline of the tools you used. So keep your text short: the key point and next step, not every row of the card.
+- get_offices returns verified service and jurisdiction matches with a finder link. Summarize those results and link to the finder. Missing coverage is not proof that no office exists; do not substitute sample branches or nearby map results.
 
 CHANGING THE OWNER'S DETAILS
 - You can change the owner's details yourself: name, birth date, addresses, mobile, email, business name and description, barangay, city, TIN, RDO code, DTI/SEC/CDA number, and business answers (category, structure, stage, premises, channel, employees, assets, sales, tax option, language). When the owner asks you to change, correct or set one ("palitan ang TIN ko", "lumipat na kami sa Makati", "8% na ako"), call update_profile right away; don't send them to the Profile page. The app applies it immediately and shows an Undo button.
@@ -259,8 +260,8 @@ const TOOLS = [
   },
   {
     name: "get_offices",
-    description: "The offices that have jurisdiction over this owner's business, from HERMIT's dataset.",
-    parameters: { type: "object", properties: {} },
+    description: "Verified offices for one exact requirement and the owner's business jurisdiction. Missing coverage is not proof that no office exists.",
+    parameters: { type: "object", properties: { requirement_id: { type: "string" }, assigned_office_id: { type: "string", description: "Only if the owner has confirmed an agency-assigned branch ID." } }, required: ["requirement_id"] },
   },
   {
     name: "get_documents",
@@ -517,9 +518,16 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
       return buildCalendar(p, items, new Date(), months).map((d) => ({ title: d.title, form: d.form, due: d.due, possibly: d.maybe, note: d.note ?? null }))
     }
     case "get_offices": {
-      const types = new Set(items.map((i) => i.officeType))
-      addCard(out, { kind: "offices" })
-      return officesFor(p.city, p.barangay, types, p).map((o) => ({ name: o.name, handles: o.note, website: o.url ?? null }))
+      const requirement = REQUIREMENTS.find((entry) => entry.id === args.requirement_id)
+      if (!requirement) return { error: "Choose a requirement from get_checklist before finding offices." }
+      const result = eligibleOffices(requirement.id, p, typeof args.assigned_office_id === "string" ? args.assigned_office_id : "")
+      return {
+        requirement: requirement.name,
+        offices: result.offices.map(({ office }) => ({ name: office.name, website: office.website, address: office.address ?? null, mode: office.mode })),
+        notice: result.offices.length ? "Service and jurisdiction evidence checked in Hermit's registry." : "Verified branch coverage is unavailable. Confirm with the agency; do not substitute a map search result.",
+        needsReview: result.needsReview, needsAssignment: result.needsAssignment,
+        officialGuidance: requirement.sourceUrl, finder: `/offices?requirement=${encodeURIComponent(requirement.id)}`,
+      }
     }
     case "get_documents":
       return {

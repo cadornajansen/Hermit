@@ -18,7 +18,6 @@ const RULES = {
   read: { ownerHour: 20, ownerDay: 60, ipHour: 150 },
   classify: { ownerHour: 10, ownerDay: 30, ipHour: 150 },
   verify: { ownerHour: 5, ownerDay: 10, ipHour: 40 }, // eVerify (PhilSys) checks
-  maps: { ownerHour: 15, ownerDay: 40, ipHour: 150 }, // Google Places / Geocoding (billed)
 } as const
 
 export type AiKind = keyof typeof RULES
@@ -56,4 +55,27 @@ export async function takeAiQuota(kind: AiKind): Promise<boolean> {
     return false
   }
   return data === true
+}
+
+// The existing RPC locks its first bucket. A common first bucket serializes all maps callers.
+export async function takeGoogleGeocodeQuota(): Promise<{ ok: true } | { ok: false; error: "quota" | "unavailable" }> {
+  try {
+    const sb = db()
+    const daily = Number(process.env.GOOGLE_MAPS_GEOCODE_DAILY_LIMIT ?? 250)
+    if (!sb || !Number.isSafeInteger(daily) || daily < 1 || daily > 10_000) return { ok: false, error: "unavailable" }
+    const owner = await ownerId()
+    if (!owner) return { ok: false, error: "unavailable" }
+    const ip = await ipBucket()
+    const buckets = ["provider:google-geocoding", "provider:google-geocoding", `owner:${owner}`, `owner:${owner}`]
+    const limits = [daily, 60, 15, 40]
+    const windows = [DAY, 60, HOUR, DAY]
+    if (ip) { buckets.push(ip); limits.push(150); windows.push(HOUR) }
+    const { data, error } = await sb.rpc("take_ai_quota", {
+      p_kind: "google_geocoding", p_buckets: buckets, p_limits: limits, p_window_seconds: windows,
+    })
+    if (error || typeof data !== "boolean") return { ok: false, error: "unavailable" }
+    return data ? { ok: true } : { ok: false, error: "quota" }
+  } catch {
+    return { ok: false, error: "unavailable" }
+  }
 }

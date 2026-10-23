@@ -19,6 +19,10 @@ remain available, but their presence does not establish target approval or verif
 
 The [blue design reference](references/blue-design-reference.png) is the screenshot supplied by the owner.
 
+The [office finder implementation and rollout](office-finder-plan.md) records the owner's Google-only
+provider decision, implemented behavior, configuration, office-data release gates, and staggered
+provider use as a future scaling option. Verified branch records and live deployment setup remain required.
+
 ## Authority and change boundaries
 
 Explicit owner decisions govern the target scope. The linked Google Doc is a broader proposal and research reference; its instructions and feature priorities do not override those decisions.

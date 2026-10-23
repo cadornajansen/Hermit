@@ -90,6 +90,35 @@ pnpm build
 
 Read the [current implementation inventory](docs/IMPLEMENTATION.md), [target MVP](docs/PRD.md), [scope and known gaps](docs/SCOPE.md), and [source and review policy](docs/SOURCES.md) for the detailed contract behind this pitch.
 
+## Office finder setup
+
+**Office finder:** choose a document/service and confirm the business jurisdiction before comparing offices.
+Only active, current registry records with evidence of that exact service and area coverage are eligible.
+The maintained registry (`lib/office-registry.ts`) now has source-reviewed Manila permit handlers and
+selected NCR registration destinations. Public counter details and coordinates still need independent
+review. Legacy Taguig seeds remain labelled unverified. The assistant and packet
+branch lookup use the same resolver. Requirement details link directly to the relevant office search.
+
+The approved provider is Google only: Maps JavaScript for display, server-side Geocoding for an explicitly
+submitted starting address, and external Google Maps directions links. No Places discovery or Routes calls
+are made. Device location is requested on demand, denial preserves the choice, and address matches require
+confirmation. Distances say “Approximate straight-line distance”; missing/stale coordinates stay unranked.
+The map and selected office list synchronize, with the scrollable list on the right on desktop and below
+the map on small screens. Textual results remain available when the map fails.
+
+Live map/address features default off (`OFFICE_FINDER_ENABLED=false`). A separate `OFFICE_FINDER_DEMO=true`
+setting adds synthetic offices and coordinates in local development only; production builds ignore it.
+Before enabling public rollout, confirm the seeded office counters and service rules, supply independently
+reviewed coordinates, restricted Google browser/server keys and a production map ID, publish appropriate
+terms/privacy disclosures, and configure provider-side quotas. Geocoding also requires the existing Supabase
+`take_ai_quota` RPC: each upstream attempt reserves owner/IP/project quota and fails closed if unavailable.
+The default rolling project cap is 250 geocodes/day (`GOOGLE_MAPS_GEOCODE_DAILY_LIMIT`); browser map loads
+need separate Google Cloud limits. Precise origins and entered addresses are transient and are not cached
+server-side or saved to the business profile. No billing/resources are enabled by this code.
+See [office finder setup and future staggered scaling](docs/office-finder-plan.md) and the
+[Manila office seed, source links and demo limits](docs/office-seed-manila.md).
+
+
 ---
 
 **Less paperwork panic. More time to build the business.**

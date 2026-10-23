@@ -34,6 +34,33 @@ implementation inventory, not a claim that legal guidance, government integratio
 
 ## Local setup and verification
 
+### Office finder checkpoint — 23 October 2026
+
+The owner selected Google Maps only; staggered OSM/Google use is documented as a future scaling option.
+The office finder now confirms a requirement and business jurisdiction, filters a versioned registry by
+verified service/area evidence and any agency assignment, and ranks mapped eligible offices by explicitly
+labelled approximate straight-line distance. Selected list/map state is synchronized; the desktop list
+is on the right and scrolls, while mobile stacks the two. Location permission is requested on demand;
+manual address matches require confirmation, and retry preserves the chosen origin. Map failures retain
+textual results. The assistant and packet branch lookup share the same eligibility resolver.
+
+Live address lookup uses server-side Google Geocoding only, with no Places discovery, routing API, or
+server location/result cache. Each provider attempt is counted through the existing shared quota RPC,
+using a common first bucket to serialize project-wide limits. Missing quota storage fails closed.
+No migration or dependency change is needed. Feature activation defaults off.
+
+The registry has no independently verified production branch records yet. Legacy Taguig data remains
+explicitly unverified guidance; no Manila branch, coordinate, or capability has been invented. Deployment
+still requires verified records, restricted Google credentials, Cloud quotas, and public privacy/terms
+disclosures. See [office finder rollout](office-finder-plan.md) for setup, verification, and limitations.
+
+Local verification passed 135 automated tests, TypeScript, ESLint, and the production build. Desktop
+and mobile browser checks used synthetic records and a mocked/blocked Google SDK; selection, map
+reuse, layout, denial recovery, and map failure/retry passed. No live map/provider or production
+database calls were made for these checks. The temporary browser fixture was removed before building.
+
+### Merge baseline
+
 Use the repository [README](../README.md) and [`.env.example`](../.env.example) for setup. The merged
 dependency lockfile uses Next.js 16.4.2. After integration, the full 117-test suite, TypeScript check,
 ESLint, and production build passed. The tests exercise account separation, stale-owner write rejection,
