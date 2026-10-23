@@ -1,11 +1,16 @@
 import "server-only"
 
 import { createHash, randomBytes } from "node:crypto"
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib"
+import { degrees, PDFDocument, StandardFonts, rgb } from "pdf-lib"
 
 import { BUCKET, db } from "@/lib/db"
 import { DEMO_OWNER } from "@/lib/demo-id"
 import { buildCalendar, buildChecklist, EMPTY_PROFILE } from "@/lib/engine"
+import { initialBoxes, type Layout } from "@/lib/fill"
+import layouts from "@/lib/form-layouts.json"
+import { fillForm, getForm } from "@/lib/forms"
+import { libraryFiles } from "@/lib/library"
+import { drawBoxes } from "@/lib/pdf-draw"
 import { restoreLocation } from "@/lib/locations"
 import type { DocType, ItemState, Profile, VaultDoc } from "@/lib/types"
 import { EMPTY_EXTRACTED, verifyDocument } from "@/lib/vault"
@@ -139,6 +144,34 @@ async function samplePdf(title: string, lines: string[]) {
   return pdf.save()
 }
 
+// The official blank form (from HERMIT's library), filled the way the form
+// editor fills it, plus mock figures, a typed signature and a DEMO watermark.
+async function filledForm(formId: string, profile: Profile, answers: Record<string, string>, signedOn: string) {
+  const form = getForm(formId)
+  const file = libraryFiles(formId, profile).find((f) => f.kind === "form" && f.path.endsWith(".pdf"))
+  const layout = file && (layouts as Record<string, Layout>)[file.path]
+  if (!form || !file || !layout) return null
+  const res = await fetch(file.url, { signal: AbortSignal.timeout(20_000) })
+  if (!res.ok) return null
+  const pdf = await PDFDocument.load(await res.arrayBuffer(), { ignoreEncryption: true })
+  const font = await pdf.embedFont(StandardFonts.Helvetica)
+  const script = await pdf.embedFont(StandardFonts.HelveticaOblique)
+  const values = Object.fromEntries(fillForm(form, profile, undefined, answers).map((f) => [f.key, f.value]))
+  const { boxes, signature } = initialBoxes(layout, values, new Date(signedOn))
+  const acro = await drawBoxes(pdf, boxes, font)
+  try {
+    acro?.updateFieldAppearances(font)
+    acro?.flatten()
+  } catch {}
+  const pages = pdf.getPages()
+  if (signature) pages[signature.page]?.drawText("J. S. Dela Cruz", { x: signature.x, y: signature.y + 2, size: 12, font: script, color: rgb(0.1, 0.2, 0.6) })
+  for (const page of pages) {
+    const { width, height } = page.getSize()
+    page.drawText("DEMO · SAMPLE DATA", { x: width * 0.18, y: height * 0.35, size: 54, font, color: rgb(0.85, 0.1, 0.1), opacity: 0.12, rotate: degrees(35) })
+  }
+  return pdf.save()
+}
+
 export async function resetDemo() {
   const sb = db()
   if (!sb) throw new Error("The demo needs the HERMIT database.")
@@ -147,6 +180,8 @@ export async function resetDemo() {
 
   for (const table of ["documents", "vault_events", "chat_messages", "payments", "submissions"])
     await sb.from(table).delete().eq("owner_id", id)
+  const old = await sb.storage.from(BUCKET).list(`${id}/forms`, { limit: 1000 })
+  if (old.data?.length) await sb.storage.from(BUCKET).remove(old.data.map((f) => `${id}/forms/${f.name}`))
   const { error } = await sb.from("owners").upsert({ id, profile, items: ITEMS, last_diff: null, egov_uniqid: null, updated_at: new Date().toISOString() })
   if (error) throw error
 
@@ -200,15 +235,37 @@ export async function resetDemo() {
     }))
   )
   const ref = (kind: string) => `${kind}-SAMPLE-${randomBytes(3).toString("hex").toUpperCase()}`
-  await sb.from("submissions").insert([
-    { kind: "application", title: "Business name registration", agency: "DTI (BNRS)", requirement_id: "dti_bn", created_at: "2024-03-14T09:00:00+08:00" },
-    { kind: "application", title: "Mayor's / Business Permit", agency: "City / municipal BPLO (e-BOSS)", requirement_id: "mayors_permit", created_at: `${year}-01-15T09:30:00+08:00` },
-    { kind: "return", title: "BIR 2551Q · Quarterly percentage tax", agency: "Bureau of Internal Revenue", form_id: "bir_2551q", period: `${year}-Q2`, created_at: paid[0].at },
-    { kind: "return", title: "BIR 1701Q · Quarterly income tax (individuals)", agency: "Bureau of Internal Revenue", form_id: "bir_1701q", period: `${year}-Q2`, created_at: paid[1].at },
+  // Filings, each with the filled official form when HERMIT has one: [row, form, mock answers]
+  const filings: [Record<string, string>, string | null, Record<string, string>][] = [
+    [{ kind: "application", title: "Business name registration", agency: "DTI (BNRS)", requirement_id: "dti_bn", created_at: "2024-03-14T09:00:00+08:00" }, null, {}],
+    [{ kind: "application", title: "BIR registration and Certificate of Registration (COR)", agency: "BIR (RDO 44)", requirement_id: "bir_cor", form_id: "bir_1901", created_at: "2024-03-28T10:00:00+08:00" }, "bir_1901", { start_date: "2024-03-20" }],
+    [{ kind: "application", title: "Mayor's / Business Permit", agency: "City / municipal BPLO (e-BOSS)", requirement_id: "mayors_permit", form_id: "lgu_permit", created_at: `${year}-01-15T09:30:00+08:00` }, "lgu_permit", { floor_area: "28", capital: "150,000.00", gross_sales: "1,180,000.00" }],
+    [{ kind: "return", title: "BIR 2551Q · Quarterly percentage tax", agency: "Bureau of Internal Revenue", form_id: "bir_2551q", period: `${year}-Q2`, created_at: paid[0].at }, "bir_2551q", { period: "2nd", gross_sales: "195000" }],
+    [{ kind: "return", title: "BIR 1701Q · Quarterly income tax (individuals)", agency: "Bureau of Internal Revenue", form_id: "bir_1701q", period: `${year}-Q2`, created_at: paid[1].at }, "bir_1701q", { period: "2nd" }],
     // In progress: filed moments ago, so they move while you watch.
-    { kind: "application", title: "Fire Safety Inspection Certificate (FSIC)", agency: "BFP", requirement_id: "fsic", created_at: ago(90_000) },
-    { kind: "application", title: "SSS employer registration", agency: "SSS", requirement_id: "sss_er", created_at: ago(25_000) },
-  ].map((s) => ({ ...s, owner_id: id, ref_no: ref(s.kind === "return" ? "RTN" : "APP"), demo: true })))
+    [{ kind: "application", title: "Fire Safety Inspection Certificate (FSIC)", agency: "BFP", requirement_id: "fsic", created_at: ago(90_000) }, null, {}],
+    [{ kind: "application", title: "SSS employer registration", agency: "SSS", requirement_id: "sss_er", form_id: "sss_r1", created_at: ago(25_000) }, "sss_r1", { start_date: "2024-03-20", employee_count_exact: "3" }],
+  ]
+  const rows = await Promise.all(
+    filings.map(async ([row, formId, answers]) => {
+      const refNo = ref(row.kind === "return" ? "RTN" : "APP")
+      let file_path: string | null = null
+      if (formId) {
+        try {
+          const bytes = await filledForm(formId, profile, answers, row.created_at)
+          if (bytes) {
+            file_path = `${id}/forms/${refNo}.pdf`
+            const up = await sb.storage.from(BUCKET).upload(file_path, bytes, { contentType: "application/pdf", upsert: true })
+            if (up.error) file_path = null
+          }
+        } catch (e) {
+          console.error(`demo form ${formId} failed`, e)
+        }
+      }
+      return { ...row, owner_id: id, ref_no: refNo, demo: true, file_path }
+    })
+  )
+  await sb.from("submissions").insert(rows)
 
   // A short earlier conversation with Kuya Hermit.
   const next = buildCalendar(profile, buildChecklist(profile, ITEMS), new Date(), 3)[0]

@@ -26,3 +26,9 @@ test("renaming clears the verified flag; moving city clears province and region;
   assert.equal(back.city, "Taguig")
   assert.equal(back.region, "NCR")
 })
+
+test("a value that's already saved is reported, not silently dropped", () => {
+  const r = applyProfileChanges({ ...base, tin: "219-000-689-2" }, { tin: "2190006892" })
+  assert.equal(r.applied.length, 0)
+  assert.deepEqual(r.unchanged, [{ field: "tin", label: "TIN", value: "219-000-689-2" }])
+})

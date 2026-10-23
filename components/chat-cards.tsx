@@ -13,6 +13,7 @@ import { FileButton } from "@/components/submission-tracker"
 import { label as optionLabel, LABELS } from "@/components/onboarding"
 import { TileMap } from "@/components/tile-map"
 import { documentsFor } from "@/lib/doc-checklist"
+import { getLibraryForm, libraryUrl } from "@/lib/forms-library"
 import type { TaxResult } from "@/lib/tax"
 import { buildCalendar, buildChecklist, getRequirement } from "@/lib/engine"
 import { formsFor } from "@/lib/forms"
@@ -71,7 +72,9 @@ export function StepTimeline({ steps, live, ms, en }: { steps: HermitStep[]; liv
 
 export function HermitCards({ cards, onAsk, photo }: { cards: HermitCard[]; onAsk: (q: string) => void; photo?: string }) {
   return cards.map((c, i) =>
-    c.kind === "tax" ? (
+    c.kind === "library" ? (
+      <LibraryCard key={i} ids={c.ids} />
+    ) : c.kind === "tax" ? (
       <TaxCard key={i} result={c.result} />
     ) : c.kind === "submit" ? (
       <SubmitCard key={i} requirementId={c.requirementId} />
@@ -186,6 +189,37 @@ function NearbyCard({ agency, purpose }: { agency: BranchAgency; purpose: string
       <Link href="/calendar" className="text-primary">
         {en ? "Open calendar →" : "Buksan ang kalendaryo →"}
       </Link>
+    </div>
+  )
+}
+
+// Blank official forms from HERMIT's library, ready to download.
+function LibraryCard({ ids }: { ids: string[] }) {
+  const forms = ids.map(getLibraryForm).filter((f) => f !== undefined)
+  if (!forms.length) return null
+  return (
+    <div className={card}>
+      <ul className="flex flex-col divide-y">
+        {forms.map((f) => (
+          <li key={f.id} className="flex items-center justify-between gap-2 py-1.5">
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="flex h-9 w-7 shrink-0 items-end justify-end rounded border bg-white p-0.5 shadow-sm">
+                <span className="rounded-sm bg-primary px-0.5 text-[7px] font-semibold text-primary-foreground">PDF</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">{f.title}</span>
+                <span className="text-muted-foreground">
+                  {f.agency}
+                  {f.pages ? ` · ${f.pages} pp` : ""}
+                </span>
+              </span>
+            </span>
+            <a href={libraryUrl(f.path)} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>
+              Open PDF <ExternalLink />
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

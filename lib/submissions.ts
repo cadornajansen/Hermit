@@ -14,6 +14,7 @@ export type Submission = {
   period: string | null
   paymentTxnid: string | null
   demo: boolean
+  hasFile: boolean // a filled form is attached
   createdAt: string
 }
 

@@ -1,9 +1,9 @@
 "use client"
 
-import { Check, Loader2, Send } from "lucide-react"
+import { Check, FileText, Loader2, Send } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { submitFiling } from "@/app/submit"
+import { submissionFile, submitFiling } from "@/app/submit"
 import { Button } from "@/components/ui/button"
 import { update } from "@/lib/store"
 import { track, type Submission, type SubmissionKind } from "@/lib/submissions"
@@ -39,6 +39,22 @@ export function SubmissionTracker({ s }: { s: Submission }) {
         {s.demo && <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">Demo filing</span>}
       </div>
       <p className="font-mono text-xs">Ref. {s.refNo}</p>
+      {s.hasFile && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="self-start"
+          onClick={async () => {
+            // Open the tab now (popup blockers allow it on click), then point it at the signed link.
+            const tab = window.open("", "_blank")
+            const url = await submissionFile(s.refNo).catch(() => null)
+            if (url && tab) tab.location.href = url
+            else tab?.close()
+          }}
+        >
+          <FileText /> View filed form
+        </Button>
+      )}
       <ol className="flex flex-col gap-2">
         {t.steps.map((step) => (
           <li key={step.label} className="flex items-center gap-2">

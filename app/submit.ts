@@ -2,7 +2,7 @@
 
 import { randomBytes } from "node:crypto"
 
-import { db } from "@/lib/db"
+import { BUCKET, db } from "@/lib/db"
 import { getRequirement } from "@/lib/engine"
 import { getPayable } from "@/lib/payments"
 import { ownerId } from "@/lib/session"
@@ -24,6 +24,7 @@ type Row = {
   period: string | null
   payment_txnid: string | null
   demo: boolean
+  file_path: string | null
   created_at: string
 }
 
@@ -37,6 +38,7 @@ const view = (r: Row): Submission => ({
   period: r.period,
   paymentTxnid: r.payment_txnid,
   demo: r.demo,
+  hasFile: Boolean(r.file_path),
   createdAt: r.created_at,
 })
 
@@ -91,4 +93,15 @@ export async function listSubmissions(): Promise<Submission[]> {
   if (!sb || !id) return []
   const { data } = await sb.from("submissions").select("*").eq("owner_id", id).order("created_at", { ascending: false }).limit(50)
   return ((data ?? []) as Row[]).map(view)
+}
+
+// A short-lived link to the filled form attached to one of the owner's filings.
+export async function submissionFile(refNo: string) {
+  const sb = db()
+  const id = await ownerId()
+  if (!sb || !id) return null
+  const { data } = await sb.from("submissions").select("file_path").eq("owner_id", id).eq("ref_no", text(refNo, 40)).maybeSingle()
+  if (!data?.file_path) return null
+  const signed = await sb.storage.from(BUCKET).createSignedUrl(data.file_path, 300)
+  return signed.data?.signedUrl ?? null
 }

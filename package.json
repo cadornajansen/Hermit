@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test lib/*.test.ts",
     "forms:sync": "node --env-file=.env.local scripts/sync-forms.mjs",
+    "forms:ph": "node --env-file=.env.local scripts/sync-forms-ph.mjs",
     "forms:layout": "node --env-file=.env.local scripts/layout-forms.mjs"
   },
   "dependencies": {

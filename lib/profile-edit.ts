@@ -68,6 +68,7 @@ export function applyProfileChanges(p: Profile, changes: Record<string, unknown>
   const next = { ...p } as Record<string, unknown>
   const applied: ProfileChange[] = []
   const rejected: { field: string; reason: string }[] = []
+  const unchanged: { field: string; label: string; value: string }[] = []
   for (const [field, raw] of Object.entries(changes ?? {})) {
     const rule = EDITABLE[field]
     if (!rule) {
@@ -80,7 +81,10 @@ export function applyProfileChanges(p: Profile, changes: Record<string, unknown>
       continue
     }
     const from = String(next[field] ?? "")
-    if (from === value) continue
+    if (from === value) {
+      unchanged.push({ field, label: rule[0], value })
+      continue
+    }
     next[field] = value
     applied.push({ field, label: rule[0], from, to: value })
   }
@@ -97,7 +101,7 @@ export function applyProfileChanges(p: Profile, changes: Record<string, unknown>
         next[k] = undefined
       }
   }
-  return { profile: next as Profile, applied, rejected }
+  return { profile: next as Profile, applied, rejected, unchanged }
 }
 
 // Puts changes on (redo) or takes them off (undo) a profile.

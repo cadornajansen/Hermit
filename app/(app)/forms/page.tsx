@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 
+import { FormsLibrary } from "@/components/forms-library"
 import { buildChecklist } from "@/lib/engine"
 import { fillForm, fitsProfile, FORMS, HANDOFF_LABEL, type FormTemplate } from "@/lib/forms"
 import { hasLibraryCopy } from "@/lib/library"
@@ -78,6 +79,7 @@ export default function FormsPage() {
           </section>
         )
       })}
+      <FormsLibrary query={q} />
     </div>
   )
 }

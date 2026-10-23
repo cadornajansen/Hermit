@@ -6,10 +6,10 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 import { documentUrl } from "@/app/sync"
 import { HermitCards, StepTimeline } from "@/components/chat-cards"
+import { FormFile } from "@/components/form-file"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { readExif } from "@/lib/exif"
 import { getFile } from "@/lib/files"
-import { getForm } from "@/lib/forms"
 import { setChanges } from "@/lib/profile-edit"
 import type { HermitReply, HermitStep } from "@/lib/hermit"
 import { buildPacket, packetPlan, slotAvailability, slotName, usable } from "@/lib/pack"
@@ -158,11 +158,8 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
               <img src={m.photo} alt={en ? "Attached photo" : "Nakalakip na litrato"} className="max-h-40 self-end rounded-xl" />
             )}
             <p className="break-words whitespace-pre-wrap">{linkify(m.text.replace(/\n\n\[Photo attached:[^\]]*\]$/, "").replaceAll("**", "").replace(/^#+ /gm, ""))}</p>
-            {m.formIds?.map((f) => (
-              <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
-                Pre-fill {getForm(f)?.short}
-              </Link>
-            ))}
+            {/* Forms Kuya Hermit worked on: each as a filled, downloadable PDF. */}
+            {!m.packs?.length && m.formIds?.map((f) => <FormFile key={f} formId={f} />)}
             {m.packs?.map((id) => <PacketCard key={id} requirementId={id} />)}
             {m.cards && <HermitCards cards={m.cards} onAsk={ask} photo={chat.slice(0, i).findLast((x) => x.role === "owner")?.photo} />}
             {m.steps?.some((st) => st.tool === "remember" && st.ok) && (
@@ -397,23 +394,12 @@ function PacketCard({ requirementId }: { requirementId: string }) {
           </select>
         </label>
       )}
-      <ul className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-2">
         {plan.forms.map((f) => (
-          <li key={f.form.id}>
-            ✓ {f.form.name}{" "}
-            <Link
-              href={`/forms/${f.form.id}`}
-              className="text-primary underline"
-            >
-              Review / edit / save answers
-            </Link>
-            <span className="text-muted-foreground">
-              {f.file && f.layout ? " · official PDF if available; info sheet on failure" : " · info sheet"}
-              {` · ${f.reason}`}
-              {f.missing.length ? ` · ${f.missing.length} ${en ? "blank" : "blanko pa"}` : ""}
-            </span>
-          </li>
+          <FormFile key={f.form.id} plan={f} />
         ))}
+      </div>
+      <ul className="flex flex-col gap-0.5">
         {plan.letter && (
           <li>
             ✓{" "}
@@ -429,7 +415,7 @@ function PacketCard({ requirementId }: { requirementId: string }) {
       </ul>
       <Button size="sm" onClick={download} disabled={busy}>
         <Download />{" "}
-        {busy ? (en ? "Preparing…" : "Inihahanda…") : en ? "Download PDF packet" : "I-download ang PDF packet"}
+        {busy ? (en ? "Preparing…" : "Inihahanda…") : en ? "Download everything as one PDF" : "I-download lahat sa isang PDF"}
       </Button>
       {plan.forms
         .filter((f) => f.file && f.layout)
