@@ -1,106 +1,97 @@
-# HERMIT
+# [HERMIT](https://hermit-eight.vercel.app/)
 
-### The paperwork shouldn't be harder than the business.
+### Your business, remembered. Your next step, explained.
 
-**Your business, remembered. Your next step, explained.**
+**One calm place to navigate the paperwork of running a business in the Philippines.**
 
-Opening a small business takes courage. Figuring out which permit comes first, which form belongs to which office, and when a tax filing is due should not take another career. Yet for many Filipino micro, small, and medium enterprise (MSME) owners, that is what compliance feels like: a trail of unfamiliar acronyms, repeated information, separate websites, and long trips to ask one question.
+An MSME owner should not have to become an expert in government acronyms just to open a shop, renew a permit, or understand a tax form. Hermit turns a maze of requirements, offices, portals, documents, and dates into a guided journey that starts with a simple question: **What kind of business are you building?**
 
-**Hermit is a friendly home base for that journey.** It helps an owner understand what may apply to their business, prepare the paperwork, find the right government channel, and keep track of what they have already done. The first pilot focuses on businesses in the **City of Manila**.
+> **The pitch:** Tell Hermit about your business once. Get a roadmap for what may apply, why it matters, what to prepare, and where to go next. Ask Kuya Hermit when something is confusing. Keep your forms, documents, deadlines, and progress together. Move from *“Saan ako magsisimula?”* to *“Alam ko na ang next step.”*
 
-> From **“Saan ako magsisimula?”** to **“Alam ko na ang next step.”**
+**Built for Philippine micro, small, and medium enterprises. Powered by eGov. Designed for the owner who has a business to run.**
 
-## Why we're building Hermit
+## The problem we're solving
 
-A sari-sari store, a carinderia, and a growing online shop do not all follow the same path. Their requirements can change with their location, activities, business structure, employees, and stage of growth. The owner is often left to piece that path together alone.
+For many owners, compliance feels like a second full-time job. The answer to “What do I need?” depends on the business, its activities, its location, and whether it is opening, operating, hiring, renewing, or closing. The answer may be scattered across agency websites, forms, counters, and advice from other people. A missed prerequisite sends an owner back to the start; an unexplained form can stop them before they begin.
 
-Hermit has five goals:
+Hermit makes that process less intimidating. It gives the owner a place to understand the work, prepare for it, and remember what has already been done. No fixer. No mystery checklist. No expectation that every owner already speaks the language of bureaucracy.
 
-1. **Make the process understandable.** Explain each step in ordinary language, including why it matters and where it happens.
-2. **Give every owner a clear next move.** Show what to prepare now, what depends on an earlier step, and what still needs confirmation.
-3. **Reduce repetition.** Help carry reviewed business details into forms instead of asking the owner to start from a blank page every time.
-4. **Keep the journey in one place.** Bring requirements, documents, forms, dates, and progress into one workspace.
-5. **Bring government services closer.** Use eGov connections where available and guide owners to the right official agency channel for the rest.
+## A journey an owner can actually follow
 
-The aim is simple: give owners more time and confidence to build their businesses, with less energy lost to paperwork and uncertainty.
+**Imagine a small food business in the City of Manila.** Its owner tells Hermit what they sell, how they operate, and whether they have employees. Hermit builds a relevant roadmap instead of handing over a generic list. Each step explains the reason it appears, what comes before it, which office or official portal handles it, and what the owner should prepare.
 
-## How it works
+When a form asks for details the owner has already provided, Hermit can help fill them in for review. When a permit arrives, the owner can keep a copy and its important dates in the vault. When a term is unfamiliar, Kuya Hermit explains it in plain language and points back to the available sources. The dashboard remembers the next action so the owner does not have to reconstruct the whole process on every visit.
 
-### 1. Tell Hermit about your business
+**Describe your business → understand your roadmap → prepare forms and documents → use the relevant government service or official channel → track what happens next.**
 
-The owner answers guided questions: What do you do? Where is the business? Are you just starting, already operating, hiring, or renewing? If an answer is uncertain, the owner can say so and return to it later.
+### What Hermit brings together
 
-### 2. Get a roadmap that makes sense
+| The owner's question | Hermit's answer |
+| --- | --- |
+| “Where do I start?” | Guided onboarding and a business-specific roadmap with prerequisites and progress tracking. |
+| “What does this requirement mean?” | Kuya Hermit explains the task using Hermit's available requirement and form information, with source links where available. |
+| “Didn't I already give you this information?” | Editable form sheets and supported official PDFs can start with known details; the owner reviews every answer. Reusing saved form answers requires an explicit opt-in. |
+| “Where did I put that permit?” | A document vault, review checks, important dates, and packet preparation keep the work organized. |
+| “When is this due, and where do I go?” | A calendar, deadline views, official starting points, and an office locator help the owner plan the next step. |
+| “How do I pay or report a problem?” | eGovPay can power a payment flow in test mode; eReport is wired for reporting red tape when configured. |
 
-Hermit turns those answers into a checklist of steps that may apply. Each step shows what it is for, what comes before it, what to prepare, and which office or official portal to use. The dashboard keeps the next action in view, while the owner records progress as work gets done.
+## Powered by eGov, connected to the bigger picture
 
-### 3. Ask Kuya Hermit
+Hermit uses [egov.js](https://github.com/omsimos/egov.js) as its bridge to Philippine eGov platform services. The goal is a connected experience: identity, verification, communication, payment, and reporting alongside a roadmap that points owners to the appropriate agency. Each service has its own integration, so it can run with configured credentials or use a clearly separate mock during development.
 
-When a form or requirement sounds intimidating, the owner can ask Kuya Hermit to explain it. The assistant uses the business's roadmap and the information available in Hermit to give a plainer answer, with source links where available. It helps the owner understand the path; the owner makes the final business and filing decisions.
+| eGov service | How Hermit uses it |
+| --- | --- |
+| **eGovPH SSO** | Sign in with an eGovPH identity and return to the owner's saved workspace. |
+| **National ID eVerify + face liveness** | Offer a separate identity check and help fill verified personal details. Sign-in alone is not presented as National ID verification. |
+| **eGovPay** | Open a government payment checkout and check the transaction status. The current integration uses a **test-mode token**. |
+| **eMessage** | Support SMS reminders when the service is configured. |
+| **eGov AI** | Support classification, explanations, and document reading, with local fallbacks for development. |
+| **eReport** | Give owners a way to report red tape when connected. |
 
-### 4. Prepare once, review every time
+Hermit also points owners toward official channels for agencies such as **DTI, BIR, SEC, CDA, local government offices, and employer agencies**, according to the task at hand. It helps prepare and review forms before that handoff. **Direct application or tax-return submission to those agencies is not connected yet**: the in-app filing and tracking experience is a labelled demo, and owners must still file through the agency's official channel. eGov integration does not imply endorsement by, or live submission access to, every agency.
 
-Hermit brings together a form library, editable answers, available official blank forms, and a document vault. Known details can help fill a form, but the owner reviews and changes them before using it. Saving answers for future forms is optional and requires a separate choice. Documents and important dates stay easy to find when it is time to renew or follow up.
+## What makes this more than another checklist
 
-### 5. Reach the right government channel
+* **It starts with the owner, not an agency menu.** Business activities, structure, location, and stage shape the suggested path.
+* **It makes the next action visible.** Requirements, dependencies, documents, forms, dates, and offices live in one workspace.
+* **It remembers with consent.** The owner can review and edit form values; optional answer reuse is off by default.
+* **It explains without pretending to decide.** Kuya Hermit helps with language and preparation. The owner remains in control of legal, tax, and filing decisions.
+* **It is built for real government touchpoints.** eGov services and official agency handoffs are part of the flow, with mock and test states made visible.
 
-Hermit points to the appropriate government service, agency website, or office for the task. The owner can also see payment and filing flows in the prototype, then return to Hermit to keep track of the work. The goal is a journey that feels connected even when several agencies are involved.
-
-## What eGov makes possible
-
-**eGov powers Hermit's connections to Philippine digital government services.** With access to the relevant services, an owner can sign in through eGovPH, complete a separate identity check through eVerify, use eGovPay for a payment flow, receive eMessage reminders, or report red tape through eReport. Hermit also uses eGov AI where configured to help with business descriptions and document reading.
-
-These connections are the foundation for a more joined-up experience. Hermit can help an owner prepare for tasks involving agencies such as **DTI, BIR, SEC, CDA, local government offices, SSS, PhilHealth, and Pag-IBIG**, then direct them to the official channel that handles each task.
-
-**Where the prototype stands:** eGov connections depend on service access and configuration; the payment flow uses test mode. Hermit's in-app filing and status timeline are demonstrations. Applications and tax returns still need to be submitted through the relevant agency's official channel. The longer-term goal is to connect actual submission and status services as access becomes available.
-
-## Picture the owner journey
-
-Imagine someone opening a small food business in Manila. They tell Hermit what they plan to sell and whether they will hire staff. Their roadmap shows the registration and permit steps that may apply, the documents to prepare, and the next office or portal to visit. When a question on a form is unclear, they ask Kuya Hermit. When they receive a document, they keep it in the vault and record its date. When they return next week, Hermit remembers where they left off.
-
-That is the experience we want to build: **less searching, less second-guessing, and a clear next step every time.**
-
-## Try Hermit
+## See it in action
 
 ```bash
 pnpm install
 pnpm dev
+
 ```
 
-Open [Hermit locally](http://localhost:3000) or go straight to the [guided onboarding](http://localhost:3000/onboarding). The landing page and local onboarding can be explored without connected services. A [sample business](http://localhost:3000/demo) is available when the project database is configured; it currently uses a fictional Taguig business from an earlier demo, while new onboarding is Manila-only.
+Open [http://localhost:3000](http://localhost:3000). You can explore the landing page and try the [local onboarding flow](http://localhost:3000/onboarding) without service credentials. Account sign-up, sync, payments, maps, and eGov services require their respective configuration: copy [`.env.example`](https://www.google.com/search?q=.env.example) to `.env.local` and add the credentials you have access to. Without Supabase, owner data uses device storage and server-backed features are unavailable.
 
-For service setup and implementation details, see [`.env.example`](.env.example) and the [implementation notes](docs/IMPLEMENTATION.md). The [product requirements](docs/PRD.md) and [source policy](docs/SOURCES.md) explain the intended scope and how guidance must be reviewed.
+For a populated showcase, open [`/demo`](http://localhost:3000/demo) **after configuring Supabase and its migrations**. This resets a shared fictional Taguig business on every visit; it is a legacy sample, while new onboarding is Manila-only. Its documents, payments, and filings are sample data, not government records or real transactions.
 
-## A promise to owners
+**Suggested judge tour:** onboarding → roadmap → Kuya Hermit → forms and document vault → payment and filing hub → eGov integration status in Profile.
 
-Hermit is here to help people understand and organize their responsibilities. Its current requirements, fees, and dates still need review against official sources for the Manila pilot. Owners should confirm guidance with the issuing office before filing or paying. Progress in Hermit records the owner's work; it does not certify legal compliance.
+## Built today, building toward tomorrow
+
+The current prototype focuses new onboarding on the **City of Manila**. It includes a working product journey and adapter-backed eGov flows, but government access depends on credentials and the specific service. eGovPay is in test mode. Agency filing and its progress timeline are demos. Requirements, fees, and dates in the seed library still need review against current official sources and the relevant Manila offices before they can be treated as authoritative guidance.
+
+The next milestone is a validated Manila pilot: review each requirement with official sources, test the live integrations, connect actual agency submission/status channels where access is available, and expand coverage only when the guidance can be supported. Hermit is a guide and workspace for owners, not a government agency or a guarantee that a business is compliant.
+
+## For builders
+
+Hermit is a Next.js and TypeScript app with a Supabase-backed option for accounts and data, a device working copy, an `egov.js` integration layer, and an AI assistant that uses Hermit's own business context. The project keeps mock services available for local development.
+
+```bash
+pnpm test
+pnpm typecheck
+pnpm lint
+pnpm build
+
+```
+
+Read the [current implementation inventory](https://www.google.com/search?q=docs/IMPLEMENTATION.md), [target MVP](https://www.google.com/search?q=docs/PRD.md), [scope and known gaps](https://www.google.com/search?q=docs/SCOPE.md), and [source and review policy](https://www.google.com/search?q=docs/SOURCES.md) for the detailed contract behind this pitch.
+
+---
 
 **Less paperwork panic. More time to build the business.**
-
-## Office finder setup
-
-**Office finder:** choose a document/service and confirm the business jurisdiction before comparing offices.
-Only active, current registry records with evidence of that exact service and area coverage are eligible.
-The maintained registry (`lib/office-registry.ts`) now has source-reviewed Manila permit handlers and
-selected NCR registration destinations. Public counter details and coordinates still need independent
-review. Legacy Taguig seeds remain labelled unverified. The assistant and packet
-branch lookup use the same resolver. Requirement details link directly to the relevant office search.
-
-The approved provider is Google only: Maps JavaScript for display, server-side Geocoding for an explicitly
-submitted starting address, and external Google Maps directions links. No Places discovery or Routes calls
-are made. Device location is requested on demand, denial preserves the choice, and address matches require
-confirmation. Distances say “Approximate straight-line distance”; missing/stale coordinates stay unranked.
-The map and selected office list synchronize, with the scrollable list on the right on desktop and below
-the map on small screens. Textual results remain available when the map fails.
-
-Live map/address features default off (`OFFICE_FINDER_ENABLED=false`). A separate `OFFICE_FINDER_DEMO=true`
-setting adds synthetic offices and coordinates in local development only; production builds ignore it.
-Before enabling public rollout, confirm the seeded office counters and service rules, supply independently
-reviewed coordinates, restricted Google browser/server keys and a production map ID, publish appropriate
-terms/privacy disclosures, and configure provider-side quotas. Geocoding also requires the existing Supabase
-`take_ai_quota` RPC: each upstream attempt reserves owner/IP/project quota and fails closed if unavailable.
-The default rolling project cap is 250 geocodes/day (`GOOGLE_MAPS_GEOCODE_DAILY_LIMIT`); browser map loads
-need separate Google Cloud limits. Precise origins and entered addresses are transient and are not cached
-server-side or saved to the business profile. No billing/resources are enabled by this code.
-See [office finder setup and future staggered scaling](docs/office-finder-plan.md) and the
-[Manila office seed, source links and demo limits](docs/office-seed-manila.md).
