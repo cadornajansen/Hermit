@@ -1,118 +1,95 @@
-is declined or fails. Store and Server Action tests run production logic with in-memory storage and stubbed
-cookie/database boundaries; a rendered field-sheet check verifies editable account values and unchecked consent.
-No live identity/database service or official-form placement accuracy is claimed by those tests. General multi-device
-account sync follows the device working-copy policy and durable retry queue described above; reusable answers
-deliberately avoid that path.
+# HERMIT
 
-**Official copies:** `pnpm forms:sync` downloads each form's official blank PDF/Excel (and agency guides) listed under
-`files:` in `lib/forms.ts`, checks it's a real PDF/Excel file, stores it in Supabase Storage (public `forms` bucket) with
-its extracted text, and writes `lib/form-files.json` (sha256, size, retrieved date). Form pages offer the download;
-Kuya Hermit reads the stored text (`read_official_form`) to explain items and attachments. Re-run the sync to detect new
-versions: it reports files whose hash changed.
+### Your business, remembered. Your next step, explained.
 
-**Filling the real form:** each stored PDF has an editor at `/forms/<id>/fill` that opens already filled in. The AI
-behind the gateway is text-only, so `pnpm forms:layout` (once per file version) first "sees" each page for it
-(`scripts/form-vision.mjs`): it renders the page, detects every drawn box and one-character cell, and reads every word
-from the text layer or, for scanned forms like SSS R-1, two OCR passes (tesseract.js). Kuya Hermit then picks the box,
-sub-label, name part (last / first / middle) and format (capitals, MM/DD/YYYY) for each answer, plus the signature
-line and date; a review pass adds anything it missed. Code then enforces form conventions (name sub-labels,
-"PRINTED NAME / SIGNATURE / DATE" lines, barangay / city, CAPITAL LETTERS) and rejects answers whose box label
-doesn't match (e.g. an email in the WEBSITE box). Results go to `lib/form-layouts.json`. In the editor the owner
-just checks, taps "Pirmahan" (the signature drops onto the signature line), and downloads; any answer can still be
-edited, moved or removed. Everything runs on the device; the signature and filled PDF are never uploaded.
+**One calm place to navigate the paperwork of running a business in the Philippines.**
 
-**Document packets:** packet cards select forms by filing task and ownership type. New sole-proprietor BIR
-registration uses 1901; choose update/cancellation or abatement explicitly for 1905 or 2121. DTI new registration and
-renewal are separate choices. The cover records each form's inclusion reason. Each official PDF is fetched and
-prepared once before the cover is written; failure produces an info-sheet label, reason and matching info-sheet
-pages. A verified vault copy is counted as included only after its bytes have been decoded and embedded successfully.
-Files awaiting review, rejected files and fetch/decode/embed failures are listed as unavailable/omitted with reasons.
-Uploads accept PDF, PNG and JPEG. Convert WebP/HEIC/other images before uploading; older unsupported files stay in
-the vault but are explicitly omitted from packets. Taguig's stored application is only offered for a matching
-canonical Taguig jurisdiction; other locations receive general information sheets and LGU confirmation guidance.
+An MSME owner should not have to become an expert in government acronyms just to open a shop, renew a permit, or understand a tax form. Hermit turns a maze of requirements, offices, portals, documents, and dates into a guided journey that starts with a simple question: **What kind of business are you building?**
 
-**Paying taxes:** `/pay` is HERMIT's payment terminal for BIR returns (2551Q, 1701Q, 2550Q, 1601-C, 0605 and more),
-pre-filled from the profile and ordered by what's due; the owner enters the amount from their return (HERMIT never
-computes tax). It creates an eGovPay transaction and shows a scan-to-pay QR of eGovPay's payment page plus a link, then
-watches the status. A payment is marked paid only when eGovPay reports it (status poll and `/api/pay/callback` both
-re-read the transaction); the receipt shows eGovPay's reference number. Payments are stored in the `payments` table.
-eGovPay's checkout offers QR Ph, e-wallets, online banking, banks, LANDBANK QR and cash, with a small convenience fee
-per channel. `EGOV_PAY_TOKEN` is the `test_`-prefixed token (test mode, no live funds); drop the prefix to go live.
-Without a token the terminal says online payment isn't available yet and points to BIR's own ePayment channels.
+> **The pitch:** Tell Hermit about your business once. Get a roadmap for what may apply, why it matters, what to prepare, and where to go next. Ask Kuya Hermit when something is confusing. Keep your forms, documents, deadlines, and progress together. Move from _“Saan ako magsisimula?”_ to _“Alam ko na ang next step.”_
 
-**Offices near you:** with Google Maps keys set, Offices finds the nearest real offices the owner needs (barangay hall,
-city hall/BPLO, BIR RDO, BFP, health office, Negosyo Center, SSS, PhilHealth, Pag-IBIG, DOLE, FDA) around their phone's
-location or their geocoded business address, via Places API (New) Text Search on the server (`app/maps.ts`, rate-limited,
-Pro-tier fields only, location rounded to ~110 m). Results are name-checked per office type (`lib/nearby.ts`) and shown
-as colour-coded pins on a Google map with distance and directions. Where jurisdiction matters (RDO, city hall,
-barangay) the page says the nearest office isn't necessarily the one that handles the owner.
-Business-address searches retain province and region and avoid repeating locality text already in the address.
-Cached address searches retain the geocoded center. Successful empty searches show “No matches”; partial results name
-the office types that failed; total upstream failure shows “Maps unavailable”. Empty, partial and unavailable states
-offer retry, and incomplete results are not cached.
+**Built for Philippine micro, small, and medium enterprises. Powered by eGov. Designed for the owner who has a business to run.**
 
-**Start here:** `lib/processes.ts` lists, per requirement and filing task, the page that starts the process (BNRS, ORUS with its
-click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,
-DOLE, eFPS/eBIRForms) or the office to visit, each checked by hand on the date shown. The dashboard and Kuya Hermit
-give these word for word. LGU portals also require a matching canonical region/province/city: Taguig links use its
-PSGC jurisdiction, while unsupported or ambiguous places get general guidance to confirm with their LGU.
-Jurisdiction stays visible in packet covers, dashboard guidance and Offices. Currently 31 files for 24 forms (BIR, SSS, PhilHealth, Taguig); Pag-IBIG
-(reCAPTCHA), BFP and DOLE (bot-blocked) and the DTI BMBE flyer (server unreachable) stay link-only for now.
+## The problem we're solving
 
-## What's in it
+For many owners, compliance feels like a second full-time job. The answer to “What do I need?” depends on the business, its activities, its location, and whether it is opening, operating, hiring, renewing, or closing. The answer may be scattered across agency websites, forms, counters, and advice from other people. A missed prerequisite sends an owner back to the start; an unexplained form can stop them before they begin.
 
-| PRD module | Where |
-| --- | --- |
-| Seven-step Manila onboarding with multiple activities, uncertainty, and review | `app/onboarding`, `components/onboarding.tsx` |
-| Requirements engine: shared tasks plus activity and employer branches | `lib/engine.ts` |
-| Main's dashboard and roadmap UI with status and expiry tracking | `app/(app)/dashboard`, `app/(app)/roadmap` |
-| Email/password and eGov sign-in with separate owner scopes | `app/register`, `app/egovph/sso`, `lib/session.ts` |
-| F2 Kuya Hermit: AI assistant with tools, guardrails, Filipino/English, form pre-fill | `lib/hermit.ts`, `app/(app)/assistant`, `app/(app)/forms` |
-| F3 Office locator and eReport red-tape reports (legacy Taguig data remains) | `app/(app)/offices`, `lib/offices.ts` |
-| F4 Calendar: generated deadlines, weekend shift, 14/3/0-day reminders, SMS, Google Calendar | `app/(app)/calendar` |
-| F5 Document vault: upload, AI read, rule-based verification, per-requirement tracking, activity log | `app/(app)/vault`, `components/vault.tsx`, `lib/vault.ts` |
-| "What Hermit knows": view, export, delete everything | `app/(app)/profile` |
+Hermit makes that process less intimidating. It gives the owner a place to understand the work, prepare for it, and remember what has already been done. No fixer. No mystery checklist. No expectation that every owner already speaks the language of bureaucracy.
 
-## eGov API sockets
+## A journey an owner can actually follow
 
-`lib/egov/index.ts` defines one adapter per API; `egov("sso")`, `egov("emessage")`, … return the live client when that
-service's env vars are set (see `.env.example`), otherwise the mock in `lib/egov/mock.ts`. Live implementations are in
-`lib/egov/live.ts`. The current mode of each service shows on the Profile page.
+**Imagine a small food business in the City of Manila.** Its owner tells Hermit what they sell, how they operate, and whether they have employees. Hermit builds a relevant roadmap instead of handing over a generic list. Each step explains the reason it appears, what comes before it, which office or official portal handles it, and what the owner should prepare.
 
-| API | Used for | Live status |
-| --- | --- | --- |
-| eGovPH SSO | In-app entry `/egovph/sso?exchange_code=…` + the official "Login as eGov" widget; binds the eGovPH `uniqid` to the owner so their data follows them | **Live** |
-| Face Liveness | eVerify Web SDK in the browser, before the PhilSys match | **Live** |
-| National ID eVerify | Match name + birthday + face against PhilSys; fills the verified name, birthday and address | **Live** |
-| eMessage | SMS reminders | Wired (sends only to the signed-in owner's number) |
-| eGov AI | Business classification, Taglish explanations, document reading | Wired; keyword / filename fallbacks |
-| eGovPay | Tax payment terminal `/pay` (QR + payment link, status, receipts) | **Live** (test-mode `test_` token) |
-| eReport | Report red tape at an office | Wired |
-| eGovChain | Vault anchoring (stretch) | Socket only |
-| Compass | — | Not used: in egov.js it's budget data, not an office locator |
+When a form asks for details the owner has already provided, Hermit can help fill them in for review. When a permit arrives, the owner can keep a copy and its important dates in the vault. When a term is unfamiliar, Kuya Hermit explains it in plain language and points back to the available sources. The dashboard remembers the next action so the owner does not have to reconstruct the whole process on every visit.
 
-## Document verification
+**Describe your business → understand your roadmap → prepare forms and documents → use the relevant government service or official channel → track what happens next.**
 
-The AI only *reads* an upload (type, names, numbers, dates) through `egov("ai").extractDocument`. Whether it's the right,
-valid document is decided by the rules in `lib/vault.ts`: document type vs. the slot it was uploaded for, owner and
-business name vs. the profile and every other document, expiry, city, duplicates, and minimum readable evidence.
-Confirmation records the owner's review; it cannot supply missing names, numbers or dates, or dismiss warnings.
-Supported permits/certificates require identity details, a document number (TIN for COR), a valid issue date and,
-where applicable, expiry. Leases require identity, property address and issue date; IDs require a name and number.
-Company documents also require the business name. Unknown or insufficient evidence stays in review.
-The first reader output and subsequent owner corrections are retained separately in the extracted JSON metadata.
-“Verified” describes document identity/detail checks, not authenticity, completed applications or official issuance.
-HERMIT does not automatically approve checklist items from an upload or confirmation; update checklist status
-separately after agency issuance. Existing checklist statuses are retained for the owner to review.
-A verified document's TIN / registration number is saved as vault metadata. Every upload, check, edit
-and deletion goes to the activity log. Files stay on the device (IndexedDB). Until eGov AI is connected, the type is
-guessed from the filename and the owner types the details, which run through the same checks.
+### What Hermit brings together
 
-Runtime acceptance results, changed files and verification limits are recorded in [docs/runtime-fixes.md](docs/runtime-fixes.md).
+| The owner's question                          | Hermit's answer                                                                                                                                                        |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| “Where do I start?”                           | Guided onboarding and a business-specific roadmap with prerequisites and progress tracking.                                                                            |
+| “What does this requirement mean?”            | Kuya Hermit explains the task using Hermit's available requirement and form information, with source links where available.                                            |
+| “Didn't I already give you this information?” | Editable form sheets and supported official PDFs can start with known details; the owner reviews every answer. Reusing saved form answers requires an explicit opt-in. |
+| “Where did I put that permit?”                | A document vault, review checks, important dates, and packet preparation keep the work organized.                                                                      |
+| “When is this due, and where do I go?”        | A calendar, deadline views, official starting points, and an office locator help the owner plan the next step.                                                         |
+| “How do I pay or report a problem?”           | eGovPay can power a payment flow in test mode; eReport is wired for reporting red tape when configured.                                                                |
 
-## Not built yet
+## Powered by eGov, connected to the bigger picture
 
-Server-side reminder
-scheduling, shareable compliance pack,
-holiday-aware deadlines, full Filipino/English toggle, other LGUs, employer payroll module. Every rule in the seed table
-is unverified until a pilot LGU and RDO sign it off.
+Hermit uses [egov.js](https://github.com/omsimos/egov.js) as its bridge to Philippine eGov platform services. The goal is a connected experience: identity, verification, communication, payment, and reporting alongside a roadmap that points owners to the appropriate agency. Each service has its own integration, so it can run with configured credentials or use a clearly separate mock during development.
+
+| eGov service                            | How Hermit uses it                                                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **eGovPH SSO**                          | Sign in with an eGovPH identity and return to the owner's saved workspace.                                                           |
+| **National ID eVerify + face liveness** | Offer a separate identity check and help fill verified personal details. Sign-in alone is not presented as National ID verification. |
+| **eGovPay**                             | Open a government payment checkout and check the transaction status. The current integration uses a **test-mode token**.             |
+| **eMessage**                            | Support SMS reminders when the service is configured.                                                                                |
+| **eGov AI**                             | Support classification, explanations, and document reading, with local fallbacks for development.                                    |
+| **eReport**                             | Give owners a way to report red tape when connected.                                                                                 |
+
+Hermit also points owners toward official channels for agencies such as **DTI, BIR, SEC, CDA, local government offices, and employer agencies**, according to the task at hand. It helps prepare and review forms before that handoff. **Direct application or tax-return submission to those agencies is not connected yet**: the in-app filing and tracking experience is a labelled demo, and owners must still file through the agency's official channel. eGov integration does not imply endorsement by, or live submission access to, every agency.
+
+## What makes this more than another checklist
+
+- **It starts with the owner, not an agency menu.** Business activities, structure, location, and stage shape the suggested path.
+- **It makes the next action visible.** Requirements, dependencies, documents, forms, dates, and offices live in one workspace.
+- **It remembers with consent.** The owner can review and edit form values; optional answer reuse is off by default.
+- **It explains without pretending to decide.** Kuya Hermit helps with language and preparation. The owner remains in control of legal, tax, and filing decisions.
+- **It is built for real government touchpoints.** eGov services and official agency handoffs are part of the flow, with mock and test states made visible.
+
+## See it in action
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). You can explore the landing page and try the [local onboarding flow](http://localhost:3000/onboarding) without service credentials. Account sign-up, sync, payments, maps, and eGov services require their respective configuration: copy [`.env.example`](.env.example) to `.env.local` and add the credentials you have access to. Without Supabase, owner data uses device storage and server-backed features are unavailable.
+
+For a populated showcase, open [`/demo`](http://localhost:3000/demo) **after configuring Supabase and its migrations**. This resets a shared fictional Taguig business on every visit; it is a legacy sample, while new onboarding is Manila-only. Its documents, payments, and filings are sample data, not government records or real transactions.
+
+**Suggested judge tour:** onboarding → roadmap → Kuya Hermit → forms and document vault → payment and filing hub → eGov integration status in Profile.
+
+## Built today, building toward tomorrow
+
+The current prototype focuses new onboarding on the **City of Manila**. It includes a working product journey and adapter-backed eGov flows, but government access depends on credentials and the specific service. eGovPay is in test mode. Agency filing and its progress timeline are demos. Requirements, fees, and dates in the seed library still need review against current official sources and the relevant Manila offices before they can be treated as authoritative guidance.
+
+The next milestone is a validated Manila pilot: review each requirement with official sources, test the live integrations, connect actual agency submission/status channels where access is available, and expand coverage only when the guidance can be supported. Hermit is a guide and workspace for owners, not a government agency or a guarantee that a business is compliant.
+
+## For builders
+
+Hermit is a Next.js and TypeScript app with a Supabase-backed option for accounts and data, a device working copy, an `egov.js` integration layer, and an AI assistant that uses Hermit's own business context. The project keeps mock services available for local development.
+
+```bash
+pnpm test
+pnpm typecheck
+pnpm lint
+pnpm build
+```
+
+Read the [current implementation inventory](docs/IMPLEMENTATION.md), [target MVP](docs/PRD.md), [scope and known gaps](docs/SCOPE.md), and [source and review policy](docs/SOURCES.md) for the detailed contract behind this pitch.
+
+---
+
+**Less paperwork panic. More time to build the business.**
