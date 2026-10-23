@@ -1,15 +1,17 @@
 "use client"
 
-import { Banknote, Building2, CheckCircle2, ExternalLink, Landmark, Lock, Printer, QrCode, ScanLine, ShieldCheck, Smartphone, Wallet } from "lucide-react"
+import { Banknote, Building2, Calculator, CheckCircle2, ExternalLink, Landmark, Lock, Printer, QrCode, ScanLine, ShieldCheck, Smartphone, Wallet } from "lucide-react"
 import Link from "next/link"
 import QRCode from "qrcode"
 import { useEffect, useState, useTransition } from "react"
 
-import { listPayments, paymentStatus, startTaxPayment, type PaymentView } from "@/app/pay"
+import { listPayments, paymentStatus, startDemoPayment, startTaxPayment, type PaymentView } from "@/app/pay"
+import { FileButton } from "@/components/submission-tracker"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { buildCalendar, buildChecklist } from "@/lib/engine"
 import { getPayable, parseAmount, PAYABLES, periodsFor, peso, type Payable } from "@/lib/payments"
 import { useProfile } from "@/lib/store"
+import { COMPUTABLE, computeTax, type TaxInput, type TaxResult } from "@/lib/tax"
 import { cn } from "@/lib/utils"
 
 const input = "h-11 w-full rounded-xl border bg-background px-3 text-base"
@@ -21,16 +23,16 @@ const STATUS: Record<PaymentView["status"], { label: string; tone: string }> = {
   expired: { label: "Nag-expire", tone: "bg-muted text-muted-foreground" },
 }
 
-export function PayTerminal({ initialForm, returnTxn }: { initialForm: string; returnTxn: string }) {
+export function PayTerminal({ initialForm, returnTxn, initialAmount = "" }: { initialForm: string; returnTxn: string; initialAmount?: string }) {
   const { profile, items } = useProfile()
   const [formId, setFormId] = useState(getPayable(initialForm) ? initialForm : "")
   const payable = getPayable(formId)
   const [period, setPeriod] = useState(() => (payable ? periodsFor(payable.period)[0].value : ""))
-  const [amount, setAmount] = useState("")
+  const [amount, setAmount] = useState(initialAmount)
   const [atc, setAtc] = useState("")
   const [error, setError] = useState<string>()
   const [notConnected, setNotConnected] = useState(false)
-  const [active, setActive] = useState<{ txnid: string; url: string } | null>(null)
+  const [active, setActive] = useState<{ txnid: string; url: string; demo?: boolean } | null>(null)
   const [status, setStatus] = useState<PaymentView | null>(null)
   const [history, setHistory] = useState<PaymentView[]>([])
   const [pending, start] = useTransition()
@@ -64,8 +66,8 @@ export function PayTerminal({ initialForm, returnTxn }: { initialForm: string; r
   const offered = [...PAYABLES].sort((a, b) => Number(due.has(b.deadlineId ?? "")) - Number(due.has(a.deadlineId ?? "")))
   const periods = payable ? periodsFor(payable.period) : []
   const value = parseAmount(amount)
-  const tin = profile.extra.tin ?? ""
-  const rdo = profile.extra.rdo_code ?? ""
+  const tin = profile.tin || profile.extra.tin || ""
+  const rdo = profile.rdoCode || profile.extra.rdo_code || ""
 
   function choose(p: Payable) {
     setFormId(p.formId)
@@ -96,13 +98,24 @@ export function PayTerminal({ initialForm, returnTxn }: { initialForm: string; r
     })
   }
 
+  function payDemo() {
+    setError(undefined)
+    start(async () => {
+      const r = await startDemoPayment({ formId, period, amount })
+      if (r.ok) {
+        setActive({ txnid: r.txnid, url: r.url, demo: true })
+        setStatus(null)
+      } else setError(r.error)
+    })
+  }
+
   // ---- Receipt / waiting on the gateway --------------------------------------
   if (status?.status === "paid") return <Receipt p={status} />
   if (active || (returnTxn && status)) {
     return (
       <div className="flex flex-col gap-4">
         <Header />
-        {active && <ScanToPay url={active.url} />}
+        {active && <ScanToPay url={active.url} demo={active.demo} />}
         {status && status.status !== "pending" && (
           <p className={cn("rounded-xl p-3 text-sm", STATUS[status.status].tone)}>
             {status.status === "failed" ? "Hindi natuloy ang bayad. Walang nakaltas; subukan ulit." : "Nag-expire ang payment link. Gumawa ng bago."}
@@ -202,6 +215,10 @@ export function PayTerminal({ initialForm, returnTxn }: { initialForm: string; r
         </section>
       )}
 
+      {payable && COMPUTABLE.includes(payable.formId) && (
+        <ComputeTax key={payable.formId} formId={payable.formId} option={profile.taxOption} onUse={(v) => setAmount(v.toFixed(2))} />
+      )}
+
       {payable && (
         <section className="flex flex-col gap-3 rounded-2xl border p-4">
           <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">3 · Review</h2>
@@ -215,7 +232,10 @@ export function PayTerminal({ initialForm, returnTxn }: { initialForm: string; r
             <span className="text-2xl font-semibold tabular-nums">{value ? peso(value) : "₱0.00"}</span>
           </div>
           <Button size="lg" disabled={!value || !tin || !period || pending} onClick={pay}>
-            <Lock /> {pending ? "Ihinahanda…" : value ? `Magbayad ${peso(value)}` : "Magbayad"}
+            <Lock /> {pending ? "Ihinahanda…" : value ? `Magbayad sa eGovPay ${peso(value)}` : "Magbayad sa eGovPay"}
+          </Button>
+          <Button size="lg" variant="outline" disabled={!value || !period || pending} onClick={payDemo}>
+            <QrCode /> Scan QR to pay (demo)
           </Button>
           <Methods />
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -283,19 +303,29 @@ function Methods() {
   )
 }
 
-function ScanToPay({ url }: { url: string }) {
+function ScanToPay({ url, demo }: { url: string; demo?: boolean }) {
   const [qr, setQr] = useState<string>()
   useEffect(() => {
     QRCode.toDataURL(url, { margin: 1, width: 480, errorCorrectionLevel: "M" }).then(setQr)
   }, [url])
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border p-5 text-center">
+    <div className={cn("flex flex-col items-center gap-3 rounded-2xl border p-5 text-center", demo && "border-[#0038a8]/30 bg-[#0038a8]/5")}>
+      {demo && (
+        <div className="flex w-full items-center justify-between rounded-xl bg-[#0038a8] px-3 py-2 text-white">
+          <span className="text-sm font-semibold tracking-wide">QR Ph · Scan to pay</span>
+          <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium">DEMO</span>
+        </div>
+      )}
       <p className="flex items-center gap-2 font-medium">
         <QrCode className="size-5 text-primary" /> I-scan para magbayad
       </p>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {qr ? <img src={qr} alt="Payment QR code" className="size-56 rounded-lg bg-white p-2" /> : <div className="size-56 animate-pulse rounded-lg bg-muted" />}
-      <p className="text-xs text-muted-foreground">Buksan ang camera o banking app sa phone mo at i-scan, o buksan ang page dito.</p>
+      <p className="text-xs text-muted-foreground">
+        {demo
+          ? "Demo QR: scan with your phone camera (or open the page) to see the checkout. Walang totoong pera na gagalaw."
+          : "Buksan ang camera o banking app sa phone mo at i-scan, o buksan ang page dito."}
+      </p>
       <a href={url} target="_blank" rel="noreferrer" className={buttonVariants()}>
         <Smartphone /> Buksan ang payment page
       </a>
@@ -309,6 +339,7 @@ function Receipt({ p }: { p: PaymentView }) {
       <div className="flex flex-col items-center gap-2 rounded-2xl border p-6 text-center">
         <CheckCircle2 className="size-12 text-primary" />
         <p className="text-lg font-semibold">Bayad na!</p>
+        {p.demo && <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">Demo payment · no money moved</span>}
         <p className="text-3xl font-semibold tabular-nums">{peso(p.amount)}</p>
         <p className="text-sm text-muted-foreground">{p.description}</p>
       </div>
@@ -319,8 +350,14 @@ function Receipt({ p }: { p: PaymentView }) {
         <Row k="Channel" v={p.channel ?? "—"} />
         <Row k="Petsa" v={p.paidAt ? new Date(p.paidAt).toLocaleString("en-PH") : "—"} />
       </dl>
+      {getPayable(p.formId) && (
+        <section className="flex flex-col gap-2 print:hidden">
+          <h2 className="text-sm font-semibold">Next: file the return</h2>
+          <FileButton kind="return" label={`File BIR ${getPayable(p.formId)!.code} for ${p.period ?? "this period"}`} formId={p.formId} period={p.period ?? undefined} paymentTxnid={p.txnid} />
+        </section>
+      )}
       <p className="text-xs text-muted-foreground">
-        Itago ang resibong ito at ang confirmation mula sa payment channel. Kung may return, i-file pa rin ito sa BIR.
+        Itago ang resibong ito at ang confirmation mula sa payment channel.
       </p>
       <div className="flex gap-2 print:hidden">
         <Button variant="outline" onClick={() => window.print()}>
@@ -367,5 +404,84 @@ function Row({ k, v, muted }: { k: string; v: string; muted?: boolean }) {
       <dt className="text-muted-foreground">{k}</dt>
       <dd className={cn("text-right", muted && "text-muted-foreground")}>{v}</dd>
     </div>
+  )
+}
+
+// Works out the amount from the owner's own figures (lib/tax.ts), shows how,
+// and lets them use it. An estimate: they confirm before paying.
+function ComputeTax({ formId, option, onUse }: { formId: string; option: string; onUse: (amount: number) => void }) {
+  const [f, setF] = useState<Record<string, string>>({})
+  const [smallCorp, setSmallCorp] = useState(true)
+  const [result, setResult] = useState<TaxResult | null>(null)
+  const quarterlyIncome = formId === "bir_1701q" || formId === "bir_1702q"
+  const fields: [keyof TaxInput, string][] = [
+    ["gross", formId.endsWith("q") ? "Gross sales this quarter" : "Gross sales for the year"],
+    ...(quarterlyIncome ? ([["grossPrior", "Gross sales in earlier quarters this year"]] as [keyof TaxInput, string][]) : []),
+    ...(formId === "bir_1701q" || formId === "bir_1701" || formId.startsWith("bir_1702") ? ([["paidPrior", "Income tax already paid this year"]] as [keyof TaxInput, string][]) : []),
+    ...((formId.startsWith("bir_1701") && option !== "8pct") || formId.startsWith("bir_1702")
+      ? ([["expenses", formId.startsWith("bir_1702") ? "Allowable expenses" : "Itemized expenses (blank = 40% standard deduction)"]] as [keyof TaxInput, string][])
+      : []),
+    ...(formId === "bir_2550q" ? ([["purchases", "VAT-able purchases this quarter (before VAT)"]] as [keyof TaxInput, string][]) : []),
+  ]
+  const num = (k: keyof TaxInput) => (f[k] ? (parseAmount(f[k]) ?? undefined) : undefined)
+  return (
+    <section className="flex flex-col gap-3 rounded-2xl border p-4">
+      <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <Calculator className="size-4 text-primary" /> Compute my tax
+      </h2>
+      {fields.map(([k, label]) => (
+        <label key={k} className="flex flex-col gap-1 text-sm">
+          {label}
+          <div className="relative">
+            <span className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">₱</span>
+            <input className={cn(input, "pl-7 tabular-nums")} inputMode="decimal" value={f[k] ?? ""} onChange={(e) => setF((x) => ({ ...x, [k]: e.target.value }))} placeholder="0.00" />
+          </div>
+        </label>
+      ))}
+      {formId.startsWith("bir_1702") && (
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" className="size-4" checked={smallCorp} onChange={(e) => setSmallCorp(e.target.checked)} /> Assets ₱100M or less (20% rate if taxable ≤ ₱5M)
+        </label>
+      )}
+      <Button
+        variant="secondary"
+        disabled={!num("gross")}
+        onClick={() =>
+          setResult(
+            computeTax(formId, option === "8pct" || option === "graduated" ? option : "unknown", {
+              gross: num("gross") ?? 0,
+              grossPrior: num("grossPrior"),
+              paidPrior: num("paidPrior"),
+              expenses: num("expenses"),
+              purchases: num("purchases"),
+              smallCorp,
+            })
+          )
+        }
+      >
+        <Calculator /> Compute
+      </Button>
+      {result && (
+        <div className="flex flex-col gap-2 rounded-xl bg-muted/60 p-3 text-sm">
+          <p className="font-medium">{result.method}</p>
+          <dl className="flex flex-col gap-1">
+            {result.lines.map((l) => (
+              <Row key={l.label} k={l.label} v={l.amount < 0 ? `(${peso(-l.amount)})` : peso(l.amount)} />
+            ))}
+          </dl>
+          <div className="flex items-center justify-between border-t pt-2">
+            <span>Tax due</span>
+            <span className="text-xl font-semibold tabular-nums">{peso(result.due)}</span>
+          </div>
+          {result.notes.map((n) => (
+            <p key={n} className="text-xs text-muted-foreground">{n}</p>
+          ))}
+          <p className="text-xs text-muted-foreground">Basis: {result.basis.join("; ")}. Estimate only, not tax advice: check it against your return.</p>
+          <Button size="sm" onClick={() => onUse(result.due)} disabled={!result.due}>
+            Use {peso(result.due)} as the amount to pay
+          </Button>
+        </div>
+      )}
+    </section>
   )
 }

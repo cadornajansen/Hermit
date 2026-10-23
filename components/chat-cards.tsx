@@ -9,7 +9,11 @@ import { paymentStatus, startServicePayment, type PaymentView } from "@/app/pay"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { agencyRecord, appointmentSlots, SERVICES, type Agency, type ServiceId, type Slot } from "@/lib/agencies"
 import { cityCenter, nearestBranches, type BranchAgency } from "@/lib/branches"
+import { FileButton } from "@/components/submission-tracker"
+import { label as optionLabel, LABELS } from "@/components/onboarding"
 import { TileMap } from "@/components/tile-map"
+import { documentsFor } from "@/lib/doc-checklist"
+import type { TaxResult } from "@/lib/tax"
 import { buildCalendar, buildChecklist, getRequirement } from "@/lib/engine"
 import { formsFor } from "@/lib/forms"
 import type { HermitCard, HermitStep } from "@/lib/hermit"
@@ -67,7 +71,11 @@ export function StepTimeline({ steps, live, ms, en }: { steps: HermitStep[]; liv
 
 export function HermitCards({ cards, onAsk, photo }: { cards: HermitCard[]; onAsk: (q: string) => void; photo?: string }) {
   return cards.map((c, i) =>
-    c.kind === "nearby" ? (
+    c.kind === "tax" ? (
+      <TaxCard key={i} result={c.result} />
+    ) : c.kind === "submit" ? (
+      <SubmitCard key={i} requirementId={c.requirementId} />
+    ) : c.kind === "nearby" ? (
       <NearbyCard key={i} agency={c.agency} purpose={c.purpose} />
     ) : c.kind === "changes" ? (
       <ChangesCard key={i} changes={c.changes} />
@@ -89,6 +97,10 @@ export function HermitCards({ cards, onAsk, photo }: { cards: HermitCard[]; onAs
   )
 }
 
+// Readable values for business answers ("sole" → "Sole proprietorship").
+const pretty = (field: string, v: string) =>
+  !v ? "—" : field in LABELS ? optionLabel(field as keyof typeof LABELS, v) : field === "lang" ? (v === "en" ? "English" : "Filipino") : v
+
 // What Kuya Hermit changed in the owner's details, with Undo / Redo.
 function ChangesCard({ changes }: { changes: ProfileChange[] }) {
   const { profile } = useProfile()
@@ -108,7 +120,7 @@ function ChangesCard({ changes }: { changes: ProfileChange[] }) {
               en ? "turned off (re-verify on Profile)" : "naka-off (i-verify ulit sa Profile)"
             ) : (
               <>
-                <span className="line-through opacity-60">{c.from || "—"}</span> → <span className="font-medium">{c.to || "—"}</span>
+                <span className="line-through opacity-60">{pretty(c.field, c.from)}</span> → <span className="font-medium">{pretty(c.field, c.to)}</span>
               </>
             )}
           </li>
@@ -174,6 +186,66 @@ function NearbyCard({ agency, purpose }: { agency: BranchAgency; purpose: string
       <Link href="/calendar" className="text-primary">
         {en ? "Open calendar →" : "Buksan ang kalendaryo →"}
       </Link>
+    </div>
+  )
+}
+
+function TaxCard({ result }: { result: TaxResult }) {
+  const { profile } = useProfile()
+  const en = profile?.lang === "en"
+  const pay = PAYABLES.find((p) => p.formId === result.formId)
+  return (
+    <div className={card}>
+      <p className="text-sm font-medium">
+        {pay ? `BIR ${pay.code} · ` : ""}
+        {result.method}
+      </p>
+      <dl className="flex flex-col gap-0.5">
+        {result.lines.map((l) => (
+          <div key={l.label} className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">{l.label}</dt>
+            <dd className="tabular-nums">{l.amount < 0 ? `(${peso(-l.amount)})` : peso(l.amount)}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="flex items-center justify-between border-t pt-2 text-sm">
+        <span>{en ? "Tax due" : "Babayaran"}</span>
+        <span className="text-xl font-semibold tabular-nums">{peso(result.due)}</span>
+      </p>
+      {result.notes.map((n) => (
+        <p key={n} className="text-muted-foreground">{n}</p>
+      ))}
+      <p className="text-muted-foreground">Basis: {result.basis.join("; ")}. {en ? "Estimate, not tax advice." : "Tantiya lang, hindi tax advice."}</p>
+      {pay && (
+        <Link href={`/pay?form=${pay.formId}&amount=${result.due.toFixed(2)}`} className={buttonVariants({ size: "sm" })}>
+          {en ? "Pay & file" : "Magbayad at i-file"} {peso(result.due)}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+// Submit an application from the chat: what's ready, what's missing, one tap to file.
+function SubmitCard({ requirementId }: { requirementId: string }) {
+  const { profile, docs } = useProfile()
+  const r = getRequirement(requirementId)
+  if (!profile || !r) return null
+  const en = profile.lang === "en"
+  const list = documentsFor(requirementId, profile)?.items ?? []
+  const has = (t?: string) => Boolean(t && docs.some((d) => d.extracted.docType === t && d.verdict !== "rejected"))
+  return (
+    <div className={card}>
+      <p className="text-sm font-medium">{r.name}</p>
+      <p className="text-muted-foreground">{r.agency}</p>
+      <ul className="flex flex-col gap-0.5">
+        {list.map((d) => (
+          <li key={d.name} className={d.vault && !has(d.vault) ? "text-amber-700 dark:text-amber-400" : undefined}>
+            {d.vault ? (has(d.vault) ? "✓" : "✗") : "•"} {d.name}
+            {d.detail && <span className="text-muted-foreground"> · {d.detail}</span>}
+          </li>
+        ))}
+      </ul>
+      <FileButton kind="application" requirementId={r.id} label={en ? `Submit ${r.name} (demo)` : `I-submit ang ${r.name} (demo)`} />
     </div>
   )
 }

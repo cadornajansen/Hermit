@@ -18,6 +18,19 @@ const ENUMS: Record<string, readonly string[]> = {
   lang: ["fil", "en"],
 }
 
+const ENUM_LABELS: Record<string, string> = {
+  category: "Business type",
+  structure: "Ownership",
+  stage: "Stage",
+  premises: "Premises",
+  channel: "Sales channel",
+  assets: "Assets",
+  sales: "Yearly sales",
+  taxOption: "Income tax option",
+  employees: "Employees",
+  lang: "Language",
+}
+
 const text = (max: number) => (v: string) => (v.length >= 2 && v.length <= max ? v : null)
 
 // field → [label, validator returning the stored value or null]
@@ -47,7 +60,7 @@ export const EDITABLE: Record<string, [string, (v: string) => string | null]> = 
   ],
   rdoCode: ["RDO code", (v) => (/^\d{3}[A-Za-z]?$/.test(v) ? v.toUpperCase() : null)],
   dtiNo: ["DTI / SEC / CDA registration no.", (v) => (/^[A-Za-z0-9-]{4,30}$/.test(v) ? v.toUpperCase() : null)],
-  ...Object.fromEntries(Object.entries(ENUMS).map(([k, list]) => [k, [k, (v: string) => (list.includes(v) ? v : null)]])),
+  ...Object.fromEntries(Object.entries(ENUMS).map(([k, list]) => [k, [ENUM_LABELS[k], (v: string) => (list.includes(v) ? v : null)]])),
 }
 export const ENUM_VALUES = ENUMS
 

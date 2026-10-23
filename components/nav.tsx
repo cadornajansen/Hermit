@@ -13,7 +13,7 @@ export const WORKSPACE_PAGES = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/vault", label: "Documents", icon: FileCheck2 },
   { href: "/forms", label: "Forms", icon: FileText },
-  { href: "/pay", label: "Payments", icon: Wallet },
+  { href: "/hub", label: "File & pay", icon: Wallet },
   { href: "/offices", label: "Office Locator", icon: MapPin },
 ] as const
 
