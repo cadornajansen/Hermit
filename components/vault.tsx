@@ -6,12 +6,12 @@ import { useRef, useState, useTransition } from "react"
 import { readDocument } from "@/app/actions"
 import { documentUrl } from "@/app/sync"
 import { Button } from "@/components/ui/button"
-import { buildChecklist, defaultExpiry, getRequirement } from "@/lib/engine"
+import { buildChecklist, getRequirement } from "@/lib/engine"
 import { deleteFile, getFile, putFile, sha256 } from "@/lib/files"
 import { update, useProfile, type Saved } from "@/lib/store"
 import type { DocType, Extracted, Profile, VaultDoc } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { coverage, DOC_TYPES, docName, REQUIREMENT_DOCS, verifyDocument } from "@/lib/vault"
+import { coverage, DOC_TYPES, docName, REQUIREMENT_DOCS, UPLOAD_HELP, UPLOAD_TYPES, verifyDocument } from "@/lib/vault"
 
 export const VERDICT: Record<VaultDoc["verdict"], { label: string; tone: string }> = {
   verified: { label: "Tama · Verified", tone: "bg-primary/15 text-primary" },
@@ -27,16 +27,7 @@ const CHECK_ICON = {
 
 const input = "h-10 w-full rounded-lg border bg-background px-3 text-sm"
 
-// Which checklist item an issued document completes.
-function issuedFor(doc: VaultDoc, profile: Profile) {
-  const ids = Object.keys(REQUIREMENT_DOCS).filter((id) => REQUIREMENT_DOCS[id].issues === doc.extracted.docType)
-  if (doc.requirementId && ids.includes(doc.requirementId)) return doc.requirementId
-  const applicable = new Set(buildChecklist(profile, {}).map((i) => i.id))
-  return ids.find((id) => applicable.has(id))
-}
-
-// Saves a document, appends to the activity log, and — once verified — feeds
-// the rest of HERMIT: numbers for form pre-fill, checklist status, expiry.
+// Readable identity evidence may supply metadata, but never proves agency issuance.
 function record(doc: VaultDoc, events: string[]) {
   update((s) => {
     const at = new Date().toISOString()
@@ -50,12 +41,6 @@ function record(doc: VaultDoc, events: string[]) {
       if (JSON.stringify(extra) !== JSON.stringify(s.profile.extra)) {
         patch.profile = { ...s.profile, extra }
         events.push("Na-save ang numero para sa form pre-fill")
-      }
-      const reqId = issuedFor(doc, s.profile)
-      if (reqId && s.items[reqId]?.status !== "approved") {
-        const expiresOn = e.expiresOn || defaultExpiry(reqId)
-        patch.items = { ...s.items, [reqId]: { status: "approved", expiresOn } }
-        events.push(`Checklist: ${getRequirement(reqId)?.name} → Approved${expiresOn ? `, expires ${expiresOn}` : ""}`)
       }
     }
     const log = events.map((event) => ({ at, docId: doc.id, docName: doc.fileName, event }))
@@ -84,7 +69,7 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
   const missing = checklist.flatMap((item) => {
     const c = coverage(item.id, docs)!
     return c.needs
-      .filter((slot) => !slot.doc || slot.doc.verdict === "rejected")
+      .filter((slot) => slot.doc?.verdict !== "verified")
       .map((slot) => ({ item, slot }))
   })
   const counts = { verified: 0, needs_review: 0, rejected: 0 }
@@ -92,6 +77,7 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
 
   function upload(file: File) {
     setError(undefined)
+    if (!UPLOAD_TYPES.includes(file.type)) return setError(UPLOAD_HELP)
     start(async () => {
       const id = crypto.randomUUID()
       const [hash] = await Promise.all([sha256(file), putFile(id, file)])
@@ -117,6 +103,7 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
         uploadedAt: new Date().toISOString(),
         requirementId: reqId || undefined,
         storagePath: r.storagePath,
+        extracted: { ...extracted, original: { ...r.extracted }, ...(r.extracted.docType !== extracted.docType ? { corrections: { docType: extracted.docType } } : {}) },
       }
       record(doc, [
         `Na-upload${reqId ? ` para sa ${getRequirement(reqId)?.name}` : ""}`,
@@ -192,7 +179,7 @@ export function Vault({ initialRequirement, initialType }: { initialRequirement:
         <input
           ref={fileRef}
           type="file"
-          accept="application/pdf,image/*"
+          accept={UPLOAD_TYPES.join(",")}
           className="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-2"
           aria-label="Choose a file"
           required
@@ -292,6 +279,11 @@ function DocCard({ doc, profile, docs, log }: { doc: VaultDoc; profile: Profile;
       source: "owner",
     }
     const changed = (Object.keys(extracted) as (keyof Extracted)[]).filter((k) => k !== "source" && extracted[k] !== e[k])
+    const original = { ...e }
+    delete original.original
+    delete original.corrections
+    extracted.original = e.original ?? original
+    extracted.corrections = { ...e.corrections, ...Object.fromEntries(changed.map((k) => [k, extracted[k]])) }
     const next = { ...doc, extracted, ownerConfirmed: false }
     const verified = { ...next, ...verifyDocument(next, profile, others) }
     record(verified, [`In-edit ng may-ari: ${changed.join(", ") || "walang binago"}`, verdictEvent(verified)])
@@ -322,6 +314,7 @@ function DocCard({ doc, profile, docs, log }: { doc: VaultDoc; profile: Profile;
         ))}
       </ul>
       {doc.ownerConfirmed && <p className="text-xs text-muted-foreground">Kinumpirma mo na tama ito.</p>}
+      <p className="text-xs text-muted-foreground">Application completion / official issuance: unverified. After the agency issues your document, update its checklist status separately.</p>
 
       {editing ? (
         <form

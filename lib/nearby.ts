@@ -1,4 +1,13 @@
-import type { OfficeType } from "./types"
+import type { OfficeType, Profile } from "./types"
+
+export function businessSearchAddress(p: Pick<Profile, "businessAddress" | "barangay" | "city" | "province" | "region">) {
+  const parts: string[] = []
+  const normalized = (value: string) => value.toLowerCase().replace(/\bbrgy\.?/g, "barangay").replace(/[^\p{L}\p{N}]+/gu, " ").trim()
+  for (const part of [p.businessAddress, p.barangay && `Barangay ${p.barangay}`, p.city, p.province, p.region, "Philippines"]) {
+    if (part && !` ${normalized(parts.join(" "))} `.includes(` ${normalized(part)} `)) parts.push(part)
+  }
+  return parts.join(", ")
+}
 
 // How to find each kind of office on Google Maps, and how to tell a real
 // match from a nearby shop with a similar name.

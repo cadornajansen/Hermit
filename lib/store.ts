@@ -32,9 +32,16 @@ import type { ItemState, Profile, VaultDoc, VaultEvent } from "./types"
 // The device is the working copy (instant, works offline on weak signal);
 // account/checklist/vault changes are mirrored through app/sync.ts. Reusable
 // answers stay local; form edits and signatures live only in this session.
-// ponytail: last-write-wins from this device; changes made while offline only
-// re-sync for profile/checklist (docs and log entries are sent once). Add a
-// pending-ops queue if owners start using several devices.
+// Local working copy wins ordinary hydration. Explicit restore chooses the server
+// only after pending local operations have been acknowledged.
+
+type PendingSync = {
+  owner?: number
+  documents?: Record<string, number>
+  deleted?: Record<string, number>
+  events?: VaultEvent[]
+  clearChat?: number
+}
 
 export type ChatMessage = {
   role: "owner" | "hermit"
@@ -46,6 +53,9 @@ export type ChatMessage = {
 }
 
 export type Saved = {
+  pendingSync?: PendingSync
+  syncVersion?: number
+  syncError?: string
   ownerId: string | null
   scopeError?: string
   formMemory: FormMemory
@@ -90,7 +100,7 @@ function commit(next: Saved) {
   cache = next
   try {
     if (next.ownerId) {
-      const durable = { ownerId: next.ownerId, profile: next.profile, items: next.items, chat: next.chat, lastDiff: next.lastDiff, docs: next.docs, vaultLog: next.vaultLog }
+      const durable = { ownerId: next.ownerId, profile: next.profile, items: next.items, chat: next.chat, lastDiff: next.lastDiff, docs: next.docs, vaultLog: next.vaultLog, pendingSync: next.pendingSync, syncVersion: next.syncVersion }
       localStorage.setItem(ownerStateKey(next.ownerId), JSON.stringify(durable))
     }
   } catch {
@@ -99,43 +109,91 @@ function commit(next: Saved) {
   listeners.forEach((l) => l())
 }
 
-const quiet = (p: Promise<unknown>) => p.catch((e) => console.warn("HERMIT sync failed (kept on device)", e))
-
 let ownerTimer: ReturnType<typeof setTimeout> | undefined
+let flushing = false
 
-// Mirror what changed to the server.
-function push(prev: Saved, next: Saved) {
+const hasPending = (s: Saved) => {
+  const p = s.pendingSync
+  return Boolean(p && (p.owner || p.clearChat || Object.keys(p.documents ?? {}).length || Object.keys(p.deleted ?? {}).length || p.events?.length))
+}
+
+// Queue before persisting, so a reload during debounce cannot lose the write.
+function queueChanges(prev: Saved, next: Saved) {
   if (!next.ownerId) return
-  const id = next.ownerId
-  if (
-    prev.profile !== next.profile || prev.items !== next.items || prev.lastDiff !== next.lastDiff
-  ) {
-    clearTimeout(ownerTimer)
-    ownerTimer = setTimeout(() => {
-      const s = read()
-      if (s.profile && s.ownerId === id)
-        quiet(
-          pushOwner(
-            { profile: s.profile, items: s.items, lastDiff: s.lastDiff },
-            id
-          )
-        )
-    }, 800)
-  }
+  const version = (prev.syncVersion ?? 0) + 1
+  const pending = { ...next.pendingSync }
+  if (prev.profile !== next.profile || prev.items !== next.items || prev.lastDiff !== next.lastDiff) pending.owner = version
   if (prev.docs !== next.docs) {
+    pending.documents = { ...pending.documents }
+    pending.deleted = { ...pending.deleted }
     const before = new Map(prev.docs.map((d) => [d.id, d]))
-    const changed = next.docs.filter((d) => before.get(d.id) !== d)
-    if (changed.length) quiet(saveDocuments(changed, id))
+    for (const d of next.docs.filter((d) => before.get(d.id) !== d)) {
+      pending.documents[d.id] = version
+      delete pending.deleted[d.id]
+    }
     const kept = new Set(next.docs.map((d) => d.id))
-    for (const d of prev.docs)
-      if (!kept.has(d.id)) quiet(deleteDocument(d.id, id))
+    for (const d of prev.docs) if (!kept.has(d.id)) {
+      pending.deleted[d.id] = version
+      delete pending.documents[d.id]
+    }
   }
   if (prev.vaultLog !== next.vaultLog) {
     const known = new Set(prev.vaultLog)
-    const added = next.vaultLog.filter((e) => !known.has(e))
-    if (added.length) quiet(appendVaultEvents(added, id))
+    pending.events = [...(pending.events ?? []), ...next.vaultLog.filter((e) => !known.has(e))]
   }
-  if (prev.chat.length && !next.chat.length) quiet(clearChat(id))
+  if (prev.chat.length && !next.chat.length) pending.clearChat = version
+  next.pendingSync = pending
+  next.syncVersion = version
+}
+
+export async function flushSync() {
+  if (flushing || hydrating) return
+  const id = read().ownerId
+  if (!id) return
+  flushing = true
+  try {
+    while (read().ownerId === id && hasPending(read())) {
+      const s = read()
+      const pending = s.pendingSync!
+      const ack = async (work: Promise<boolean>, clear: (p: PendingSync) => PendingSync) => {
+        if ((await work) !== true) throw new Error("Server sync is unavailable.")
+        if (read().ownerId === id) commit({ ...read(), pendingSync: clear(read().pendingSync ?? {}), syncError: undefined })
+      }
+      if (pending.owner) await ack(pushOwner({ profile: s.profile, items: s.items, lastDiff: s.lastDiff }, id), (p) => p.owner === pending.owner ? { ...p, owner: undefined } : p)
+      for (const [docId, version] of Object.entries(pending.documents ?? {})) {
+        if (read().ownerId !== id) return
+        if (read().pendingSync?.documents?.[docId] !== version) continue
+        const doc = read().docs.find((d) => d.id === docId)
+        if (!doc) {
+          if (!read().pendingSync?.documents?.[docId]) continue
+          throw new Error("A pending document is missing from the device copy.")
+        }
+        await ack(saveDocuments([doc], id), (p) => {
+          const documents = { ...p.documents }
+          if (documents[docId] === version) delete documents[docId]
+          return { ...p, documents }
+        })
+      }
+      for (const [docId, version] of Object.entries(pending.deleted ?? {})) {
+        if (read().ownerId !== id) return
+        if (read().pendingSync?.deleted?.[docId] !== version) continue
+        await ack(deleteDocument(docId, id), (p) => {
+          const deleted = { ...p.deleted }
+          if (deleted[docId] === version) delete deleted[docId]
+          return { ...p, deleted }
+        })
+      }
+      const events = pending.events?.slice(0, 100) ?? []
+      if (read().ownerId !== id) return
+      if (events.length) await ack(appendVaultEvents(events, id), (p) => ({ ...p, events: p.events?.filter((e) => !events.some((sent) => JSON.stringify(sent) === JSON.stringify(e))) }))
+      if (pending.clearChat) await ack(clearChat(id), (p) => p.clearChat === pending.clearChat ? { ...p, clearChat: undefined } : p)
+    }
+  } catch (error) {
+    if (read().ownerId === id) commit({ ...read(), syncError: "Changes are kept on this device. Server sync failed; reconnect and retry." })
+    console.warn("HERMIT sync failed (kept on device)", error)
+  } finally {
+    flushing = false
+  }
 }
 
 export function update(fn: (s: Saved) => Partial<Saved>) {
@@ -143,8 +201,12 @@ export function update(fn: (s: Saved) => Partial<Saved>) {
   const patch = fn(prev)
   if (!Object.keys(patch).length) return
   const next = { ...prev, ...patch }
+  queueChanges(prev, next)
   commit(next)
-  push(prev, next)
+  if (hasPending(next)) {
+    clearTimeout(ownerTimer)
+    ownerTimer = setTimeout(() => void flushSync(), 800)
+  }
 }
 
 let hydrating = false
@@ -175,47 +237,41 @@ export async function hydrate() {
     local.pdfDrafts = cache.pdfDrafts
   }
   let server: ServerState | null = null
+  let syncError: string | undefined
   try {
     server = await pullState(id)
   } catch (e) {
+    syncError = "Could not check the server copy. This device's changes are kept; reconnect and retry."
     console.warn("HERMIT: server unavailable, using this device's copy", e)
   }
   const latestId = await currentOwnerId().catch(() => null)
-  if (latestId && latestId !== id) {
+  if (latestId !== id) {
     commit({ ...SERVER, ready: true, scopeError: "Account changed while loading. Retry loading your account." })
     hydrating = false
     return
   }
+  if (cache?.ownerId === id) local = { ...local, ...cache, scopeError: undefined }
   // Returning eGovPH user on this device (/egovph/sso switched the owner):
   // their saved data wins over whatever this device had.
-  if (
-    typeof location !== "undefined" && new URLSearchParams(location.search).has("restore")
-  ) {
-    commit({ ...local, ...(server ?? {}), ready: true, synced: true })
+  const restoring = typeof location !== "undefined" && new URLSearchParams(location.search).has("restore")
+  if (restoring && server && !hasPending(local)) {
+    commit({ ...local, ...server, ready: true, synced: true, syncError: undefined })
     history.replaceState(null, "", location.pathname)
     hydrating = false
     return
   }
-  if (server?.profile && !local.profile) {
+  if (server?.profile && !local.profile && !hasPending(local)) {
     // New device / cleared browser: restore everything from the server.
     commit({ ...local, ...server, synced: true })
     hydrating = false
     return
   }
-  commit({ ...local, synced: true })
+  // A missing owner row also needs its first sync; a failed pull is not absence.
+  if (local.profile && !server?.profile && !syncError && !hasPending(local)) queueChanges({ ...local, profile: null, docs: [], vaultLog: [] }, local)
+  commit({ ...local, synced: true, syncError })
   hydrating = false
-  if (local.profile && !server?.profile) {
-    // First sync for data created before the backend existed.
-    quiet(
-      pushOwner(
-        { profile: local.profile, items: local.items, lastDiff: local.lastDiff },
-        id
-      )
-    )
-    if (local.docs.length) quiet(saveDocuments(local.docs, id))
-    if (local.vaultLog.length)
-      quiet(appendVaultEvents(local.vaultLog.slice(0, 100), id))
-  }
+  if (!syncError) await flushSync()
+  if (restoring && server && !hasPending(read()) && !read().syncError) await hydrate()
 }
 
 export function setFormAnswer(formId: string, key: string, value: string) {
@@ -257,6 +313,7 @@ export const editSavedAnswer = (key: ReusableKey, value: string) =>
 export const withdrawFormConsent = () => changeMemory(() => emptyFormMemory())
 
 if (typeof window !== "undefined") {
+  window.addEventListener("online", () => void hydrate())
   window.addEventListener("storage", (event) => {
     const s = read()
     if (
@@ -310,7 +367,7 @@ export function useProfile() {
   const s = useHermit()
   const router = useRouter()
   useEffect(() => {
-    if (s.synced && !s.profile) router.replace("/onboarding")
-  }, [s.synced, s.profile, router])
+    if (s.synced && !s.profile && !s.syncError) router.replace("/onboarding")
+  }, [s.synced, s.profile, s.syncError, router])
   return s
 }

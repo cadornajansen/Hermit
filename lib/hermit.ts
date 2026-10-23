@@ -3,7 +3,7 @@ import "server-only"
 import { extractText, getDocumentProxy } from "unpdf"
 
 import { buildCalendar, buildChecklist, getRequirement, REQUIREMENTS } from "@/lib/engine"
-import { fillForm, FIELDS, fitsProfile, FORMS, formsFor, getForm, type FieldKey } from "@/lib/forms"
+import { fillForm, FIELDS, fitsProfile, formForLocation, FORMS, formsFor, getForm, type FieldKey } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
 import { officesFor } from "@/lib/offices"
 import { packetPlan, slotName, usable } from "@/lib/pack"
@@ -242,9 +242,9 @@ const TOOLS = [
   },
 ].map((t) => ({ type: "function" as const, function: t }))
 
-async function readOfficialForm(formId: string, out: HermitReply) {
+async function readOfficialForm(formId: string, out: HermitReply, profile: Profile) {
   const form = getForm(formId)
-  const copies = libraryFiles(formId).filter((c) => c.textUrl)
+  const copies = libraryFiles(formId, profile).filter((c) => c.textUrl)
   if (!form || !copies.length) return { error: "No readable official copy for this form. Use find_forms to see which have officialCopy=true." }
   if (!out.formIds.includes(form.id)) out.formIds.push(form.id)
   const texts = await Promise.all(
@@ -285,7 +285,7 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
           issued: c.issued && { document: DOC_TYPES[c.issued.types[0]].name, onFile: c.issued.doc?.verdict ?? "missing" },
         },
         forms: formsFor(item.id, p).map((f) => ({ id: f.id, name: f.name })),
-        startHere: processFor(item.id) ?? null,
+        startHere: processFor(item.id, p) ?? null,
       }
     }
     case "get_deadlines": {
@@ -294,31 +294,32 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
     }
     case "get_offices": {
       const types = new Set(items.map((i) => i.officeType))
-      return officesFor(p.city, p.barangay, types).map((o) => ({ name: o.name, handles: o.note, website: o.url ?? null }))
+      return officesFor(p.city, p.barangay, types, p).map((o) => ({ name: o.name, handles: o.note, website: o.url ?? null }))
     }
     case "get_documents":
       return {
         uploaded: ctx.docs.map((d) => ({ file: d.fileName, document: d.type === "unknown" ? "unknown" : DOC_TYPES[d.type].name, result: d.verdict, expiresOn: d.expiresOn || null })),
-        missing: items.flatMap((i) => (coverage(i.id, vaultDocs)?.needs ?? []).filter((s) => !s.doc || s.doc.verdict === "rejected").map((s) => ({ for: i.name, documents: s.types.map((t) => DOC_TYPES[t].name) }))),
+        missing: items.flatMap((i) => (coverage(i.id, vaultDocs)?.needs ?? []).filter((s) => !usable(s)).map((s) => ({ for: i.name, documents: s.types.map((t) => DOC_TYPES[t].name), reviewState: s.doc?.verdict ?? "missing" }))),
       }
     case "find_forms": {
       const q = String(args.query ?? "").toLowerCase().split(/\s+/).filter(Boolean)
-      const list = (args.requirement_id ? formsFor(String(args.requirement_id)) : FORMS).filter((f) => fitsProfile(f, p))
+      const list = (args.requirement_id ? formsFor(String(args.requirement_id), p) : FORMS).filter((f) => fitsProfile(f, p))
       return list
         .filter((f) => q.every((w) => `${f.id} ${f.code} ${f.name} ${f.agency} ${f.purpose}`.toLowerCase().includes(w)))
         .slice(0, 12)
-        .map((f) => ({ id: f.id, code: f.code, name: f.name, agency: f.agency, purpose: f.purpose, howToFile: f.handoff, fileAt: f.portal, officialCopy: libraryFiles(f.id).length > 0 }))
+        .map((f) => ({ id: f.id, code: f.code, name: f.name, agency: f.agency, purpose: f.purpose, howToFile: f.handoff, fileAt: f.portal, officialCopy: libraryFiles(f.id, p).length > 0 }))
     }
     case "prefill_form": {
-      const form = getForm(String(args.form_id))
-      if (!form) return { error: "Unknown form id. Call find_forms first." }
+      const template = getForm(String(args.form_id))
+      if (!template) return { error: "Unknown form id. Call find_forms first." }
+      const form = formForLocation(template, p)
       if (!out.formIds.includes(form.id)) out.formIds.push(form.id)
       if (!out.sources.some((s) => s.url === form.source)) out.sources.push({ name: form.name, url: form.source, lastVerified: null })
       return {
         form: form.name,
         howToFile: form.handoff,
         fileAt: form.portal,
-        officialBlankForms: libraryFiles(form.id).map((c) => ({ label: c.label, kind: c.kind, download: c.url, copiedOn: c.retrievedAt.slice(0, 10) })),
+        officialBlankForms: libraryFiles(form.id, p).map((c) => ({ label: c.label, kind: c.kind, download: c.url, copiedOn: c.retrievedAt.slice(0, 10) })),
         fields: fillForm(form, p, undefined, out.saved).map((f) => ({ key: f.key, label: f.label, value: f.value || null, missing: f.missing })),
       }
     }
@@ -346,9 +347,9 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
       cite(plan.requirement.id)
       return {
         packet: plan.requirement.name,
-        forms: plan.forms.map((f) => ({ form: f.form.name, filledOnOfficialPdf: Boolean(f.file && f.layout), stillBlank: f.missing })),
+        forms: plan.forms.map((f) => ({ form: f.form.name, reason: f.reason, officialPdfCandidate: Boolean(f.file && f.layout), stillBlank: f.missing })),
         consentLetter: plan.letter,
-        vaultCopiesIncluded: plan.needs.filter(usable).map(slotName),
+        vaultCopiesToAttempt: plan.needs.filter(usable).map(slotName),
         stillMissing: plan.needs.filter((s) => !usable(s)).map(slotName),
         note: "The app now shows a card with a download button; the PDF is built on the owner's device. The owner reviews, signs and files it.",
       }
@@ -390,7 +391,7 @@ export async function askKuyaHermit(
         const args = JSON.parse(call.function.arguments)
         result =
           call.function.name === "read_official_form"
-            ? await readOfficialForm(String(args.form_id), out)
+            ? await readOfficialForm(String(args.form_id), out, ctx.profile)
             : runTool(call.function.name, args, ctx, out)
       } catch (e) {
         result = { error: e instanceof Error ? e.message : "tool failed" }

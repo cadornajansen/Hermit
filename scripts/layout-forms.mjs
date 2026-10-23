@@ -67,7 +67,7 @@ const ENTRY = {
   properties: {
     key: { type: "string" },
     target: { type: "string", description: "box id (flat PDF) or field name (fillable PDF)" },
-    part: { type: "string", enum: ["full", "last", "first", "middle"] },
+    part: { type: "string", enum: ["full", "last", "first", "middle", "suffix"] },
     format: { type: "string", enum: ["as_is", "upper", "date"] },
     anchor: { type: "string", description: "exact sub-label text inside the box to align under/over, or empty" },
     where: { type: "string", enum: ["fill", "below_anchor", "above_anchor", "mark"] },
@@ -90,7 +90,7 @@ const VERIFY = {
 
 const RULES = `Rules:
 - Fill EVERY answer below that the form asks for. Use where="fill" to write in the box. When one box holds several sub-labels side by side (e.g. "(LAST NAME) (FIRST NAME) (MIDDLE NAME)" or "(BARANGAY) (CITY/MUNICIPALITY)"), add one entry per sub-label with anchor = that sub-label exactly as printed and where="below_anchor".
-- Names: when the form separates last / first / middle name, use key owner_name with part="last" / "first" / "middle"; otherwise part="full".
+- Names: when the form separates last / first / middle name, use key owner_name with part="last" / "first" / "middle"; use part="suffix" for a separate Jr./Sr./II/III or name extension box; otherwise part="full".
 - Dates: format="date". If the form says to print in CAPITAL LETTERS, use format="upper" for all text answers.
 - Checkboxes: where="mark", target the small checkbox box beside the option's words; for choice fields set equals to the matching HERMIT option. Use __constant only for boxes true for every business owner.
 - Signature: one __signature entry for the owner's / taxpayer's / employer's signature (if the box contains the word SIGNATURE, anchor="SIGNATURE", where="above_anchor"); add __today on the DATE line beside it (anchor="DATE", where="above_anchor" when the word is in the box).

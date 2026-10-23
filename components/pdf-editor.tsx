@@ -32,7 +32,7 @@ type Mode =
 export function PdfEditor({ formId, filePath }: { formId: string; filePath?: string }) {
   const { profile, ownerId, formMemory, formEdits, pdfDrafts } = useProfile()
   const form = getForm(formId)!
-  const pdfs = libraryFiles(formId).filter((f) => f.kind === "form" && f.path.endsWith(".pdf"))
+  const pdfs = libraryFiles(formId, profile).filter((f) => f.kind === "form" && f.path.endsWith(".pdf"))
   const file = pdfs.find((f) => f.path === filePath) ?? pdfs[0]
   const layout = file ? ((layouts as Record<string, Layout>)[file.path] ?? null) : null
 

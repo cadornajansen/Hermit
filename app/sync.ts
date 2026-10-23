@@ -13,6 +13,10 @@ import type { ItemState, Profile, VaultDoc, VaultEvent } from "@/lib/types"
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const VERDICTS = new Set(["verified", "needs_review", "rejected"])
 
+function checked(result: { error: unknown }) {
+  if (result.error) throw new Error("Could not sync account data. Changes remain on this device.")
+}
+
 function capped<T>(value: T, maxBytes: number): T {
   if (JSON.stringify(value ?? null).length > maxBytes) throw new Error("Payload too large")
   return value
@@ -24,7 +28,7 @@ async function owner(expectedOwnerId: string) {
     throw new Error("Account changed. Reload before saving.")
   const sb = db()
   if (!sb) return null
-  await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
+  checked(await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true }))
   return { sb, id }
 }
 
@@ -89,8 +93,8 @@ export async function pushOwner(
   expectedOwnerId: string
 ) {
   const o = await owner(expectedOwnerId)
-  if (!o) return
-  await o.sb
+  if (!o) return false
+  const result = await o.sb
     .from("owners")
     .update({
       profile: capped(state.profile, 100_000),
@@ -99,13 +103,17 @@ export async function pushOwner(
       updated_at: new Date().toISOString(),
     })
     .eq("id", o.id)
+    .select("id")
+  checked(result)
+  if (!result.data?.length) throw new Error("Could not save account data: no row was acknowledged.")
+  return true
 }
 
 export async function saveDocuments(docs: VaultDoc[], expectedOwnerId: string) {
   const o = await owner(expectedOwnerId)
-  if (!o || !Array.isArray(docs) || docs.length > 200) return
+  if (!o) return false
+  if (!Array.isArray(docs) || docs.length > 200 || docs.some((d) => !UUID.test(d.id) || !VERDICTS.has(d.verdict))) throw new Error("Invalid documents to sync")
   const rows = docs
-    .filter((d) => UUID.test(d.id) && VERDICTS.has(d.verdict))
     .map((d) => ({
       owner_id: o.id,
       id: d.id,
@@ -122,7 +130,8 @@ export async function saveDocuments(docs: VaultDoc[], expectedOwnerId: string) {
       owner_confirmed: Boolean(d.ownerConfirmed),
       uploaded_at: d.uploadedAt,
     }))
-  if (rows.length) await o.sb.from("documents").upsert(rows, { onConflict: "owner_id,id" })
+  if (rows.length) checked(await o.sb.from("documents").upsert(rows, { onConflict: "owner_id,id" }))
+  return true
 }
 
 export async function appendVaultEvents(
@@ -130,7 +139,8 @@ export async function appendVaultEvents(
   expectedOwnerId: string
 ) {
   const o = await owner(expectedOwnerId)
-  if (!o || !Array.isArray(events) || events.length > 100) return
+  if (!o) return false
+  if (!Array.isArray(events) || events.length > 100) throw new Error("Invalid events to sync")
   const rows = events.map((e) => ({
     owner_id: o.id,
     doc_id: UUID.test(e.docId) ? e.docId : null,
@@ -138,14 +148,25 @@ export async function appendVaultEvents(
     event: String(e.event).slice(0, 500),
     at: e.at,
   }))
-  if (rows.length) await o.sb.from("vault_events").insert(rows)
+  if (rows.length) {
+    // A retried batch may already have committed before its response was lost.
+    const previous = await o.sb.from("vault_events").select("doc_id, doc_name, event, at").eq("owner_id", o.id).gte("at", rows.map((r) => r.at).sort()[0])
+    checked(previous)
+    const key = (r: { doc_id: string | null; doc_name: string; event: string; at: string }) => JSON.stringify([r.doc_id, r.doc_name, r.event, new Date(r.at).toISOString()])
+    const known = new Set((previous.data ?? []).map(key))
+    const missing = rows.filter((r) => !known.has(key(r)))
+    if (missing.length) checked(await o.sb.from("vault_events").insert(missing))
+  }
+  return true
 }
 
 export async function deleteDocument(docId: string, expectedOwnerId: string) {
   const o = await owner(expectedOwnerId)
-  if (!o || !UUID.test(docId)) return
-  await o.sb.storage.from(BUCKET).remove([`${o.id}/${docId}`])
-  await o.sb.from("documents").delete().eq("owner_id", o.id).eq("id", docId)
+  if (!o) return false
+  if (!UUID.test(docId)) throw new Error("Invalid document to delete")
+  checked(await o.sb.storage.from(BUCKET).remove([`${o.id}/${docId}`]))
+  checked(await o.sb.from("documents").delete().eq("owner_id", o.id).eq("id", docId))
+  return true
 }
 
 // Short-lived link to view a stored file; only for the cookie's owner.
@@ -161,7 +182,9 @@ export async function documentUrl(docId: string) {
 
 export async function clearChat(expectedOwnerId: string) {
   const o = await owner(expectedOwnerId)
-  if (o) await o.sb.from("chat_messages").delete().eq("owner_id", o.id)
+  if (!o) return false
+  checked(await o.sb.from("chat_messages").delete().eq("owner_id", o.id))
+  return true
 }
 
 // "Delete all my data": files, rows (cascade) and cookies.

@@ -93,6 +93,16 @@ export function resolveLocation(value: LocationValue) {
   return { region, city, issue }
 }
 
+export const isTaguigJurisdiction = (value: LocationValue) =>
+  resolveLocation(value).city?.code === "1381500000"
+
+export function jurisdictionLabel(value: LocationValue) {
+  const { city, region } = resolveLocation(value)
+  return city
+    ? [city.name, city.province, region?.name].filter(Boolean).join(", ")
+    : `${[value.city, value.province, value.region].filter(Boolean).join(", ") || "Unknown location"} (confirm jurisdiction)`
+}
+
 export function restoreLocation<T extends LocationValue>(
   value: T
 ): T & LocationValue {

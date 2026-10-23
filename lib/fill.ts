@@ -7,7 +7,7 @@ export type LayoutEntry = {
   x: number
   y: number // PDF points from the bottom-left; text baseline (signature: bottom edge)
   size: number // font size; signature: width
-  part?: "full" | "last" | "first" | "middle"
+  part?: "full" | "last" | "first" | "middle" | "suffix"
   format?: "as_is" | "upper" | "date"
   maxWidth?: number
   pitch?: number // one character per cell (TIN, dates, ZIP)
@@ -61,12 +61,13 @@ const PARTICLES = new Set(["de", "del", "dela", "della", "delos", "la", "las", "
 
 export function splitName(full: string) {
   const t = full.trim().split(/\s+/).filter(Boolean)
-  if (t.length <= 1) return { first: t[0] ?? "", middle: "", last: "" }
+  const suffix = t.length > 1 && /^(jr\.?|sr\.?|ii|iii)$/i.test(t.at(-1)!) ? t.pop()! : ""
+  if (t.length <= 1) return { first: t[0] ?? "", middle: "", last: "", suffix }
   let k = t.length - 1
   while (k > 1 && PARTICLES.has(t[k - 1].toLowerCase())) k--
   const last = t.slice(k).join(" ")
-  if (k === 1) return { first: t[0], middle: "", last }
-  return { first: t.slice(0, k - 1).join(" "), middle: t[k - 1], last }
+  if (k === 1) return { first: t[0], middle: "", last, suffix }
+  return { first: t.slice(0, k - 1).join(" "), middle: t[k - 1], last, suffix }
 }
 
 export function formatDate(v: string) {

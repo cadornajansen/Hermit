@@ -224,11 +224,11 @@ test("real store: no blur retention, explicit consent, reload, deletion, owner s
     const f = globalThis.__hermitStoreTest;
     export const currentOwnerId = async () => { if (f.failScope) throw Error('offline'); return f.owner; };
     export const pullState = async () => { if (f.switchDuringPull) { f.owner = 'C'; f.switchDuringPull = false; } return null; };
-    export const pushOwner = async () => { f.pushCount++; };
-    export const saveDocuments = async () => {};
-    export const appendVaultEvents = async () => {};
-    export const deleteDocument = async () => {};
-    export const clearChat = async () => {};
+    export const pushOwner = async () => { f.pushCount++; return true; };
+    export const saveDocuments = async () => true;
+    export const appendVaultEvents = async () => true;
+    export const deleteDocument = async () => true;
+    export const clearChat = async () => true;
   `)
   const imports = {
     "@/app/sync": sync,

@@ -159,7 +159,7 @@ export default function Dashboard() {
                       <dt className="text-muted-foreground">Renewal</dt>
                       <dd>{item.renewal}</dd>
                     </dl>
-                    <StartHere requirementId={item.id} />
+                    <StartHere requirementId={item.id} profile={profile} />
                     <DocSlots requirementId={item.id} docs={docs} />
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <AlertTriangle className="size-3.5" aria-hidden />
@@ -220,12 +220,13 @@ export default function Dashboard() {
 }
 
 // Exactly where to begin the paperwork for steps without a downloadable form.
-function StartHere({ requirementId }: { requirementId: string }) {
-  const p = processFor(requirementId)
+function StartHere({ requirementId, profile }: { requirementId: string; profile: import("@/lib/types").Profile }) {
+  const p = processFor(requirementId, profile)
   if (!p || (!p.links.length && !p.office)) return null
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-primary/5 p-3">
       <p className="text-xs font-semibold tracking-wide text-primary uppercase">Simulan dito · Start here</p>
+      <p className="text-xs">Jurisdiction: {p.jurisdiction}</p>
       {p.links.map((l) => (
         <div key={l.label} className="flex flex-col gap-1">
           <a href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline">

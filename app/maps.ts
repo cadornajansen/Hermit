@@ -21,7 +21,7 @@ type Place = {
 }
 
 // ponytail: per-instance memory cache; move to Supabase if Places costs climb.
-const cache = new Map<string, { at: number; offices: NearbyOffice[] }>()
+const cache = new Map<string, { at: number; center: { lat: number; lng: number }; offices: NearbyOffice[] }>()
 const DAY = 86_400_000
 
 export async function mapsEnabled() {
@@ -32,9 +32,11 @@ async function geocode(address: string) {
   const url = new URL("https://maps.googleapis.com/maps/api/geocode/json")
   url.search = new URLSearchParams({ address, region: "ph", components: "country:PH", key: KEY()! }).toString()
   const r = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+  if (!r.ok) throw new Error(`Geocoding HTTP ${r.status}`)
   const j = await r.json()
+  if (j.status !== "OK" && j.status !== "ZERO_RESULTS") throw new Error(`Geocoding ${j.status}`)
   const loc = j.results?.[0]?.geometry?.location
-  return loc ? { lat: loc.lat as number, lng: loc.lng as number } : null
+  return loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng) && Math.abs(loc.lat) <= 90 && Math.abs(loc.lng) <= 180 ? { lat: loc.lat as number, lng: loc.lng as number } : null
 }
 
 async function search(text: string, at: { lat: number; lng: number }) {
@@ -63,7 +65,8 @@ export async function findNearbyOffices(input: {
   types: OfficeType[]
 }) {
   if (!KEY()) return { ok: false as const, error: "no_key" }
-  const types = (Array.isArray(input?.types) ? input.types : []).filter((t) => t in OFFICE_SEARCH).slice(0, 14)
+  const types = [...new Set(Array.isArray(input?.types) ? input.types : [])].filter((t) => Object.hasOwn(OFFICE_SEARCH, t)).slice(0, 14)
+  if (!types.length) return { ok: false as const, error: "Choose at least one office type." }
   const city = String(input?.city ?? "").slice(0, 60)
   const barangay = String(input?.barangay ?? "").slice(0, 60)
 
@@ -73,7 +76,7 @@ export async function findNearbyOffices(input: {
 
   const key = `${at ? `${at.lat},${at.lng}` : String(input?.address ?? "").slice(0, 200)}|${city}|${barangay}|${types.join(",")}`
   const hit = cache.get(key)
-  if (hit && Date.now() - hit.at < DAY) return { ok: true as const, center: at ?? null, offices: hit.offices }
+  if (hit && Date.now() - hit.at < DAY) return { ok: true as const, center: at ?? hit.center, offices: hit.offices, failedTypes: [] as OfficeType[], cached: true }
 
   if (!(await takeAiQuota("maps"))) return { ok: false as const, error: "Masyadong maraming hanap ngayon. Subukan ulit mamaya." }
   try {
@@ -84,11 +87,13 @@ export async function findNearbyOffices(input: {
       if (!at) return { ok: false as const, error: "Hindi mahanap ang address sa mapa. Gamitin ang lokasyon mo." }
     }
     const center = at
+    const failedTypes: OfficeType[] = []
     const found = await Promise.all(
       types.map(async (type) => {
         const s = OFFICE_SEARCH[type]!
         const places = await search(s.query(city, barangay), center).catch((e) => {
           console.error("Places search failed", type, e)
+          failedTypes.push(type)
           return [] as Place[]
         })
         return places
@@ -110,8 +115,10 @@ export async function findNearbyOffices(input: {
       })
     )
     const offices = found.flat()
-    cache.set(key, { at: Date.now(), offices })
-    return { ok: true as const, center, offices }
+    if (failedTypes.length === types.length) return { ok: false as const, error: "Hindi ma-reach ang Google Maps ngayon. Subukan ulit." }
+    // A retry must recheck failed types rather than reuse an incomplete result.
+    if (!failedTypes.length) cache.set(key, { at: Date.now(), center, offices })
+    return { ok: true as const, center, offices, failedTypes, cached: false }
   } catch (e) {
     console.error("Nearby office search failed", e)
     return { ok: false as const, error: "Hindi ma-reach ang Google Maps ngayon. Subukan ulit." }

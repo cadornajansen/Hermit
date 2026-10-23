@@ -5,7 +5,7 @@ import { useState } from "react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { useFormConsent } from "@/components/form-consent"
-import { fillForm, getForm, HANDOFF_LABEL } from "@/lib/forms"
+import { fillForm, formForLocation, getForm, HANDOFF_LABEL } from "@/lib/forms"
 import { libraryFiles } from "@/lib/library"
 import { setFormAnswer, update, useProfile } from "@/lib/store"
 
@@ -14,7 +14,7 @@ import { setFormAnswer, update, useProfile } from "@/lib/store"
 export function FormSheet({ id }: { id: string }) {
   const { profile, formMemory, formEdits } = useProfile()
   const [copied, setCopied] = useState(false)
-  const form = getForm(id)!
+  const form = formForLocation(getForm(id)!, profile)
   const fields = profile
     ? fillForm(form, profile, formMemory, formEdits[id])
     : []
@@ -26,7 +26,7 @@ export function FormSheet({ id }: { id: string }) {
 
   const missing = fields.filter((f) => f.missing).length
   const portalIsUrl = form.portal.startsWith("http")
-  const copies = libraryFiles(form.id)
+  const copies = libraryFiles(form.id, profile)
 
   return (
     <div className="flex flex-col gap-4">

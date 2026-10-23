@@ -1,10 +1,11 @@
 import { getRequirement } from "./engine"
 import { draftKey, initialBoxes, pdfSafe, type Box, type Layout } from "./fill"
 import layouts from "./form-layouts.json"
-import { fillForm, formsFor, type FormTemplate } from "./forms"
+import { fillForm, filingTask, formsFor, type FilingTask, type FormTemplate } from "./forms"
 import type { FormMemory } from "./form-memory"
 import { libraryFiles, type LibraryFile } from "./library"
 import { officesFor } from "./offices"
+import { jurisdictionLabel } from "./locations"
 import { processFor } from "./processes"
 import type { Profile, VaultDoc } from "./types"
 import { coverage, DOC_TYPES, type SlotStatus } from "./vault"
@@ -16,15 +17,19 @@ import { coverage, DOC_TYPES, type SlotStatus } from "./vault"
 
 export type PacketPlan = {
   requirement: NonNullable<ReturnType<typeof getRequirement>>
-  forms: { form: FormTemplate; file?: LibraryFile; layout?: Layout; missing: string[] }[]
+  task: FilingTask
+  forms: { form: FormTemplate; reason: string; file?: LibraryFile; layout?: Layout; missing: string[] }[]
   needs: SlotStatus[] // documents to bring, with the owner's vault copy when there is one
   letter: boolean // property owner's consent letter, when no lease/title is on file
 }
 
-export const usable = (s: SlotStatus) => Boolean(s.doc && s.doc.verdict !== "rejected")
+export const usable = (s: SlotStatus) => s.doc?.verdict === "verified"
+export const slotAvailability = (s: SlotStatus) =>
+  usable(s) ? "verified copy" : s.doc?.verdict === "needs_review" ? "awaiting review" : s.doc ? "unavailable: rejected" : "not in your vault"
 export const slotName = (s: SlotStatus) => s.types.map((t) => DOC_TYPES[t].name).join(" / ")
 
 export type FormContext = {
+  task?: FilingTask
   memory?: FormMemory
   edits?: Record<string, Record<string, string>>
   ownerId?: string | null
@@ -39,11 +44,13 @@ export function packetPlan(
 ): PacketPlan | null {
   const requirement = getRequirement(requirementId)
   if (!requirement) return null
-  const forms = formsFor(requirementId, profile).map((form) => {
-    const file = libraryFiles(form.id).find((f) => f.kind === "form" && f.path.endsWith(".pdf"))
+  const task = context.task ?? filingTask(requirementId)
+  const forms = formsFor(requirementId, profile, task).map((form) => {
+    const file = libraryFiles(form.id, profile).find((f) => f.kind === "form" && f.path.endsWith(".pdf"))
     const layout = file ? (layouts as Record<string, Layout>)[file.path] : undefined
     return {
       form,
+      reason: `${task}: ${form.purpose}`,
       file,
       layout,
       missing: fillForm(form, profile, context.memory, context.edits?.[form.id])
@@ -53,7 +60,7 @@ export function packetPlan(
   })
   const needs = coverage(requirementId, docs)?.needs ?? []
   const letter = profile.premises !== "owned" && needs.some((s) => s.types.includes("lease") && !usable(s))
-  return { requirement, forms, needs, letter }
+  return { requirement, task, forms, needs, letter }
 }
 
 const A4: [number, number] = [595.28, 841.89]
@@ -109,28 +116,74 @@ export async function buildPacket(
     return { line, space }
   }
 
-  // Vault copies first, so the cover can say what made it in.
-  const attached: { name: string; blob?: Blob; why?: string }[] = []
-  for (const s of plan.needs.filter(usable)) {
-    const blob = await fetchDoc(s.doc!).catch(() => undefined)
-    attached.push({ name: DOC_TYPES[s.types.find((x) => x === s.doc!.extracted.docType) ?? s.types[0]].name, blob, why: blob ? undefined : t("hindi ma-load ang file", "file couldn't be loaded") })
+  // Prepare and copy once before the cover; its claims use these exact outcomes.
+  const prepared = await Promise.all(plan.forms.map(async (f) => {
+    try {
+      if (!f.file || !f.layout) throw new Error("No mapped official PDF available")
+      const res = await fetch(f.file.url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const src = await PDFDocument.load(await res.arrayBuffer(), { ignoreEncryption: true })
+      if (!src.getPageCount()) throw new Error("Official PDF has no pages")
+      const boxes = context.ownerId ? context.drafts?.[draftKey(context.ownerId, f.file.path, f.layout)] : undefined
+      const srcFont = await src.embedFont(StandardFonts.Helvetica)
+      const acro = await drawBoxes(src, boxes ?? initialBoxes(f.layout, values(f.form)).boxes, srcFont)
+      acro?.updateFieldAppearances(srcFont)
+      acro?.flatten()
+      return { ...f, pages: await out.copyPages(src, src.getPageIndices()), why: undefined }
+    } catch (error) {
+      return { ...f, pages: [], why: error instanceof Error ? error.message : "Official PDF could not be prepared" }
+    }
+  }))
+  const attached = []
+  for (const slot of plan.needs) {
+    const name = slot.doc ? DOC_TYPES[slot.types.find((x) => x === slot.doc!.extracted.docType) ?? slot.types[0]].name : slotName(slot)
+    let pages: import("pdf-lib").PDFPage[] = []
+    let why: string | undefined
+    try {
+      if (!usable(slot)) throw new Error(slotAvailability(slot))
+      const blob = await fetchDoc(slot.doc!)
+      if (!blob) throw new Error("file couldn't be loaded")
+      const bytes = await blob.arrayBuffer()
+      let src
+      if (blob.type === "application/pdf") {
+        src = await PDFDocument.load(bytes, { ignoreEncryption: true })
+        if (!src.getPageCount()) throw new Error("PDF has no pages")
+      } else if (["image/png", "image/jpeg"].includes(blob.type)) {
+        src = await PDFDocument.create()
+        const img = blob.type === "image/png" ? await src.embedPng(bytes) : await src.embedJpg(bytes)
+        const page = src.addPage(A4)
+        const scale = Math.min(495 / img.width, 700 / img.height, 1)
+        const labelFont = await src.embedFont(StandardFonts.HelveticaBold)
+        page.drawText(pdfSafe(name), { x: 50, y: 800, size: 10, font: labelFont })
+        page.drawImage(img, { x: 50, y: 780 - img.height * scale, width: img.width * scale, height: img.height * scale })
+      } else throw new Error(`unsupported file type ${blob.type || "unknown"}; convert to PDF, PNG or JPEG`)
+      pages = await out.copyPages(src, src.getPageIndices())
+    } catch (error) {
+      why = error instanceof Error ? error.message : "file couldn't be decoded or embedded"
+    }
+    attached.push({ slot, name, pages, why })
   }
 
   // 1. Cover page and checklist
   const c = sheet()
   c.line(`HERMIT · ${plan.requirement.name}`, { size: 18, b: true })
   c.line([profile.businessName, profile.ownerName].filter(Boolean).join(" · "))
+  c.line(`Jurisdiction: ${jurisdictionLabel(profile)} · Filing task: ${plan.task}`, { size: 9 })
   c.line(t(`Inihanda noong ${today}`, `Prepared ${today}`), { size: 9 })
   c.space(12)
   c.line(t("LAMAN NG PACKET NA ITO", "IN THIS PACKET"), { b: true })
   let n = 1
-  for (const f of plan.forms)
-    c.line(`${n++}. ${f.form.name}${f.file && f.layout ? t(" (opisyal na form, napunan na)", " (official form, filled in)") : t(" (info sheet: kopyahin sa form ng opisina)", " (info sheet: copy onto the office's form)")}`, { indent: 8 })
+  for (const f of prepared) {
+    c.line(`${n++}. ${f.form.name}${f.pages.length ? t(" (opisyal na form, napunan na)", " (official form, filled in)") : t(" (info sheet: kopyahin sa form ng opisina)", " (info sheet: copy onto the office's form)")}`, { indent: 8 })
+    c.line(f.reason, { indent: 16, size: 9 })
+    if (f.why) c.line(`Info sheet: ${f.why}`, { indent: 16, size: 9 })
+  }
   if (plan.letter) c.line(`${n++}. ${t("Liham ng pahintulot ng may-ari ng lugar (papirmahan sa may-ari)", "Property owner's consent letter (for the owner to sign)")}`, { indent: 8 })
-  for (const a of attached) c.line(`${n++}. ${t("Kopya mula sa vault", "Vault copy")}: ${a.name}${a.why ? ` (${a.why})` : ""}`, { indent: 8 })
+  for (const a of attached.filter((a) => a.pages.length)) c.line(`${n++}. ${t("Kopya mula sa vault", "Vault copy")}: ${a.name}`, { indent: 8 })
+  for (const a of attached.filter((a) => a.why)) c.line(`Unavailable / omitted: ${a.name} (${a.why})`, { indent: 8 })
   c.space()
   c.line(t("DALHIN (original + photocopy)", "BRING (original + photocopy)"), { b: true })
-  for (const s of plan.needs) c.line(`[${usable(s) ? "x" : "  "}] ${slotName(s)}${usable(s) ? "" : t(" (wala pa sa vault mo)", " (not in your vault yet)")}`, { indent: 8 })
+  for (const a of attached) c.line(`[${a.pages.length ? "x" : "  "}] ${slotName(a.slot)} (${a.why ?? "verified copy included"})`, { indent: 8 })
   for (const d of plan.requirement.documents) c.line(`- ${d}`, { indent: 8, size: 9.5 })
   const blanks = plan.forms.filter((f) => f.missing.length)
   if (blanks.length) {
@@ -141,8 +194,11 @@ export async function buildPacket(
   c.space()
   c.line(t("SAAN MAG-FILE", "WHERE TO FILE"), { b: true })
   c.line(plan.requirement.whereToFile, { indent: 8 })
-  for (const o of officesFor(profile.city, profile.barangay, new Set([plan.requirement.officeType]))) c.line(`${o.name}${o.url ? ` · ${o.url}` : ""}`, { indent: 8 })
-  for (const l of processFor(plan.requirement.id)?.links ?? []) c.line(`${l.label}: ${l.url}`, { indent: 8 })
+  for (const o of officesFor(profile.city, profile.barangay, new Set([plan.requirement.officeType]), profile)) c.line(`${o.name}${o.url ? ` · ${o.url}` : ""}`, { indent: 8 })
+  const process = processFor(plan.requirement.id, profile, plan.task)
+  if (process?.office) c.line(process.office, { indent: 8 })
+  if (process?.note) c.line(process.note, { indent: 8, size: 9 })
+  for (const l of process?.links ?? []) c.line(`${l.label}: ${l.url}`, { indent: 8 })
   c.space(14)
   c.line(
     t(
@@ -153,26 +209,10 @@ export async function buildPacket(
   )
 
   // 2. Forms: the official PDF filled in (with the owner's own edits, if any), else an info sheet.
-  for (const f of plan.forms) {
-    if (f.file && f.layout) {
-      try {
-        const res = await fetch(f.file.url)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const src = await PDFDocument.load(await res.arrayBuffer(), { ignoreEncryption: true })
-        const boxes = context.ownerId
-          ? context.drafts?.[draftKey(context.ownerId, f.file.path, f.layout)]
-          : undefined
-        const srcFont = await src.embedFont(StandardFonts.Helvetica)
-        const acro = await drawBoxes(src, boxes ?? initialBoxes(f.layout, values(f.form)).boxes, srcFont)
-        try {
-          acro?.updateFieldAppearances(srcFont)
-          acro?.flatten()
-        } catch {}
-        for (const p of await out.copyPages(src, src.getPageIndices())) out.addPage(p)
-        continue
-      } catch (e) {
-        console.warn(`Packet: ${f.form.id} official PDF failed, using info sheet`, e)
-      }
+  for (const f of prepared) {
+    if (f.pages.length) {
+      for (const page of f.pages) out.addPage(page)
+      continue
     }
     const s = sheet()
     s.line(f.form.name, { size: 15, b: true })
@@ -219,25 +259,7 @@ export async function buildPacket(
   }
 
   // 4. The owner's own documents from the vault.
-  for (const a of attached) {
-    if (!a.blob) continue
-    const bytes = await a.blob.arrayBuffer()
-    try {
-      if (a.blob.type === "application/pdf" || new Uint8Array(bytes.slice(0, 4)).join() === "37,80,68,70") {
-        const src = await PDFDocument.load(bytes, { ignoreEncryption: true })
-        for (const p of await out.copyPages(src, src.getPageIndices())) out.addPage(p)
-      } else if (/png|jpe?g/.test(a.blob.type)) {
-        const img = a.blob.type.includes("png") ? await out.embedPng(bytes) : await out.embedJpg(bytes)
-        const page = out.addPage(A4)
-        const scale = Math.min(495 / img.width, 700 / img.height, 1)
-        page.drawText(pdfSafe(a.name), { x: 50, y: 800, size: 10, font: bold })
-        page.drawImage(img, { x: 50, y: 780 - img.height * scale, width: img.width * scale, height: img.height * scale })
-      }
-      // ponytail: other image types (HEIC/WebP) are skipped; convert via canvas if owners upload them.
-    } catch (e) {
-      console.warn(`Packet: couldn't add ${a.name}`, e)
-    }
-  }
+  for (const a of attached) for (const page of a.pages) out.addPage(page)
 
   return out.save()
 }

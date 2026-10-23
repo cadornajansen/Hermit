@@ -64,7 +64,7 @@ export default function FormsPage() {
                           {f.agency} ·{" "}
                           {HANDOFF_LABEL[f.handoff].split(" · ")[1]}
                           {forYou && <span className="text-primary"> · para sa iyo</span>}
-                          {hasLibraryCopy(f.id) && <span> · may opisyal na kopya</span>}
+                          {hasLibraryCopy(f.id, profile) && <span> · may opisyal na kopya</span>}
                         </span>
                       </span>
                       <span className="shrink-0 text-xs text-muted-foreground tabular-nums">

@@ -167,6 +167,8 @@ export type Extracted = {
   issuedOn: string // YYYY-MM-DD
   expiresOn: string // YYYY-MM-DD
   source: "ai" | "filename" | "owner"
+  original?: Omit<Extracted, "original" | "corrections"> // first reader output, preserved when corrected
+  corrections?: Partial<Omit<Extracted, "original" | "corrections">> // owner-entered changes, not proof of issuance
 }
 
 export type Check = { id: string; label: string; result: "pass" | "warn" | "fail"; detail: string }

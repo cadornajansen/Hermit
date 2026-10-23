@@ -50,6 +50,12 @@ duplicate names and compatibility with Taguig's pilot office list.
 key, always scoped to the owner id in a signed httpOnly cookie. Owners start anonymous; signing in with eGovPH binds their `uniqid`, so the same data opens on any device.
 RLS is on with no public policies, so the publishable key reads nothing. The device keeps a working copy (offline,
 weak signal) and mirrors every change through `app/sync.ts`; a new device restores from the server.
+Ordinary loading keeps an existing device working copy and does not write it over the server merely because it was
+loaded. Explicit SSO restore selects the server copy after pending local changes are acknowledged. Profile/checklist,
+document metadata, deletions, vault events and chat clearing are queued in the owner-scoped browser snapshot before
+the debounce. Reload, reconnect and the retry control resume pending work; failures remain visible and do not clear
+the queue. An acknowledgement for an older edit cannot clear a newer edit. This is still a device working-copy policy,
+without automatic field merging across devices. Run `node scripts/sync-reproduction.mjs` for the synthetic conflict harness.
 
 ## Kuya Hermit
 
@@ -131,7 +137,8 @@ stale-write rejection, including SSO transitions, a switch during hydration, PDF
 is declined or fails. Store and Server Action tests run production logic with in-memory storage and stubbed
 cookie/database boundaries; a rendered field-sheet check verifies editable account values and unchecked consent.
 No live identity/database service or official-form placement accuracy is claimed by those tests. General multi-device
-account sync still has the audit's existing reconciliation/retry limits; reusable answers deliberately avoid that path.
+account sync follows the device working-copy policy and durable retry queue described above; reusable answers
+deliberately avoid that path.
 
 **Official copies:** `pnpm forms:sync` downloads each form's official blank PDF/Excel (and agency guides) listed under
 `files:` in `lib/forms.ts`, checks it's a real PDF/Excel file, stores it in Supabase Storage (public `forms` bucket) with
@@ -150,6 +157,16 @@ doesn't match (e.g. an email in the WEBSITE box). Results go to `lib/form-layout
 just checks, taps "Pirmahan" (the signature drops onto the signature line), and downloads; any answer can still be
 edited, moved or removed. Everything runs on the device; the signature and filled PDF are never uploaded.
 
+**Document packets:** packet cards select forms by filing task and ownership type. New sole-proprietor BIR
+registration uses 1901; choose update/cancellation or abatement explicitly for 1905 or 2121. DTI new registration and
+renewal are separate choices. The cover records each form's inclusion reason. Each official PDF is fetched and
+prepared once before the cover is written; failure produces an info-sheet label, reason and matching info-sheet
+pages. A verified vault copy is counted as included only after its bytes have been decoded and embedded successfully.
+Files awaiting review, rejected files and fetch/decode/embed failures are listed as unavailable/omitted with reasons.
+Uploads accept PDF, PNG and JPEG. Convert WebP/HEIC/other images before uploading; older unsupported files stay in
+the vault but are explicitly omitted from packets. Taguig's stored application is only offered for a matching
+canonical Taguig jurisdiction; other locations receive general information sheets and LGU confirmation guidance.
+
 **Paying taxes:** `/pay` is HERMIT's payment terminal for BIR returns (2551Q, 1701Q, 2550Q, 1601-C, 0605 and more),
 pre-filled from the profile and ordered by what's due; the owner enters the amount from their return (HERMIT never
 computes tax). It creates an eGovPay transaction and shows a scan-to-pay QR of eGovPay's payment page plus a link, then
@@ -165,11 +182,17 @@ location or their geocoded business address, via Places API (New) Text Search on
 Pro-tier fields only, location rounded to ~110 m). Results are name-checked per office type (`lib/nearby.ts`) and shown
 as colour-coded pins on a Google map with distance and directions. Where jurisdiction matters (RDO, city hall,
 barangay) the page says the nearest office isn't necessarily the one that handles the owner.
+Business-address searches retain province and region and avoid repeating locality text already in the address.
+Cached address searches retain the geocoded center. Successful empty searches show “No matches”; partial results name
+the office types that failed; total upstream failure shows “Maps unavailable”. Empty, partial and unavailable states
+offer retry, and incomplete results are not cached.
 
-**Start here:** `lib/processes.ts` lists, per requirement, the exact page that starts the process (BNRS, ORUS with its
+**Start here:** `lib/processes.ts` lists, per requirement and filing task, the page that starts the process (BNRS, ORUS with its
 click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,
 DOLE, eFPS/eBIRForms) or the office to visit, each checked by hand on the date shown. The dashboard and Kuya Hermit
-give these word for word. Currently 31 files for 24 forms (BIR, SSS, PhilHealth, Taguig); Pag-IBIG
+give these word for word. LGU portals also require a matching canonical region/province/city: Taguig links use its
+PSGC jurisdiction, while unsupported or ambiguous places get general guidance to confirm with their LGU.
+Jurisdiction stays visible in packet covers, dashboard guidance and Offices. Currently 31 files for 24 forms (BIR, SSS, PhilHealth, Taguig); Pag-IBIG
 (reCAPTCHA), BFP and DOLE (bot-blocked) and the DTI BMBE flyer (server unreachable) stay link-only for now.
 
 ## What's in it
@@ -207,10 +230,20 @@ service's env vars are set (see `.env.example`), otherwise the mock in `lib/egov
 
 The AI only *reads* an upload (type, names, numbers, dates) through `egov("ai").extractDocument`. Whether it's the right,
 valid document is decided by the rules in `lib/vault.ts`: document type vs. the slot it was uploaded for, owner and
-business name vs. the profile and every other document, expiry, city, duplicates. A verified permit marks its checklist
-item Approved with its expiry, and its TIN / registration number is saved for form pre-fill. Every upload, check, edit
+business name vs. the profile and every other document, expiry, city, duplicates, and minimum readable evidence.
+Confirmation records the owner's review; it cannot supply missing names, numbers or dates, or dismiss warnings.
+Supported permits/certificates require identity details, a document number (TIN for COR), a valid issue date and,
+where applicable, expiry. Leases require identity, property address and issue date; IDs require a name and number.
+Company documents also require the business name. Unknown or insufficient evidence stays in review.
+The first reader output and subsequent owner corrections are retained separately in the extracted JSON metadata.
+“Verified” describes document identity/detail checks, not authenticity, completed applications or official issuance.
+HERMIT does not automatically approve checklist items from an upload or confirmation; update checklist status
+separately after agency issuance. Existing checklist statuses are retained for the owner to review.
+A verified document's TIN / registration number is saved as vault metadata. Every upload, check, edit
 and deletion goes to the activity log. Files stay on the device (IndexedDB). Until eGov AI is connected, the type is
 guessed from the filename and the owner types the details, which run through the same checks.
+
+Runtime acceptance results, changed files and verification limits are recorded in [docs/runtime-fixes.md](docs/runtime-fixes.md).
 
 ## Not built yet
 

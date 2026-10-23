@@ -1,5 +1,5 @@
 import type { Office, OfficeType } from "./types"
-import { cityKey } from "./locations.ts"
+import { cityKey, isTaguigJurisdiction, type LocationValue } from "./locations.ts"
 
 // No eGov API gives "address → office with jurisdiction" (Compass in egov.js is
 // budget data), so this is HERMIT's own maintained dataset, seeded for the
@@ -24,13 +24,13 @@ const TAGUIG: Office[] = [
 export const PILOT_CITY = "Taguig"
 export const isPilotCity = (city: string) => cityKey(city) === cityKey(PILOT_CITY)
 
-export function officesFor(city: string, barangay: string, types: Set<OfficeType>): Office[] {
+export function officesFor(city: string, barangay: string, types: Set<OfficeType>, location?: LocationValue): Office[] {
   const brgy: Office = {
     type: "barangay",
     name: barangay ? `Barangay ${barangay} Hall` : "Your barangay hall",
     note: "Barangay business clearance",
   }
-  const list = isPilotCity(city) ? TAGUIG : []
+  const list = (location ? isTaguigJurisdiction(location) : isPilotCity(city)) ? TAGUIG : []
   return [brgy, ...list].filter((o) => types.has(o.type))
 }
 

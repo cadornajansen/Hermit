@@ -17,6 +17,7 @@ import {
 import { takeAiQuota } from "@/lib/ratelimit"
 import { ownerId, readSession, writeSession } from "@/lib/session"
 import type { Extracted, Profile, Requirement } from "@/lib/types"
+import { UPLOAD_HELP, UPLOAD_TYPES } from "@/lib/vault"
 
 // Server Functions are public POST endpoints: validate every input here.
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "")
@@ -202,7 +203,6 @@ export async function integrationStatus() {
 // --- Document vault ---------------------------------------------------------
 
 const MAX_UPLOAD = 10 * 1024 * 1024
-const UPLOAD_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]
 
 // Stores the file (Supabase Storage, when on) and has the AI read it.
 // lib/vault.ts then decides on the device whether it's the right document.
@@ -211,7 +211,7 @@ export async function readDocument(formData: FormData) {
   const docId = String(formData.get("id") ?? "")
   if (!(file instanceof File) || file.size === 0) return { ok: false as const, error: "Walang file" }
   if (file.size > MAX_UPLOAD) return { ok: false as const, error: "Masyadong malaki — hanggang 10MB lang" }
-  if (!UPLOAD_TYPES.includes(file.type)) return { ok: false as const, error: "PDF o larawan (JPG, PNG) lang" }
+  if (!UPLOAD_TYPES.includes(file.type)) return { ok: false as const, error: UPLOAD_HELP }
   if (!/^[0-9a-f-]{36}$/i.test(docId)) return { ok: false as const, error: "Invalid document id" }
 
   let storagePath: string | undefined

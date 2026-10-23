@@ -3,6 +3,9 @@
 // here, deterministically, so the result is explainable and testable.
 import type { Check, DocType, Extracted, Profile, VaultDoc, Verdict } from "./types"
 
+export const UPLOAD_TYPES = ["application/pdf", "image/jpeg", "image/png"]
+export const UPLOAD_HELP = "Use PDF, PNG or JPEG. Convert WebP, HEIC and other images before uploading."
+
 type DocInfo = {
   name: string
   hint: RegExp // filename / text hint, checked in this order
@@ -82,6 +85,7 @@ export function namesMatch(a: string, b: string) {
 }
 
 const DAY = 86_400_000
+const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value
 
 // ---------------------------------------------------------------------------
 // Verification
@@ -138,7 +142,7 @@ export function verifyDocument(
   // 5. Still valid?
   if (e.expiresOn) {
     const days = Math.floor((Date.parse(e.expiresOn) - today.getTime()) / DAY)
-    if (Number.isNaN(days)) add("expiry", "Validity", "warn", `Hindi mabasa ang expiry date "${e.expiresOn}".`)
+    if (!validDate(e.expiresOn)) add("expiry", "Validity", "warn", `Hindi mabasa ang expiry date "${e.expiresOn}".`)
     else if (days < 0) add("expiry", "Validity", "fail", `Expired noong ${e.expiresOn}. Kailangang i-renew.`)
     else if (days <= 30) add("expiry", "Validity", "warn", `Mag-e-expire sa ${e.expiresOn} (${days} araw na lang).`)
     else add("expiry", "Validity", "pass", `Valid hanggang ${e.expiresOn}`)
@@ -151,12 +155,22 @@ export function verifyDocument(
     add("city", "Lugar", "warn", `Hindi ${profile.city} ang address sa dokumento. Tama ba ang lungsod?`)
   }
 
-  // 7. Key number present?
-  if (e.docType === "bir_cor" && !e.tin) add("number", "TIN", "warn", "Walang nabasang TIN sa COR.")
+  // Minimum readable identity evidence; a type guess or confirmation is insufficient.
+  const missing: string[] = []
+  if (!info || e.docType === "other") missing.push("supported document type")
+  else {
+    if (!e.ownerName.trim() && !e.businessName.trim()) missing.push("owner or business name")
+    if (!["valid_id", "health_cert", "cedula", "lease"].includes(e.docType) && !e.businessName.trim()) missing.push("business name")
+    if (e.docType === "lease") {
+      if (!e.address.trim()) missing.push("property address")
+    } else if (!(e.docType === "bir_cor" ? e.tin : e.number).trim()) missing.push(e.docType === "bir_cor" ? "TIN" : "document number")
+    if (e.docType !== "valid_id" && (!validDate(e.issuedOn) || e.issuedOn > today.toISOString().slice(0, 10))) missing.push("valid issue date (not in the future)")
+  }
+  add("evidence", "Document evidence", missing.length ? "warn" : "pass", missing.length ? `Missing: ${missing.join(", ")}. Confirmation cannot supply missing evidence.` : "Minimum identity details present; application completion and official issuance are not verified.")
 
   const verdict: Verdict = checks.some((c) => c.result === "fail")
     ? "rejected"
-    : checks.some((c) => c.result === "warn") && !doc.ownerConfirmed
+    : checks.some((c) => c.result === "warn")
       ? "needs_review"
       : "verified"
   return { checks, verdict }

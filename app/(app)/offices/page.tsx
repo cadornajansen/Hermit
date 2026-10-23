@@ -8,8 +8,9 @@ import { findNearbyOffices } from "@/app/maps"
 import { COLORS, mapsOnPage, OfficeMap } from "@/components/office-map"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { buildChecklist } from "@/lib/engine"
-import { directionsUrl, OFFICE_SEARCH, type NearbyOffice } from "@/lib/nearby"
-import { isPilotCity, mapsLink, officesFor, PILOT_CITY } from "@/lib/offices"
+import { businessSearchAddress, directionsUrl, OFFICE_SEARCH, type NearbyOffice } from "@/lib/nearby"
+import { mapsLink, officesFor, PILOT_CITY } from "@/lib/offices"
+import { isTaguigJurisdiction } from "@/lib/locations"
 import { useProfile } from "@/lib/store"
 import type { OfficeType } from "@/lib/types"
 
@@ -19,15 +20,15 @@ export default function OfficesPage() {
 
   const types = new Set(buildChecklist(profile, items).map((i) => i.officeType))
   types.add("negosyo_center")
-  const offices = officesFor(profile.city, profile.barangay, types)
-  const pilot = isPilotCity(profile.city)
+  const offices = officesFor(profile.city, profile.barangay, types, profile)
+  const pilot = isTaguigJurisdiction(profile)
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Mga opisina mo</h1>
         <p className="text-sm text-muted-foreground">
-          Ang mga opisinang kailangan mo para sa negosyo sa {[profile.barangay && `Brgy. ${profile.barangay}`, profile.city].filter(Boolean).join(", ") || "lugar mo"}.
+          Ang mga opisinang kailangan mo para sa negosyo sa {[profile.barangay && `Brgy. ${profile.barangay}`, profile.city, profile.province, profile.region].filter(Boolean).join(", ") || "lugar mo"}.
         </p>
       </div>
 
@@ -35,7 +36,7 @@ export default function OfficesPage() {
         types={[...types]}
         city={profile.city}
         barangay={profile.barangay}
-        address={[profile.businessAddress, profile.barangay && `Barangay ${profile.barangay}`, profile.city, "Philippines"].filter(Boolean).join(", ")}
+        address={businessSearchAddress(profile)}
       />
 
       <h2 className="pt-2 text-sm font-semibold tracking-wide text-muted-foreground uppercase">May hawak sa iyo · Your offices</h2>
@@ -71,20 +72,27 @@ export default function OfficesPage() {
 }
 
 // Nearest real offices from Google Maps, around the owner's location or business address.
-function NearMe({ types, city, barangay, address }: { types: OfficeType[]; city: string; barangay: string; address: string }) {
-  const [state, setState] = useState<{ center: { lat: number; lng: number }; offices: NearbyOffice[] } | null>(null)
+export function NearMe({ types, city, barangay, address }: { types: OfficeType[]; city: string; barangay: string; address: string }) {
+  const [state, setState] = useState<{ center: { lat: number; lng: number }; offices: NearbyOffice[]; failedTypes: OfficeType[] } | null>(null)
   const [error, setError] = useState<string>()
   const [selected, setSelected] = useState<string>()
   const [pending, start] = useTransition()
+  const [lastWhere, setLastWhere] = useState<{ lat: number; lng: number } | null>(null)
 
   if (!mapsOnPage) return null
 
   function run(where: { lat: number; lng: number } | null) {
     setError(undefined)
+    setState(null)
+    setLastWhere(where)
     start(async () => {
-      const r = await findNearbyOffices({ ...(where ?? { address }), city, barangay, types })
-      if (!r.ok) setError(r.error === "no_key" ? "Hindi pa naka-connect ang Google Maps." : r.error)
-      else setState({ center: r.center ?? where!, offices: r.offices })
+      try {
+        const r = await findNearbyOffices({ ...(where ?? { address }), city, barangay, types })
+        if (!r.ok) setError(r.error === "no_key" ? "Hindi pa naka-connect ang Google Maps." : r.error)
+        else setState({ center: r.center, offices: r.offices, failedTypes: r.failedTypes })
+      } catch {
+        setError("Hindi ma-reach ang Google Maps ngayon. Subukan ulit.")
+      }
     })
   }
 
@@ -112,11 +120,13 @@ function NearMe({ types, city, barangay, address }: { types: OfficeType[]; city:
         </Button>
       </div>
       {pending && <p className="text-sm text-muted-foreground">Hinahanap ang mga opisina…</p>}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">Maps unavailable: {error}</p>}
+      {(error || (state && (state.failedTypes.length > 0 || state.offices.length === 0))) && <Button variant="outline" onClick={() => run(lastWhere)} disabled={pending}>Subukan ulit · Retry</Button>}
       {state && (
         <>
           <OfficeMap center={state.center} offices={state.offices} selected={selected} onSelect={setSelected} />
-          {state.offices.length === 0 && <p className="text-sm">Walang nahanap na opisina sa paligid. Subukan ang address ng negosyo.</p>}
+          {state.failedTypes.length > 0 && <p role="status" className="text-sm text-amber-700 dark:text-amber-400">Partial results: hindi nakuha ang {state.failedTypes.map((type) => OFFICE_SEARCH[type]!.label).join(", ")}. Subukan ulit.</p>}
+          {state.offices.length === 0 && state.failedTypes.length === 0 && <p role="status" className="text-sm">Walang nahanap na opisina sa paligid · No matches. Subukan ang address ng negosyo.</p>}
           {byType &&
             [...byType].map(([type, list]) => {
               const s = OFFICE_SEARCH[type]!

@@ -1,4 +1,5 @@
 import type { Profile } from "./types"
+import { isTaguigJurisdiction } from "./locations.ts"
 import {
   matchReusableField,
   resolveFormValue,
@@ -62,6 +63,7 @@ export const FIELDS = {
 export type FieldKey = keyof typeof FIELDS
 
 export type Handoff = "portal" | "print" | "office"
+export type FilingTask = "new" | "renewal" | "update" | "abatement"
 
 // An official blank form or agency guide, copied into HERMIT's library by
 // scripts/sync-forms.mjs (see lib/form-files.json for the stored copies).
@@ -151,12 +153,30 @@ export const FORMS: FormTemplate[] = [
 
 export const getForm = (id: string) => FORMS.find((f) => f.id === id)
 
+// The stored UBPA is Taguig's, not a nationwide application form.
+export function formForLocation(form: FormTemplate, profile?: Profile | null): FormTemplate {
+  if (!["lgu_permit", "zoning", "lgu_retirement"].includes(form.id) || (profile && isTaguigJurisdiction(profile))) return form
+  return { ...form, source: "https://www.dilg.gov.ph", files: undefined }
+}
+
 // "unknown" ownership keeps every form (stricter path: show, don't hide).
 export const fitsProfile = (f: FormTemplate, p: Profile) =>
   !f.structures || p.structure === "unknown" || f.structures.includes(p.structure)
 
-export const formsFor = (requirementId: string, p?: Profile) =>
-  FORMS.filter((f) => f.requirementIds.includes(requirementId) && (!p || fitsProfile(f, p)))
+export const filingTask = (requirementId: string): FilingTask =>
+  requirementId.endsWith("_renewal") ? "renewal" : "new"
+
+export const formsFor = (requirementId: string, p?: Profile, task = filingTask(requirementId)) =>
+  FORMS.filter((f) => {
+    if (!f.requirementIds.includes(requirementId) || (p && !fitsProfile(f, p))) return false
+    if (requirementId === "bir_cor") {
+      if (task === "update") return f.id === "bir_1905"
+      if (task === "abatement") return f.id === "bir_2121"
+      return task === "new" && ["bir_1901", "bir_1903", "pbh"].includes(f.id)
+    }
+    if (requirementId === "dti_bn") return f.id === (task === "renewal" ? "dti_bn_renewal" : "dti_bn") && ["new", "renewal"].includes(task)
+    return task === filingTask(requirementId)
+  }).map((form) => formForLocation(form, p))
 
 export function fillForm(
   form: FormTemplate,

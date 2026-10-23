@@ -27,9 +27,20 @@ const layout: Layout = {
 }
 
 test("splits Filipino names, keeping surname particles", () => {
-  assert.deepEqual(splitName("Juana Santos Dela Cruz"), { first: "Juana", middle: "Santos", last: "Dela Cruz" })
-  assert.deepEqual(splitName("Juan de los Santos"), { first: "Juan", middle: "", last: "de los Santos" })
-  assert.deepEqual(splitName("Maria Clara Reyes Garcia"), { first: "Maria Clara", middle: "Reyes", last: "Garcia" })
+  assert.deepEqual(splitName("Juana Santos Dela Cruz"), { first: "Juana", middle: "Santos", last: "Dela Cruz", suffix: "" })
+  assert.deepEqual(splitName("Juan de los Santos"), { first: "Juan", middle: "", last: "de los Santos", suffix: "" })
+  assert.deepEqual(splitName("Maria Clara Reyes Garcia"), { first: "Maria Clara", middle: "Reyes", last: "Garcia", suffix: "" })
+})
+
+test("suffixes are removed before name splitting and fill a separate supported target", () => {
+  for (const suffix of ["Jr.", "Sr.", "II", "III"]) {
+    assert.deepEqual(splitName(`Alex Taylor Rivera ${suffix}`), { first: "Alex", middle: "Taylor", last: "Rivera", suffix })
+    assert.deepEqual(splitName(`Alex Taylor Dela Cruz ${suffix}`), { first: "Alex", middle: "Taylor", last: "Dela Cruz", suffix })
+  }
+  assert.deepEqual(splitName("Alex Rivera Jr."), { first: "Alex", middle: "", last: "Rivera", suffix: "Jr." })
+  assert.deepEqual(splitName(""), { first: "", middle: "", last: "", suffix: "" })
+  const layout: Layout = { formId: "synthetic", sha256: "", fillable: false, pages: [], entries: ["first", "middle", "last", "suffix"].map((part) => ({ key: "owner_name", page: 0, x: 0, y: 0, size: 10, part: part as "first" | "middle" | "last" | "suffix" })) }
+  assert.deepEqual(initialBoxes(layout, { owner_name: "Alex Taylor Rivera Jr." }).boxes.map((b) => b.text), ["Alex", "Taylor", "Rivera", "Jr."])
 })
 
 test("dates print as MM/DD/YYYY", () => {

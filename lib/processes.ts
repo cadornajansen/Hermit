@@ -3,9 +3,11 @@
 // path clicked through on the date below; `note` says when a site blocked or
 // failed the check. ponytail: re-verify by hand (or add a link checker to
 // pnpm forms:sync) when a portal changes.
+import { filingTask, type FilingTask } from "./forms.ts"
+import { jurisdictionLabel, resolveLocation, type LocationValue } from "./locations.ts"
 
 export type StartLink = { label: string; url: string; steps: string[] }
-export type Process = { links: StartLink[]; office?: string; verifiedOn: string; note?: string }
+export type Process = { links: StartLink[]; office?: string; verifiedOn: string; note?: string; jurisdiction?: string }
 
 const ORUS = "https://orus.bir.gov.ph/home"
 const PBH_SIGNUP = "https://business.gov.ph/signup"
@@ -37,16 +39,15 @@ export const PROCESSES: Record<string, Process> = {
   },
   brgy_renewal: { links: [], office: "Your barangay hall, before renewing the Mayor's Permit in January", verifiedOn: CHECKED },
   mayors_permit: {
-    links: [
-      { label: "Taguig TLC Portal — Business Permit", url: TLC, steps: ["Register a TLC Portal account, then log in", "On Home, tap “Apply for Business Permit”", "Upload your requirements (DTI/SEC, barangay clearance, lease, cedula)"] },
-      { label: "Check a Taguig permit's status", url: "https://verifybusiness.taguig.gov.ph", steps: ["Verify an issued business permit"] },
-    ],
-    office: "Taguig City Hall BPLO / e-BOSS (other cities: your city hall's BPLO)",
+    links: [],
+    office: "Your city / municipal hall BPLO or e-BOSS",
+    note: "Confirm the correct new-permit portal and requirements with your LGU; no portal is verified here for this jurisdiction and task.",
     verifiedOn: CHECKED,
   },
   mayors_renewal: {
-    links: [{ label: "Taguig TLC Portal — Business Permit renewal", url: TLC, steps: ["Log in to the TLC Portal", "On Home, tap “Apply for Business Permit” and choose renewal", "Declare last year's gross sales"] }],
-    office: "Taguig City Hall BPLO (January, before the deadline)",
+    links: [],
+    office: "Your city / municipal hall BPLO (renewal)",
+    note: "Confirm your LGU's renewal portal and deadline.",
     verifiedOn: CHECKED,
   },
   fsic: {
@@ -55,7 +56,7 @@ export const PROCESSES: Record<string, Process> = {
     verifiedOn: CHECKED,
     note: "FSIS is on fsis.e-bfp.com (not a .gov.ph domain); it is the address published by city governments (e.g. Davao, Loon). Confirm with your city's BFP station.",
   },
-  sanitary_permit: { links: [], office: "City health office (Taguig: Taguig City Health Office)", verifiedOn: CHECKED },
+  sanitary_permit: { links: [], office: "Your city / municipal health office", verifiedOn: CHECKED },
   health_certs: { links: [], office: "City health office — each food handler applies in person", verifiedOn: CHECKED },
   cenro: { links: [], office: "City ENRO desk at the city hall e-BOSS", verifiedOn: CHECKED },
   liquor_license: { links: [], office: "City hall BPLO (after the Mayor's Permit)", verifiedOn: CHECKED },
@@ -131,4 +132,35 @@ export const PROCESSES: Record<string, Process> = {
   regulated_review: { links: [], office: "Your nearest DTI Negosyo Center", verifiedOn: CHECKED },
 }
 
-export const processFor = (requirementId: string) => PROCESSES[requirementId]
+// Local portal entries are keyed by canonical PSGC jurisdiction and filing task.
+const LOCAL_PROCESSES: Record<string, Record<string, Partial<Record<FilingTask, Process>>>> = {
+  "1381500000": {
+    mayors_permit: { new: {
+      links: [
+        { label: "Taguig TLC Portal — Business Permit", url: TLC, steps: ["Register a TLC Portal account, then log in", "On Home, tap “Apply for Business Permit”", "Upload your requirements (DTI/SEC, barangay clearance, lease, cedula)"] },
+        { label: "Check a Taguig permit's status", url: "https://verifybusiness.taguig.gov.ph", steps: ["Verify an issued business permit"] },
+      ],
+      office: "Taguig City Hall BPLO / e-BOSS",
+      verifiedOn: CHECKED,
+    } },
+    mayors_renewal: { renewal: {
+      links: [{ label: "Taguig TLC Portal — Business Permit renewal", url: TLC, steps: ["Log in to the TLC Portal", "On Home, tap “Apply for Business Permit” and choose renewal", "Declare last year's gross sales"] }],
+      office: "Taguig City Hall BPLO (January, before the deadline)",
+      verifiedOn: CHECKED,
+    } },
+  },
+}
+
+export function processFor(requirementId: string, location?: LocationValue, task = filingTask(requirementId)): Process | undefined {
+  const canonical = location && resolveLocation(location)
+  const local = canonical?.city && LOCAL_PROCESSES[canonical.city.code]?.[requirementId]?.[task]
+  let process = local || PROCESSES[requirementId]
+  if (!process) return undefined
+  if (requirementId === "bir_cor" && task !== "new") {
+    process = task === "update"
+      ? { links: [{ label: "BIR ORUS — registration update / cancellation", url: ORUS, steps: ["Confirm the update / cancellation process with your RDO (Form 1905)"] }], verifiedOn: CHECKED }
+      : { links: [], office: "Your BIR RDO — confirm eligibility and the abatement process (Form 2121)", verifiedOn: CHECKED }
+  }
+  if (requirementId === "dti_bn" && task === "renewal") process = { ...process, links: [{ label: "DTI BNRS — Renewal", url: "https://bnrs.dti.gov.ph", steps: ["Choose Business Name Renewal and confirm your registration details"] }] }
+  return { ...process, jurisdiction: location ? jurisdictionLabel(location) : "Confirm your business jurisdiction" }
+}

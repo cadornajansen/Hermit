@@ -37,7 +37,7 @@ test("filename hints pick the document type", () => {
 })
 
 test("a correct, valid permit is verified", () => {
-  const d = doc({ extracted: { docType: "mayors_permit", ownerName: "JUANA S. DELA CRUZ", businessName: "NENA'S CARINDERIA", address: "Western Bicutan, Taguig City", expiresOn: "2026-12-31" } })
+  const d = doc({ extracted: { docType: "mayors_permit", ownerName: "JUANA S. DELA CRUZ", businessName: "NENA'S CARINDERIA", address: "Western Bicutan, Taguig City", number: "SYNTHETIC-123", issuedOn: "2026-01-01", expiresOn: "2026-12-31" } })
   assert.equal(verify(d).verdict, "verified")
 })
 
@@ -53,10 +53,39 @@ test("owner name mismatch and expired documents are rejected", () => {
   assert.equal(verify(doc({ extracted: { docType: "cedula", ownerName: "Juana Dela Cruz", expiresOn: "2025-12-31" } })).verdict, "rejected")
 })
 
-test("missing details need review until the owner confirms", () => {
+test("missing details stay in review even when the owner confirms", () => {
   const d = doc({ extracted: { docType: "mayors_permit" } })
   assert.equal(verify(d).verdict, "needs_review")
-  assert.equal(verify({ ...d, ownerConfirmed: true }).verdict, "verified")
+  assert.equal(verify({ ...d, ownerConfirmed: true }).verdict, "needs_review")
+})
+
+test("blank, partial and populated evidence is distinct from completion or issuance", () => {
+  for (const source of ["ai", "filename", "owner"] as const) {
+    const blank = doc({ ownerConfirmed: true, extracted: { docType: "mayors_permit", source } })
+    const partial = doc({ ownerConfirmed: true, extracted: { docType: "mayors_permit", ownerName: owner.ownerName, expiresOn: "2027-12-31", source } })
+    const populated = doc({ ownerConfirmed: true, extracted: { docType: "mayors_permit", ownerName: owner.ownerName, businessName: owner.businessName, number: "SYNTHETIC-1", issuedOn: "2026-01-01", expiresOn: "2027-12-31", source } })
+    assert.equal(verify(blank).verdict, "needs_review")
+    assert.equal(verify(partial).verdict, "needs_review")
+    const result = verify(populated)
+    assert.equal(result.verdict, "verified")
+    assert.match(result.checks.find((c) => c.id === "evidence")!.detail, /completion and official issuance are not verified/)
+  }
+  assert.equal(verify(doc({ ownerConfirmed: true, extracted: { ...EMPTY_EXTRACTED, docType: "unknown" } })).verdict, "needs_review")
+  assert.equal(verify(doc({ ownerConfirmed: true, extracted: { docType: "other", businessName: owner.businessName } })).verdict, "needs_review")
+})
+
+test("supported types require readable identity and type-specific minimum evidence", () => {
+  for (const type of ["dti_cert", "sec_cert", "cda_cert", "brgy_clearance", "cedula", "mayors_permit", "fsic", "sanitary_permit", "health_cert", "bir_cor", "bmbe_cert", "fda_lto", "sss_er", "philhealth_er", "pagibig_er", "valid_id", "lease"] as const) {
+    const populated = doc({ extracted: { docType: type, ownerName: owner.ownerName, businessName: owner.businessName, number: "SYNTHETIC-1", tin: "000-000-000", address: "Synthetic Taguig", issuedOn: "2026-01-01", expiresOn: "2027-12-31", source: "owner" } })
+    assert.equal(verify(populated).verdict, "verified", type)
+    assert.equal(verify({ ...populated, extracted: { ...populated.extracted, number: "", tin: "", address: "" }, ownerConfirmed: true }).verdict, "needs_review", type)
+  }
+})
+
+test("invalid or future dates remain in review after confirmation", () => {
+  const populated = doc({ ownerConfirmed: true, extracted: { docType: "mayors_permit", ownerName: owner.ownerName, businessName: owner.businessName, number: "SYNTHETIC", issuedOn: "2026-01-01", expiresOn: "2027-12-31" } })
+  for (const issuedOn of ["2026-02-31", "unreadable", "2027-01-01"]) assert.equal(verify({ ...populated, extracted: { ...populated.extracted, issuedOn } }).verdict, "needs_review")
+  assert.equal(verify({ ...populated, extracted: { ...populated.extracted, expiresOn: "2027-02-31" } }).verdict, "needs_review")
 })
 
 test("business name clash across documents is flagged", () => {

@@ -9,7 +9,7 @@ import { documentUrl } from "@/app/sync"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { getFile } from "@/lib/files"
 import { getForm } from "@/lib/forms"
-import { buildPacket, packetPlan, slotName, usable } from "@/lib/pack"
+import { buildPacket, packetPlan, slotAvailability, slotName, usable } from "@/lib/pack"
 import { update, useProfile, type ChatMessage } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
@@ -199,7 +199,9 @@ function PacketCard({ requirementId }: { requirementId: string }) {
     useProfile()
   const [status, setStatus] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const [task, setTask] = useState<import("@/lib/forms").FilingTask>("new")
   const context = {
+    ...(requirementId === "bir_cor" || requirementId === "dti_bn" ? { task } : {}),
     memory: formMemory,
     edits: formEdits,
     ownerId,
@@ -220,7 +222,10 @@ function PacketCard({ requirementId }: { requirementId: string }) {
           const local = await getFile(d.id).catch(() => undefined)
           if (local) return local
           const url = await documentUrl(d.id)
-          return url ? (await fetch(url)).blob() : undefined
+          if (!url) return undefined
+          const response = await fetch(url)
+          if (!response.ok) throw new Error(`HTTP ${response.status}`)
+          return response.blob()
         },
         context
       )
@@ -242,6 +247,15 @@ function PacketCard({ requirementId }: { requirementId: string }) {
         <FileText className="size-4" />{" "}
         {en ? "Document packet" : "Document packet"}: {plan.requirement.name}
       </p>
+      {(requirementId === "bir_cor" || requirementId === "dti_bn") && (
+        <label className="flex flex-col gap-1">
+          Filing task
+          <select value={task} onChange={(event) => setTask(event.target.value as import("@/lib/forms").FilingTask)} className="h-9 rounded-lg border bg-background px-2">
+            <option value="new">New registration</option>
+            {requirementId === "bir_cor" ? <><option value="update">Update / cancellation</option><option value="abatement">Abatement</option></> : <option value="renewal">Renewal</option>}
+          </select>
+        </label>
+      )}
       <ul className="flex flex-col gap-0.5">
         {plan.forms.map((f) => (
           <li key={f.form.id}>
@@ -253,7 +267,8 @@ function PacketCard({ requirementId }: { requirementId: string }) {
               Review / edit / save answers
             </Link>
             <span className="text-muted-foreground">
-              {f.file && f.layout ? (en ? " · filled in" : " · napunan na") : en ? " · info sheet" : " · info sheet"}
+              {f.file && f.layout ? " · official PDF if available; info sheet on failure" : " · info sheet"}
+              {` · ${f.reason}`}
               {f.missing.length ? ` · ${f.missing.length} ${en ? "blank" : "blanko pa"}` : ""}
             </span>
           </li>
@@ -267,7 +282,7 @@ function PacketCard({ requirementId }: { requirementId: string }) {
         {plan.needs.map((s) => (
           <li key={s.types.join()} className={usable(s) ? undefined : "text-amber-700 dark:text-amber-400"}>
             {usable(s) ? "✓" : "✗"} {slotName(s)}
-            {usable(s) ? (en ? " · copy from your vault" : " · kopya mula sa vault") : en ? " · not in your vault" : " · wala pa sa vault"}
+            {` · ${slotAvailability(s)}`}
           </li>
         ))}
       </ul>
