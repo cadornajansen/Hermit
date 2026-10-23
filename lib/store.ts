@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useSyncExternalStore } from "react"
 
-import { clearFiles } from "./files"
+import { storageKeyForAccount } from "./account-storage"
+import { normalizeProfile } from "./activities"
+import { deleteFile } from "./files"
 import type { ItemState, Profile, VaultDoc, VaultEvent } from "./types"
 
-// Owner's data lives on their device for now (works offline, nothing leaves
-// without the owner acting). ponytail: localStorage only; move to PostgreSQL
-// with row-level security + field-level encryption for TIN/ID numbers
-// (PRD §11) when accounts and server-side reminders land.
+// Roadmaps and files remain on this device. Separate keys prevent the interface
+// from showing one account's cached profile to another; they are not a server
+// authorization boundary or encrypted storage.
 
 export type ChatMessage = {
   role: "owner" | "hermit"
@@ -29,15 +30,34 @@ export type Saved = {
   vaultLog: VaultEvent[] // append-only record of uploads, checks, edits, deletions
 }
 
-const KEY = "hermit:v1"
+let storageKey = storageKeyForAccount(null)
+let configuredAccount: string | null | undefined
 const SERVER: Saved = { ready: false, profile: null, items: {}, chat: [], lastDiff: null, docs: [], vaultLog: [] }
 const listeners = new Set<() => void>()
 let cache: Saved | null = null
 
+export function currentStorageKey(): string {
+  return storageKey
+}
+
+export function getConfiguredAccount(): string | null | undefined {
+  return configuredAccount
+}
+
+export function configureAccount(userId: string | null): void {
+  if (configuredAccount === userId) return
+
+  storageKey = storageKeyForAccount(userId)
+  configuredAccount = userId
+  cache = null
+  listeners.forEach((listener) => listener())
+}
+
 function read(): Saved {
   if (cache) return cache
   try {
-    cache = { ...SERVER, ...JSON.parse(localStorage.getItem(KEY) ?? "{}"), ready: true }
+    const loaded: Saved = { ...SERVER, ...JSON.parse(localStorage.getItem(storageKey) ?? "{}"), ready: true }
+    cache = { ...loaded, profile: loaded.profile ? normalizeProfile(loaded.profile) : null }
   } catch {
     cache = { ...SERVER, ready: true }
   }
@@ -47,7 +67,7 @@ function read(): Saved {
 export function update(fn: (s: Saved) => Partial<Saved>) {
   cache = { ...read(), ...fn(read()) }
   try {
-    localStorage.setItem(KEY, JSON.stringify({ ...cache, ready: undefined }))
+    localStorage.setItem(storageKey, JSON.stringify({ ...cache, ready: undefined }))
   } catch {
     // storage full or blocked: keep the in-memory copy
   }
@@ -55,20 +75,21 @@ export function update(fn: (s: Saved) => Partial<Saved>) {
 }
 
 export function clearAll() {
+  const documentIds = read().docs.map((doc) => doc.id)
   try {
-    localStorage.removeItem(KEY)
+    localStorage.removeItem(storageKey)
   } catch {}
-  clearFiles().catch(() => {})
+  Promise.all(documentIds.map((id) => deleteFile(id))).catch(() => {})
   cache = { ...SERVER, ready: true }
   listeners.forEach((l) => l())
 }
 
-function subscribe(l: () => void) {
+export function subscribeStore(l: () => void) {
   listeners.add(l)
   return () => listeners.delete(l)
 }
 
-export const useHermit = () => useSyncExternalStore(subscribe, read, () => SERVER)
+export const useHermit = () => useSyncExternalStore(subscribeStore, read, () => SERVER)
 
 // For pages that need a finished profile: sends first-timers to onboarding.
 export function useProfile() {

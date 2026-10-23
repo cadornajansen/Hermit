@@ -7,7 +7,7 @@ import { writeSession } from "@/lib/session"
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const code = url.searchParams.get("exchange_code")
-  if (!code) redirect("/onboarding?auth_error=missing_code")
+  if (!code) redirect("/register?auth_error=missing_code")
 
   let next: string
   try {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     next = live.url
   } catch (e) {
     console.error("SSO exchange failed", e)
-    next = "/onboarding?auth_error=sso"
+    next = "/register?auth_error=sso"
   }
   redirect(next)
 }

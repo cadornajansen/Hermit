@@ -3,7 +3,8 @@
 import { egov, isLive, serviceModes } from "@/lib/egov"
 import { buildChecklist, EMPTY_PROFILE } from "@/lib/engine"
 import { mock } from "@/lib/egov/mock"
-import { clearSession, readSession } from "@/lib/session"
+import { readSession } from "@/lib/session"
+import { signOut as signOutAccount } from "@/app/register/actions"
 import type { Profile, Requirement } from "@/lib/types"
 
 // Server Functions are public POST endpoints: validate every input here.
@@ -126,7 +127,7 @@ export async function reportProblem(input: { office: string; message: string }) 
 // --- Session ----------------------------------------------------------------
 
 export async function signOut() {
-  await clearSession()
+  await signOutAccount()
 }
 
 export async function integrationStatus() {

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { integrationStatus, signOut } from "@/app/actions"
 import { label } from "@/components/onboarding"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { activitySummary } from "@/lib/activities"
 import { clearAll, update, useProfile } from "@/lib/store"
 
 // "What Hermit knows": every remembered fact is visible, editable, deletable.
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const s = useProfile()
   const router = useRouter()
   const [modes, setModes] = useState<Record<string, string>>()
+  const [signOutError, setSignOutError] = useState("")
   useEffect(() => {
     integrationStatus().then(setModes)
   }, [])
@@ -27,10 +29,20 @@ export default function ProfilePage() {
     URL.revokeObjectURL(url)
   }
 
+  async function leaveAccount() {
+    try {
+      await signOut()
+      router.push("/register")
+      router.refresh()
+    } catch {
+      setSignOutError("Could not sign out. Please try again.")
+    }
+  }
+
   async function deleteEverything() {
     if (!confirm("Burahin lahat ng data mo sa HERMIT? Hindi na ito maibabalik.")) return
-    await signOut()
     clearAll()
+    await signOut()
     router.push("/")
   }
 
@@ -40,7 +52,7 @@ export default function ProfilePage() {
     ["Mobile", p.mobile || "—"],
     ["Negosyo", p.businessName || "—"],
     ["Ginagawa", p.description || "—"],
-    ["Category", `${label("category", p.category)}${p.psic ? ` · PSIC ${p.psic}` : ""}`],
+    ["Activities", `${activitySummary(p)}${p.psic ? ` · PSIC ${p.psic}` : ""}`],
     ["Ownership", label("structure", p.structure)],
     ["Lugar", [p.businessAddress, p.barangay, p.city].filter(Boolean).join(", ") || "—"],
     ["Empleyado", label("employees", p.employees)],
@@ -71,7 +83,9 @@ export default function ProfilePage() {
         <Button variant="outline" onClick={exportData}>
           Export my data
         </Button>
+        <Button variant="outline" onClick={leaveAccount}>Sign out</Button>
       </div>
+      {signOutError && <p role="alert" className="text-sm text-destructive">{signOutError}</p>}
 
       <section className="flex flex-col gap-2 text-sm">
         <h2 className="font-semibold">Usapan · Conversation memory</h2>

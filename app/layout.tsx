@@ -1,35 +1,38 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'})
-
-const fontMono = Geist_Mono({
+import { AccountScope } from "@/components/account-scope"
+import { getAccountUser } from "@/lib/supabase"
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-mono",
+  display: "swap",
+  variable: "--font-geist",
 })
 
 export const metadata: Metadata = {
-  title: "HERMIT",
-  description: "Your business, remembered. One compliance checklist for Philippine MSME owners.",
+  title: "Hermit — Business compliance, one clear step at a time",
+  description:
+    "Find guidance for your City of Manila business, understand your next step, and track your compliance roadmap with Hermit.",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const user = await getAccountUser()
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
+      className={`${geist.variable} font-sans antialiased`}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider defaultTheme="light" enableSystem={false}>
+          <AccountScope userId={user?.id ?? null}>{children}</AccountScope>
+        </ThemeProvider>
       </body>
     </html>
   )
