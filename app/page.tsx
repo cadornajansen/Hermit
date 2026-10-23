@@ -1,13 +1,18 @@
-import { ArrowRight } from "lucide-react"
+import { Store } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import localFont from "next/font/local"
 
 import { AgencyStrip } from "@/components/agency-strip"
-import { Brand } from "@/components/brand"
+import { PublicBrand } from "@/components/public-brand"
+import { PublicNav } from "@/components/public-nav"
+import motion from "@/components/public-motion.module.css"
 import { HowItWorksPreview, LandingContent } from "@/components/landing-content"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { publicMetadata } from "@/components/public-metadata"
+
+export const metadata = publicMetadata("Hermit — Business compliance, one clear step at a time", "Explore a clearer next step for your City of Manila business with Hermit’s prototype roadmap, requirement source links, and progress tracking.", "/")
 
 const melodrame = localFont({
   src: "../public/fonts/Relationship of mélodrame.ttf",
@@ -39,17 +44,8 @@ export default function Page() {
       <div className="bg-linear-to-b from-sky via-sky/35 to-background">
         <header className="h-24">
           <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6 sm:px-10">
-            <Brand />
-            <Link
-              href="/dashboard"
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "text-muted-foreground"
-              )}
-            >
-              Open my roadmap
-              <ArrowRight aria-hidden="true" className="size-4" />
-            </Link>
+            <PublicBrand />
+            <PublicNav current="/" />
           </div>
         </header>
 
@@ -86,8 +82,10 @@ export default function Page() {
                 />
               </div>
 
-              <div className="relative z-10 flex w-full max-w-205 flex-col items-center text-center">
+              <div className={`${motion.entrance} relative z-10 flex w-full max-w-205 flex-col items-center text-center`}>
+                <p data-entrance="" className="absolute -top-11 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-white/80 bg-white/60 px-3 py-1.5 text-[10px] font-medium text-foreground shadow-sm sm:text-xs"><Store aria-hidden="true" className="size-3.5 text-brand" />Built for Filipino business owners</p>
                 <h1
+                  data-entrance=""
                   id="hero-title"
                   className="text-[clamp(2.5rem,5vw,4rem)] leading-[0.8] font-medium tracking-[-0.060em] text-balance"
                 >
@@ -104,12 +102,13 @@ export default function Page() {
                     at a time
                   </span>
                 </h1>
-                <p className="mt-3 max-w-155 text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
+                <p data-entrance="" className="mt-3 max-w-155 text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
                   Find the requirements relevant to your business, understand
                   what comes next, and track your progress in one place.
                 </p>
                 <Link
                   href="/register"
+                  data-entrance=""
                   className={cn(
                     buttonVariants({ size: "lg", variant: "ink" }),
                     "mt-8 h-12 gap-2.5 px-6 text-sm"
@@ -118,7 +117,7 @@ export default function Page() {
                   <Image src="/brand/store.svg" alt="" width={36} height={36} />
                   Build my roadmap
                 </Link>
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p data-entrance="" className="mt-3 text-xs text-muted-foreground">
                   Free and easy to use
                 </p>
               </div>
@@ -177,7 +176,7 @@ export default function Page() {
         <div className="mx-auto max-w-6xl px-6 py-8 sm:px-10">
           <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
             <div>
-              <Brand />
+              <PublicBrand />
               <p className="mt-3 max-w-md text-xs leading-relaxed text-muted-foreground">
                 A clearer path for businesses in the City of Manila. Source-linked
                 guidance with visible coverage limits; always confirm
@@ -188,6 +187,9 @@ export default function Page() {
               aria-label="Footer"
               className="flex flex-wrap items-center gap-5 text-sm"
             >
+              <Link href="/about" className="inline-flex min-h-11 items-center rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring">About</Link>
+              <Link href="/prototype" className="inline-flex min-h-11 items-center rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring">Prototype</Link>
+              <a href="https://github.com/cadornajansen/Hermit" className="inline-flex min-h-11 items-center rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring">GitHub</a>
               <Link
                 href="/register"
                 className="rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring"

@@ -1,0 +1,31 @@
+{
+  "tool": "built-in image_gen",
+  "transparent_background": true,
+  "concepts": [
+    {
+      "name": "01-folded-paper-h",
+      "file": "01-folded-paper-h.png",
+      "prompt": "Use case: logo-brand. Generate a polished logo exploration for Hermit, a friendly business-paperwork roadmap app. One logo only, not a presentation board or multiple variants. Horizontal lockup: distinctive icon on left, exact wordmark 'Hermit' on right in confident clean rounded sans-serif, dark navy #111827. Flat vector-style graphics with crisp clean edges, blue #2463D4 primary icon color and optional light-blue #7FB7E4 accent. Genuine transparent alpha background. Centered composition on a square canvas, generous transparent margins. Professional simple memorable identity, legible at small sizes. No tagline, no extra text or numbering, no mockup surface, no background shape, no photographic effects, no shadows, no 3D, no gradients, no thin fiddly detail, no government insignia. Icon concept: FOLDED PAPER H. A compact geometric paper/document silhouette with a folded top-right corner, using a deliberate negative-space cutout and fold geometry to clearly form a capital H. Balance the paper association and a highly recognizable H; the fold is the only light-blue accent. A graphic brand mark rather than a stock document outline."
+    },
+    {
+      "name": "02-paperclip-h",
+      "file": "02-paperclip-h.png",
+      "prompt": "Use case: logo-brand. Generate a polished logo exploration for Hermit, a friendly business-paperwork roadmap app. One logo only, not a presentation board or multiple variants. Horizontal lockup: distinctive icon on left, exact wordmark 'Hermit' on right in confident clean rounded sans-serif, dark navy #111827. Flat vector-style graphics with crisp clean edges, blue #2463D4 primary icon color and optional light-blue #7FB7E4 accent. Genuine transparent alpha background. Centered composition on a square canvas, generous transparent margins. Professional simple memorable identity, legible at small sizes. No tagline, no extra text or numbering, no mockup surface, no background shape, no photographic effects, no shadows, no 3D, no gradients, no thin fiddly detail, no government insignia. Icon concept: PAPERCLIP H. A single continuous smooth monoline blue stroke, with rounded ends and medium-bold consistent weight, ingeniously shaped to read as both a tidy paperclip and an uppercase H. Minimal number of turns, no extra symbols. Friendly organizational feel and balanced geometry."
+    },
+    {
+      "name": "03-path-h",
+      "file": "03-path-h.png",
+      "prompt": "Use case: logo-brand. Generate a polished logo exploration for Hermit, a friendly business-paperwork roadmap app. One logo only, not a presentation board or multiple variants. Horizontal lockup: distinctive icon on left, exact wordmark 'Hermit' on right in confident clean rounded sans-serif, dark navy #111827. Flat vector-style graphics with crisp clean edges, blue #2463D4 primary icon color and optional light-blue #7FB7E4 accent. Genuine transparent alpha background. Centered composition on a square canvas, generous transparent margins. Professional simple memorable identity, legible at small sizes. No tagline, no extra text or numbering, no mockup surface, no background shape, no photographic effects, no shadows, no 3D, no gradients, no thin fiddly detail, no government insignia. Icon concept: PATH THROUGH H. A bold compact geometric uppercase H in blue with an intentional simple negative-space route crossing its middle and a single small endpoint dot. The pathway should feel like moving through clear steps, not a road sign, maze or transportation logo. Keep two upright stems and an unmistakable H structure."
+    },
+    {
+      "name": "04-folder-monogram",
+      "file": "04-folder-monogram.png",
+      "prompt": "Use case: logo-brand. Generate a polished logo exploration for Hermit, a friendly business-paperwork roadmap app. One logo only, not a presentation board or multiple variants. Horizontal lockup: distinctive icon on left, exact wordmark 'Hermit' on right in confident clean rounded sans-serif, dark navy #111827. Flat vector-style graphics with crisp clean edges, blue #2463D4 primary icon color and optional light-blue #7FB7E4 accent. Genuine transparent alpha background. Centered composition on a square canvas, generous transparent margins. Professional simple memorable identity, legible at small sizes. No tagline, no extra text or numbering, no mockup surface, no background shape, no photographic effects, no shadows, no 3D, no gradients, no thin fiddly detail, no government insignia. Icon concept: FOLDER MONOGRAM. A softly rounded, compact blue folder silhouette with one restrained folder tab. A clever large H is carved out in negative space at its center, functioning as a memorable brand monogram. Very simple flat form, no paperwork lines or clutter, visually welcoming and stable."
+    },
+    {
+      "name": "05-paper-shell-crab",
+      "file": "05-paper-shell-crab.png",
+      "prompt": "Use case: logo-brand. Generate a polished logo exploration for Hermit, a friendly business-paperwork roadmap app. One logo only, not a presentation board or multiple variants. Horizontal lockup: distinctive icon on left, exact wordmark 'Hermit' on right in confident clean rounded sans-serif, dark navy #111827. Flat vector-style graphics with crisp clean edges, blue #2463D4 primary icon color and optional light-blue #7FB7E4 accent. Genuine transparent alpha background. Centered composition on a square canvas, generous transparent margins. Professional simple memorable identity, legible at small sizes. No tagline, no extra text or numbering, no mockup surface, no background shape, no photographic effects, no shadows, no 3D, no gradients, no thin fiddly detail, no government insignia. Icon concept: PAPER-SHELL HERMIT CRAB. A charming minimal hermit crab whose shell is a folded blue document. A small compact crab peeks out beneath it with two tiny dark eyes, simple rounded blue claws and only a few short leg marks. The paper shell is unmistakable but no text or document rules. Friendly restrained mascot reduced to logo geometry, not a detailed cartoon or illustration. Keep comparable visual weight to the wordmark."
+    }
+  ]
+}

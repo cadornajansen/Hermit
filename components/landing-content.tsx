@@ -243,55 +243,6 @@ function RequirementPreview(): ReactElement {
   )
 }
 
-function ProductPhilosophy(): ReactElement {
-  return (
-    <section
-      aria-labelledby="philosophy-title"
-      className="mx-auto max-w-6xl px-6 pt-10 pb-24 sm:px-10 sm:pt-16 sm:pb-28"
-    >
-      <LandingReveal className="grid gap-8 lg:grid-cols-2 lg:gap-20">
-        <div>
-          <p className="text-xs font-semibold tracking-widest text-brand uppercase">
-            A little less to carry
-          </p>
-          <h2
-            id="philosophy-title"
-            className="mt-4 max-w-lg text-3xl leading-[1.1] font-medium tracking-[-0.045em] text-balance sm:text-5xl"
-          >
-            Your business deserves more of your attention.
-          </h2>
-        </div>
-        <div className="lg:pt-8">
-          <p className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Running a business already takes enough. Scattered requirements,
-            unfamiliar terms, and wondering what you might have missed shouldn’t
-            take over your day.
-          </p>
-          <p className="mt-4 max-w-lg text-base leading-relaxed text-muted-foreground">
-            Hermit brings relevant steps into one roadmap, so there’s less to
-            untangle and a clearer place to start.
-          </p>
-          <ul className="mt-7 space-y-3 text-sm font-medium">
-            {[
-              "Less jargon. Clearer next steps.",
-              "Dates you can see and prepare for.",
-              "More headspace for the business.",
-            ].map((idea) => (
-              <li key={idea} className="flex items-center gap-3">
-                <Check
-                  aria-hidden="true"
-                  className="size-4 shrink-0 text-brand"
-                />
-                {idea}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </LandingReveal>
-    </section>
-  )
-}
-
 function ProductBenefits(): ReactElement {
   return (
     <section aria-labelledby="benefits-title" className="bg-canvas">
@@ -311,7 +262,7 @@ function ProductBenefits(): ReactElement {
             connected.
           </p>
         </LandingReveal>
-        <LandingReveal scale className="mt-12 grid gap-6 md:grid-cols-2">
+        <LandingReveal staggerChildren className="mt-12 grid gap-6 md:grid-cols-2">
           <article className="overflow-hidden rounded-[2rem] border border-border/50 bg-card">
             <NextActionPreview />
             <div className="px-7 pt-7 pb-8 sm:px-8">
@@ -538,7 +489,7 @@ const faqs = [
   {
     question: "Can I come back to my progress?",
     answer:
-      "Yes. In this version, your business details and progress are saved in this browser for your account. Return using the same account and browser. Your roadmap does not sync across devices, and clearing browser data can remove saved progress.",
+      "The app keeps a local working copy and includes server backup and restore when configured. Check save or sync messages before leaving, keep your own important records, and review the Prototype page for current limitations.",
   },
 ] as const
 
@@ -583,7 +534,6 @@ function ClosingInvitation(): ReactElement {
       className="mx-auto max-w-6xl px-6 pb-20 sm:px-10 sm:pb-24"
     >
       <LandingReveal
-        scale
         className="rounded-[2rem] bg-secondary px-6 py-16 text-center sm:px-10 sm:py-20"
       >
         <div
@@ -627,7 +577,6 @@ function ClosingInvitation(): ReactElement {
 export function LandingContent(): ReactElement {
   return (
     <>
-      <ProductPhilosophy />
       <ProductBenefits />
       <GovernmentGuidance />
       <LandingFaq />

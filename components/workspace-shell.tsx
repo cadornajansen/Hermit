@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { WorkspaceSearch } from "@/components/workspace-search"
 import { useHermit } from "@/lib/store"
 import { cn } from "@/lib/utils"
+import "@/components/workspace.css"
 
 function BusinessLink({ name, collapsed = false, onNavigate }: { name: string; collapsed?: boolean; onNavigate?: () => void }) {
   const reduceMotion = useReducedMotion()
@@ -35,11 +36,11 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const reduceMotion = useReducedMotion()
   const businessName = profile?.businessName.trim() || "Your business"
-  const wide = pathname === "/dashboard" || pathname === "/roadmap"
+  const wide = ["/dashboard", "/roadmap", "/forms", "/offices", "/business"].includes(pathname)
   const sidebarTransition = { duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] as const }
 
   return (
-    <div className="min-h-svh bg-canvas text-foreground lg:flex print:block print:bg-background">
+    <div data-workspace className="min-h-svh bg-canvas text-foreground lg:flex print:block print:bg-background">
       <a href="#workspace-content" className="sr-only fixed top-3 left-3 z-50 rounded-lg bg-background px-4 py-3 text-sm shadow-lg focus:not-sr-only">Skip to content</a>
       <motion.aside initial={false} animate={{ width: collapsed ? 72 : 247 }} transition={sidebarTransition} className="sticky top-0 hidden h-svh shrink-0 flex-col border-r border-border bg-background p-3 lg:flex print:hidden" aria-label="Workspace sidebar">
         <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden [scrollbar-width:thin]">
@@ -88,7 +89,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           <WorkspaceSearch compact />
         </header>
 
-        <main id="workspace-content" tabIndex={-1} className={cn("mx-auto w-full min-w-0 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8 print:max-w-none print:p-0", wide ? "max-w-[1440px]" : "max-w-3xl")}>
+        <main id="workspace-content" tabIndex={-1} className={cn("mx-auto w-full min-w-0 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8 print:max-w-none print:p-0", wide ? "max-w-[1280px]" : "max-w-3xl")}>
           {children}
         </main>
       </div>

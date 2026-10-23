@@ -1,0 +1,35 @@
+[data-workspace] {
+  --canvas: #f8f9fb;
+}
+
+.dark [data-workspace] {
+  --canvas: #0f1724;
+}
+
+[data-workspace] .workspace-form-card {
+  box-shadow: 0 3px 10px rgb(15 23 42 / 7%);
+}
+
+[data-workspace] .workspace-form-art {
+  background: linear-gradient(180deg, #3b8aff 0%, #b0d9fc 100%);
+}
+
+[data-workspace] .workspace-form-cta {
+  background-color: #1263df;
+  color: #fff;
+}
+
+[data-workspace] .workspace-form-cta:hover {
+  background-color: #0d52bf;
+}
+
+@media print {
+  [data-workspace] {
+    --canvas: #fff;
+  }
+
+  [data-workspace] .workspace-form-card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}

@@ -1,0 +1,100 @@
+[
+  {
+    "file": "nextjs.ico",
+    "sourcePage": "https://nextjs.org",
+    "assetUrl": "https://nextjs.org/favicon.ico?favicon.38folom4sz_yx.ico",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "react.png",
+    "sourcePage": "https://react.dev",
+    "assetUrl": "https://react.dev/favicon-32x32.png",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "typescript.png",
+    "sourcePage": "https://www.typescriptlang.org",
+    "assetUrl": "https://www.typescriptlang.org/icons/icon-96x96.png?v=8944a05a8b601855de116c8a56d3b3ae",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "tailwind.png",
+    "sourcePage": "https://tailwindcss.com",
+    "assetUrl": "https://tailwindcss.com/favicons/favicon-32x32.png?v=4",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "shadcn.png",
+    "sourcePage": "https://ui.shadcn.com",
+    "assetUrl": "https://ui.shadcn.com/apple-touch-icon.png",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "supabase.png",
+    "sourcePage": "https://supabase.com",
+    "assetUrl": "https://supabase.com/favicon/apple-icon-180x180.png",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "motion.svg",
+    "sourcePage": "https://motion.dev",
+    "assetUrl": "https://motion.dev/favicon.svg",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "lucide.svg",
+    "sourcePage": "https://lucide.dev",
+    "assetUrl": "https://lucide.dev/logo.light.svg",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "googlemaps.png",
+    "sourcePage": "https://developers.google.com/maps",
+    "assetUrl": "https://www.gstatic.com/images/branding/productlogos/maps_2025/v1/192px.svg",
+    "retrieved": "2026-10-23",
+    "usage": "Rasterized at 96px with original colors and proportions; identification only, no endorsement implied."
+  },
+  {
+    "file": "assemblyai.svg",
+    "sourcePage": "https://www.assemblyai.com",
+    "assetUrl": "https://www.assemblyai.com/_aai/images/logos/assemblyai-logo-full-primary.svg",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "egov.png",
+    "sourcePage": "https://platforms.e.gov.ph",
+    "assetUrl": "https://platforms.e.gov.ph/platforms/logo-eGovPH.png",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "egovai.png",
+    "sourcePage": "https://platforms.e.gov.ph",
+    "assetUrl": "https://platforms.e.gov.ph/platforms/logo-egovai.png",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "egovpay.png",
+    "sourcePage": "https://platforms.e.gov.ph",
+    "assetUrl": "https://platforms.e.gov.ph/platforms/logo-eGovPay.png",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  },
+  {
+    "file": "ereport.png",
+    "sourcePage": "https://platforms.e.gov.ph",
+    "assetUrl": "https://platforms.e.gov.ph/platforms/logo-ereport.png",
+    "retrieved": "2026-10-23",
+    "usage": "Unmodified official site asset; identification only, no endorsement implied."
+  }
+]
