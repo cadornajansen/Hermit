@@ -170,7 +170,7 @@ export async function sendReminderSms(input: { title: string; due: string; mobil
 
 // --- eReport ----------------------------------------------------------------
 
-export async function reportProblem(input: { office: string; message: string }) {
+export async function reportProblem(input: { office: string; message: string; subject?: string }) {
   const office = text(input.office, 120)
   const message = text(input.message, 2000)
   if (!office || !message) return { ok: false, error: "Please describe the problem" }
@@ -179,7 +179,7 @@ export async function reportProblem(input: { office: string; message: string }) 
   try {
     const { caseNumber } = await egov("report").submit({
       identity: s?.identity ?? ({} as never),
-      subject: `Red tape at ${office}`,
+      subject: text(input.subject, 120) || `Red tape at ${office}`,
       message,
       reportType: process.env.EGOV_EREPORT_REPORT_TYPE ?? "",
     })

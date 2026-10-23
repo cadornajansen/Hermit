@@ -1,12 +1,13 @@
 "use client"
 
-import { Brain, Download, ExternalLink, FileText, Mic, Send } from "lucide-react"
+import { Brain, Download, ExternalLink, FileText, ImagePlus, Mic, Send, X } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 import { documentUrl } from "@/app/sync"
 import { HermitCards, StepTimeline } from "@/components/chat-cards"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { readExif } from "@/lib/exif"
 import { getFile } from "@/lib/files"
 import { getForm } from "@/lib/forms"
 import type { HermitReply, HermitStep } from "@/lib/hermit"
@@ -34,6 +35,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
   const [q, setQ] = useState(initialQuestion)
   const [pending, setPending] = useState(false)
   const [live, setLive] = useState<HermitStep[]>([])
+  const [attached, setAttached] = useState<{ thumb: string; note: string } | null>(null)
   const voice = useVoice(profile?.lang === "en" ? "en-PH" : "fil-PH", (t) => setQ(t))
   // Follow the conversation and Kuya Hermit's live steps.
   const end = useRef<HTMLDivElement>(null)
@@ -45,7 +47,10 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
 
   async function ask(question: string) {
     if (!question.trim() || pending) return
-    const mine: ChatMessage = { role: "owner", text: question, at: new Date().toISOString() }
+    const photo = attached
+    if (photo) question = `${question}\n\n${photo.note}`
+    setAttached(null)
+    const mine: ChatMessage = { role: "owner", text: question, photo: photo?.thumb, at: new Date().toISOString() }
     update((s) => ({ chat: [...s.chat, mine] }))
     setQ("")
     setPending(true)
@@ -158,14 +163,18 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
             }
           >
             {m.role === "hermit" && m.steps && <StepTimeline steps={m.steps} ms={m.ms} en={en} />}
-            <p className="break-words whitespace-pre-wrap">{linkify(m.text.replaceAll("**", "").replace(/^#+ /gm, ""))}</p>
+            {m.photo && (
+              // eslint-disable-next-line @next/next/no-img-element -- local data URL
+              <img src={m.photo} alt={en ? "Attached photo" : "Nakalakip na litrato"} className="max-h-40 self-end rounded-xl" />
+            )}
+            <p className="break-words whitespace-pre-wrap">{linkify(m.text.replace(/\n\n\[Photo attached:[^\]]*\]$/, "").replaceAll("**", "").replace(/^#+ /gm, ""))}</p>
             {m.formIds?.map((f) => (
               <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
                 Pre-fill {getForm(f)?.short}
               </Link>
             ))}
             {m.packs?.map((id) => <PacketCard key={id} requirementId={id} />)}
-            {m.cards && <HermitCards cards={m.cards} onAsk={ask} />}
+            {m.cards && <HermitCards cards={m.cards} onAsk={ask} photo={chat.slice(0, i).findLast((x) => x.role === "owner")?.photo} />}
             {m.steps?.some((st) => st.tool === "remember" && st.ok) && (
               <Link href="/memory" className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Brain className="size-3.5" /> {en ? "Saved to memory · view or delete" : "Naitala sa memory · tingnan o burahin"}
@@ -197,6 +206,16 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
       </ol>
       <div ref={end} />
 
+      {attached && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {/* eslint-disable-next-line @next/next/no-img-element -- local data URL */}
+          <img src={attached.thumb} alt="" className="size-12 rounded-lg object-cover" />
+          <span className="flex-1">{attached.note.slice(1, -1)}</span>
+          <Button size="icon-sm" variant="ghost" aria-label={en ? "Remove photo" : "Alisin ang litrato"} onClick={() => setAttached(null)}>
+            <X />
+          </Button>
+        </div>
+      )}
       <form
         className="sticky bottom-20 flex gap-2 bg-background py-2"
         onSubmit={(e) => {
@@ -211,6 +230,19 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
           onChange={(e) => setQ(e.target.value)}
           aria-label="Your question"
         />
+        <label className={cn(buttonVariants({ size: "icon-lg", variant: "outline" }), "cursor-pointer")} aria-label={en ? "Attach a photo" : "Maglakip ng litrato"}>
+          <ImagePlus />
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={async (e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ""
+              if (f) setAttached(await photoNote(f).catch(() => null))
+            }}
+          />
+        </label>
         {voice.supported && (
           <Button
             type="button"
@@ -229,6 +261,20 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
       </form>
     </div>
   )
+}
+
+// A small thumbnail for the chat, and when/where the photo was taken for
+// Kuya Hermit (it can't see images). The photo itself never leaves the device.
+async function photoNote(file: File) {
+  const meta = file.type === "image/jpeg" ? readExif(await file.arrayBuffer()) : {}
+  const bmp = await createImageBitmap(file)
+  const k = Math.min(1, 480 / Math.max(bmp.width, bmp.height))
+  const c = Object.assign(document.createElement("canvas"), { width: Math.round(bmp.width * k), height: Math.round(bmp.height * k) })
+  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height)
+  const d = new Date(file.lastModified)
+  const taken = meta.takenAt ?? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+  const where = meta.lat !== undefined ? `, GPS ${meta.lat}, ${meta.lng} (https://maps.google.com/?q=${meta.lat},${meta.lng})` : ", no location in the photo"
+  return { thumb: c.toDataURL("image/jpeg", 0.7), note: `[Photo attached: taken ${taken.replace("T", " ")}${where}]` }
 }
 
 // POST to the streaming endpoint; report each step as it happens.

@@ -6,6 +6,7 @@ import { headers } from "next/headers"
 import { db } from "@/lib/db"
 import { egov, isLive } from "@/lib/egov"
 import { refreshPayment, type PaymentRow } from "@/lib/pay-server"
+import { SERVICES, type ServiceId } from "@/lib/agencies"
 import { getPayable, parseAmount, periodsFor } from "@/lib/payments"
 import { ownerId } from "@/lib/session"
 
@@ -84,6 +85,48 @@ export async function startTaxPayment(input: {
     })
     await sb.from("payments").update({ gateway_uuid: p.uuid, payment_url: p.url }).eq("txnid", txnid)
     return { ok: true as const, txnid, url: p.url }
+  } catch (e) {
+    console.error("eGovPay create failed", e)
+    await sb.from("payments").update({ status: "failed", updated_at: new Date().toISOString() }).eq("txnid", txnid)
+    return { ok: false as const, error: "Hindi ma-reach ang payment gateway ngayon. Subukan ulit mamaya." }
+  }
+}
+
+// Government service fees started from Kuya Hermit (e.g. NBI clearance).
+// The amount comes from the server's catalog, never from the browser.
+export async function startServicePayment(input: { service: string; purpose: string }) {
+  const id_ = text(input?.service, 40) as ServiceId
+  const svc = SERVICES[id_]
+  if (!svc) return { ok: false as const, error: "Unknown service" }
+  const purpose = text(input?.purpose, 80) || "General"
+  const sb = db()
+  if (!isLive("pay") || !sb) return { ok: false as const, error: "not_connected" }
+
+  const id = (await ownerId(true))!
+  await sb.from("owners").upsert({ id }, { onConflict: "id", ignoreDuplicates: true })
+  const txnid = `HRM-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`
+  const amount = svc.fee + svc.eFee
+  const description = `${svc.name} · ${purpose}`
+  const { error: insertError } = await sb.from("payments").insert({ owner_id: id, txnid, form_id: id_, description, period: null, amount })
+  if (insertError) {
+    console.error("payments insert failed", insertError)
+    return { ok: false as const, error: "Hindi masimulan ang bayad. Subukan ulit." }
+  }
+  const h = await headers()
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`
+  try {
+    const p = await egov("pay").createPayment({
+      txnid,
+      amount,
+      items: [
+        { name: `${svc.name} fee`, amount: svc.fee },
+        { name: "e-payment fee", amount: svc.eFee },
+      ],
+      callbackUrl: `${origin}/api/pay/callback`,
+      redirectUrl: `${origin}/pay?txn=${txnid}`,
+    })
+    await sb.from("payments").update({ gateway_uuid: p.uuid, payment_url: p.url }).eq("txnid", txnid)
+    return { ok: true as const, txnid, url: p.url, amount }
   } catch (e) {
     console.error("eGovPay create failed", e)
     await sb.from("payments").update({ status: "failed", updated_at: new Date().toISOString() }).eq("txnid", txnid)

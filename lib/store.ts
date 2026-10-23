@@ -53,6 +53,7 @@ export type ChatMessage = {
   steps?: HermitStep[] // what Kuya Hermit did, as a timeline
   cards?: HermitCard[] // interactive cards drawn under the answer
   ms?: number
+  photo?: string // small on-device thumbnail the owner attached (never uploaded)
   at: string
 }
 

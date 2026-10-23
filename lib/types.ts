@@ -1,3 +1,5 @@
+import type { Appointment } from "./agencies"
+
 // "unknown" is the "Hindi ko alam" answer: the engine treats it as "possibly required".
 export type Unknown = "unknown"
 
@@ -53,6 +55,8 @@ export type Profile = {
   extra: Record<string, string>
   // Facts the owner told Kuya Hermit to keep (Memory page); editable and deletable.
   memory?: MemoryFact[]
+  // Appointments booked through Kuya Hermit (demo bookings, see lib/agencies.ts).
+  appointments?: Appointment[]
 }
 
 export type MemoryFact = { id: string; text: string; source: "chat" | "owner"; at: string }

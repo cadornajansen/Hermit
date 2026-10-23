@@ -2,17 +2,19 @@
 
 import { Check, ChevronDown, ExternalLink, Loader2, MapPin, X } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { reportProblem } from "@/app/actions"
+import { paymentStatus, startServicePayment, type PaymentView } from "@/app/pay"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { agencyRecord, SERVICES, type Agency, type ServiceId, type Slot } from "@/lib/agencies"
 import { buildCalendar, buildChecklist, getRequirement } from "@/lib/engine"
 import { formsFor } from "@/lib/forms"
 import type { HermitCard, HermitStep } from "@/lib/hermit"
 import { mapsLink, officesFor } from "@/lib/offices"
-import { PAYABLES } from "@/lib/payments"
+import { PAYABLES, peso } from "@/lib/payments"
 import { processFor } from "@/lib/processes"
-import { useProfile } from "@/lib/store"
+import { update, useProfile } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { coverage, DOC_TYPES } from "@/lib/vault"
 
@@ -60,17 +62,215 @@ export function StepTimeline({ steps, live, ms, en }: { steps: HermitStep[]; liv
   )
 }
 
-export function HermitCards({ cards, onAsk }: { cards: HermitCard[]; onAsk: (q: string) => void }) {
+export function HermitCards({ cards, onAsk, photo }: { cards: HermitCard[]; onAsk: (q: string) => void; photo?: string }) {
   return cards.map((c, i) =>
-    c.kind === "requirement" ? (
+    c.kind === "agency" ? (
+      <AgencyCard key={i} agency={c.agency} />
+    ) : c.kind === "booking" ? (
+      <BookingCard key={i} office={c.office} purpose={c.purpose} slots={c.slots} />
+    ) : c.kind === "service" ? (
+      <ServiceCard key={i} service={c.service} purpose={c.purpose} />
+    ) : c.kind === "requirement" ? (
       <RequirementCard key={i} id={c.id} onAsk={onAsk} />
     ) : c.kind === "deadlines" ? (
       <DeadlinesCard key={i} months={c.months} />
     ) : c.kind === "offices" ? (
       <OfficesCard key={i} />
     ) : (
-      <ReportCard key={i} office={c.office} message={c.message} />
+      <ReportCard key={i} office={c.office} message={c.message} photo={photo} />
     )
+  )
+}
+
+const DemoBadge = ({ en }: { en: boolean }) => (
+  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+    {en ? "Sample data · prototype" : "Sample data · prototype"}
+  </span>
+)
+
+function AgencyCard({ agency }: { agency: Agency }) {
+  const { profile } = useProfile()
+  if (!profile) return null
+  const en = profile.lang === "en"
+  const r = agencyRecord(agency, profile)
+  return (
+    <div className={card}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">
+          {r.name} · <span className="font-mono">{r.number}</span>
+        </p>
+        <DemoBadge en={en} />
+      </div>
+      <p className="text-muted-foreground">
+        {r.status} · {r.summary}
+      </p>
+      <ul className="flex flex-col divide-y">
+        {r.rows.map((row) => (
+          <li key={row.label} className="flex items-center justify-between gap-2 py-1.5">
+            <span>{row.label}</span>
+            <span className="flex items-center gap-2">
+              <span className="tabular-nums">{row.value}</span>
+              {row.note && <span className="rounded-full bg-emerald-600/15 px-1.5 text-[10px] text-emerald-700 dark:text-emerald-400">{row.note}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {r.total && (
+        <p className="flex justify-between border-t pt-2 font-medium">
+          <span>{r.total.label}</span>
+          <span className="tabular-nums">{r.total.value}</span>
+        </p>
+      )}
+    </div>
+  )
+}
+
+const when = (at: string, en: boolean) =>
+  new Date(`${at}:00`).toLocaleString(en ? "en-PH" : "fil-PH", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+
+function BookingCard({ office, purpose, slots }: { office: string; purpose: string; slots: Slot[] }) {
+  const { profile } = useProfile()
+  if (!profile) return null
+  const en = profile.lang === "en"
+  const booked = profile.appointments?.find((a) => a.office === office && slots.some((s) => s.at === a.at))
+  return (
+    <div className={card}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{office}</p>
+        <DemoBadge en={en} />
+      </div>
+      <p className="text-muted-foreground">{purpose}</p>
+      {booked ? (
+        <>
+          <p className="font-medium text-emerald-700 dark:text-emerald-400">
+            ✓ {en ? "Booked" : "Naka-book"}: {when(booked.at, en)}
+          </p>
+          <a
+            href={`https://calendar.google.com/calendar/render?${new URLSearchParams({ action: "TEMPLATE", text: `${purpose} · ${office}`, dates: `${booked.at.replace(/[-:]/g, "")}00/${booked.at.replace(/[-:]/g, "")}00`, details: "Booked through HERMIT (prototype booking)." })}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary"
+          >
+            Add to Google Calendar →
+          </a>
+          <Button size="sm" variant="ghost" className="self-start" onClick={() => update((s) => ({ profile: s.profile && { ...s.profile, appointments: (s.profile.appointments ?? []).filter((a) => a.id !== booked.id) } }))}>
+            {en ? "Cancel booking" : "Kanselahin"}
+          </Button>
+        </>
+      ) : slots.length ? (
+        <div className="flex flex-col gap-2">
+          {slots.map((s) => (
+            <Button
+              key={s.at}
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                update((st) => ({
+                  profile: st.profile && {
+                    ...st.profile,
+                    appointments: [...(st.profile.appointments ?? []), { id: crypto.randomUUID(), office, at: s.at, purpose, demo: true as const }].slice(-20),
+                  },
+                }))
+              }
+            >
+              {en ? "Book" : "I-book"} · {when(s.at, en)}
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <p>{en ? "No open slots in the next two weeks." : "Walang bakanteng schedule sa susunod na dalawang linggo."}</p>
+      )}
+    </div>
+  )
+}
+
+function ServiceCard({ service, purpose }: { service: ServiceId; purpose: string }) {
+  const { profile } = useProfile()
+  const [pay, setPay] = useState<{ txnid: string; url: string }>()
+  const [view, setView] = useState<PaymentView | null>()
+  const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
+  // Watch the transaction until eGovPay reports it paid (status comes from the gateway, not the browser).
+  useEffect(() => {
+    if (!pay || view?.status === "paid") return
+    const t = setInterval(() => paymentStatus(pay.txnid).then(setView, () => {}), 4000)
+    return () => clearInterval(t)
+  }, [pay, view?.status])
+  const svc = SERVICES[service]
+  if (!profile || !svc) return null
+  const en = profile.lang === "en"
+
+  if (view?.status === "paid")
+    return (
+      <div className={card}>
+        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">✓ {en ? "Payment confirmed by eGovPay" : "Kumpirmado ng eGovPay ang bayad"}</p>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+          <dt className="text-muted-foreground">Service</dt>
+          <dd>{view.description}</dd>
+          <dt className="text-muted-foreground">Ref no.</dt>
+          <dd className="font-mono">{view.refno ?? view.txnid}</dd>
+          <dt className="text-muted-foreground">{en ? "Paid" : "Binayaran"}</dt>
+          <dd>{view.paidAt ? new Date(view.paidAt).toLocaleString("en-PH") : "—"}</dd>
+          {view.channel && (
+            <>
+              <dt className="text-muted-foreground">Channel</dt>
+              <dd>{view.channel}</dd>
+            </>
+          )}
+          <dt className="text-muted-foreground">Total</dt>
+          <dd className="font-medium">{peso(view.amount)}</dd>
+        </dl>
+        <p className="text-muted-foreground">{en ? "eGovPay test mode: no real money moved, and the clearance itself isn't issued yet." : "eGovPay test mode: walang totoong pera, at hindi pa ito tunay na NBI clearance."}</p>
+      </div>
+    )
+
+  return (
+    <div className={card}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{svc.name}</p>
+        <DemoBadge en={en} />
+      </div>
+      <p className="text-muted-foreground">
+        {svc.agency} · {purpose}
+      </p>
+      <ul className="flex flex-col gap-0.5">
+        {svc.checks.map((c, i) => (
+          <li key={c}>{i === 0 ? (profile.identityVerified ? "✓" : "✗") : "•"} {c}{i === 0 && !profile.identityVerified ? (en ? " · verify on your Profile" : " · i-verify sa Profile") : ""}</li>
+        ))}
+      </ul>
+      <p className="flex justify-between border-t pt-2">
+        <span>
+          {peso(svc.fee)} + {peso(svc.eFee)} e-payment
+        </span>
+        <span className="font-medium">{peso(svc.fee + svc.eFee)}</span>
+      </p>
+      {pay ? (
+        <>
+          <a href={pay.url} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm" })}>
+            {en ? "Open eGovPay checkout" : "Buksan ang eGovPay checkout"} <ExternalLink />
+          </a>
+          <p className="flex items-center gap-1.5 text-muted-foreground">
+            <Loader2 className="size-3 animate-spin" /> {en ? "Waiting for eGovPay to confirm…" : "Hinihintay ang kumpirmasyon ng eGovPay…"}
+          </p>
+        </>
+      ) : (
+        <Button
+          size="sm"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            setError(undefined)
+            const r = await startServicePayment({ service, purpose }).catch(() => ({ ok: false as const, error: "failed" }))
+            setBusy(false)
+            if (r.ok) setPay({ txnid: r.txnid, url: r.url })
+            else setError(r.error === "not_connected" ? (en ? "Payments aren't connected on this server." : "Hindi pa konektado ang payments dito.") : r.error)
+          }}
+        >
+          {busy ? (en ? "Starting…" : "Sinisimulan…") : en ? "Continue with eGovPay" : "Magpatuloy sa eGovPay"}
+        </Button>
+      )}
+      {error && <p role="alert" className="text-destructive">{error}</p>}
+    </div>
   )
 }
 
@@ -209,7 +409,7 @@ function OfficesCard() {
 }
 
 // A draft Kuya Hermit wrote; only the owner's tap submits it.
-function ReportCard({ office: initialOffice, message: initialMessage }: { office: string; message: string }) {
+function ReportCard({ office: initialOffice, message: initialMessage, photo }: { office: string; message: string; photo?: string }) {
   const { profile } = useProfile()
   const [office, setOffice] = useState(initialOffice)
   const [message, setMessage] = useState(initialMessage)
@@ -236,12 +436,21 @@ function ReportCard({ office: initialOffice, message: initialMessage }: { office
         <span className="text-muted-foreground">{en ? "What happened" : "Ano ang nangyari"}</span>
         <textarea className="min-h-24 rounded-lg border bg-background p-2 text-sm" value={message} onChange={(e) => setMessage(e.target.value)} />
       </label>
+      {photo && (
+        <figure className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element -- local data URL */}
+          <img src={photo} alt="" className="size-14 rounded-lg object-cover" />
+          <figcaption className="text-muted-foreground">
+            {en ? "Your photo (kept on this device; eReport doesn't accept attachments yet)" : "Ang litrato mo (nasa device mo lang; wala pang attachment ang eReport)"}
+          </figcaption>
+        </figure>
+      )}
       <Button
         size="sm"
         disabled={busy || !office.trim() || !message.trim()}
         onClick={async () => {
           setBusy(true)
-          setResult(await reportProblem({ office, message }).catch(() => ({ ok: false, error: "Report failed, try again later" })))
+          setResult(await reportProblem({ office, message, subject: `Report to ${office}` }).catch(() => ({ ok: false, error: "Report failed, try again later" })))
           setBusy(false)
         }}
       >
