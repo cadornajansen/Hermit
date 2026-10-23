@@ -1,14 +1,15 @@
 "use client"
 
-import { Download, ExternalLink, FileText, Send } from "lucide-react"
+import { Brain, Download, ExternalLink, FileText, Mic, Send } from "lucide-react"
 import Link from "next/link"
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
-import { askHermit } from "@/app/actions"
 import { documentUrl } from "@/app/sync"
+import { HermitCards, StepTimeline } from "@/components/chat-cards"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { getFile } from "@/lib/files"
 import { getForm } from "@/lib/forms"
+import type { HermitReply, HermitStep } from "@/lib/hermit"
 import { buildPacket, packetPlan, slotAvailability, slotName, usable } from "@/lib/pack"
 import { update, useProfile, type ChatMessage } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -31,16 +32,27 @@ const SUGGESTIONS = {
 export function Chat({ initialQuestion }: { initialQuestion: string }) {
   const { profile, chat, items, docs, ownerId } = useProfile()
   const [q, setQ] = useState(initialQuestion)
-  const [pending, start] = useTransition()
+  const [pending, setPending] = useState(false)
+  const [live, setLive] = useState<HermitStep[]>([])
+  const voice = useVoice(profile?.lang === "en" ? "en-PH" : "fil-PH", (t) => setQ(t))
+  // Follow the conversation and Kuya Hermit's live steps.
+  const end = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end", behavior: "smooth" })
+  }, [chat.length, live.length, pending])
   if (!profile) return null
+  const en = profile.lang === "en"
 
-  function ask(question: string) {
-    if (!question.trim()) return
+  async function ask(question: string) {
+    if (!question.trim() || pending) return
     const mine: ChatMessage = { role: "owner", text: question, at: new Date().toISOString() }
     update((s) => ({ chat: [...s.chat, mine] }))
     setQ("")
-    start(async () => {
-      const r = await askHermit({
+    setPending(true)
+    setLive([])
+    {
+      const r = await streamHermit(
+        {
         expectedOwnerId: ownerId!,
         question,
         history: chat.map((m) => ({ role: m.role, text: m.text })),
@@ -53,15 +65,32 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
           requirementId: d.requirementId,
           fileName: d.fileName,
         })),
-      }).catch(() => null)
+        },
+        (step) => setLive((l) => [...l.filter((x) => x.id !== step.id), step])
+      ).catch(() => null)
+      setPending(false)
+      setLive([])
       const answer: ChatMessage = r
-        ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, packs: r.packs, at: new Date().toISOString() }
+        ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, packs: r.packs, steps: r.steps, cards: r.cards, ms: r.ms, at: new Date().toISOString() }
         : { role: "hermit", text: "Pasensya, hindi kita ma-reach ngayon. Subukan ulit mamaya. · Sorry, I can't connect right now.", at: new Date().toISOString() }
       update((s) =>
         s.ownerId !== ownerId
           ? {}
           : {
               chat: [...s.chat, answer],
+              // Facts the owner asked Kuya Hermit to keep (Memory page).
+              profile:
+                r?.remembered?.length && s.profile
+                  ? {
+                      ...s.profile,
+                      memory: [
+                        ...(s.profile.memory ?? []),
+                        ...r.remembered
+                          .filter((t) => !s.profile!.memory?.some((m) => m.text === t))
+                          .map((text) => ({ id: crypto.randomUUID(), text, source: "chat" as const, at: new Date().toISOString() })),
+                      ].slice(-50),
+                    }
+                  : s.profile,
               // Chat suggestions are current-form edits, never consent for reuse.
               formEdits: r
                 ? {
@@ -76,7 +105,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
                 : s.formEdits,
             }
       )
-    })
+    }
   }
 
   return (
@@ -84,6 +113,9 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
       <div>
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">Kuya Hermit</h1>
+          <Link href="/memory" className="ml-auto flex items-center gap-1 text-xs text-muted-foreground" aria-label="Memory">
+            <Brain className="size-4" aria-hidden /> {en ? "Memory" : "Naaalala"}
+          </Link>
           <div role="radiogroup" aria-label="Wika · Language" className="flex rounded-full border p-0.5 text-xs">
             {(["fil", "en"] as const).map((l) => (
               <button
@@ -125,6 +157,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
                 : "mr-6 flex flex-col gap-2 rounded-2xl rounded-bl-sm bg-muted px-4 py-3 text-sm"
             }
           >
+            {m.role === "hermit" && m.steps && <StepTimeline steps={m.steps} ms={m.ms} en={en} />}
             <p className="break-words whitespace-pre-wrap">{linkify(m.text.replaceAll("**", "").replace(/^#+ /gm, ""))}</p>
             {m.formIds?.map((f) => (
               <Link key={f} href={`/forms/${f}`} className={buttonVariants({ size: "sm" })}>
@@ -132,6 +165,12 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
               </Link>
             ))}
             {m.packs?.map((id) => <PacketCard key={id} requirementId={id} />)}
+            {m.cards && <HermitCards cards={m.cards} onAsk={ask} />}
+            {m.steps?.some((st) => st.tool === "remember" && st.ok) && (
+              <Link href="/memory" className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Brain className="size-3.5" /> {en ? "Saved to memory · view or delete" : "Naitala sa memory · tingnan o burahin"}
+              </Link>
+            )}
             {m.role === "hermit" && (
               <p className="text-[11px] text-muted-foreground">Hindi ito legal o tax advice · Not legal or tax advice</p>
             )}
@@ -151,11 +190,12 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
           </li>
         ))}
         {pending && (
-          <li className="mr-6 rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">
-            {profile.lang === "en" ? "Thinking…" : "Nag-iisip…"}
+          <li className="mr-6 rounded-2xl bg-muted px-4 py-3 text-sm" aria-live="polite">
+            <StepTimeline steps={live} live en={en} />
           </li>
         )}
       </ol>
+      <div ref={end} />
 
       <form
         className="sticky bottom-20 flex gap-2 bg-background py-2"
@@ -171,12 +211,77 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
           onChange={(e) => setQ(e.target.value)}
           aria-label="Your question"
         />
+        {voice.supported && (
+          <Button
+            type="button"
+            size="icon-lg"
+            variant={voice.listening ? "default" : "outline"}
+            onClick={voice.toggle}
+            aria-label={voice.listening ? "Stop listening" : en ? "Speak your question" : "Sabihin ang tanong"}
+            aria-pressed={voice.listening}
+          >
+            <Mic className={cn(voice.listening && "animate-pulse")} />
+          </Button>
+        )}
         <Button type="submit" size="icon-lg" disabled={pending || !q.trim()} aria-label="Send">
           <Send />
         </Button>
       </form>
     </div>
   )
+}
+
+// POST to the streaming endpoint; report each step as it happens.
+async function streamHermit(input: unknown, onStep: (s: HermitStep) => void): Promise<HermitReply | null> {
+  const res = await fetch("/api/hermit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) })
+  if (!res.ok || !res.body) return null
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buf = ""
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) return null
+    buf += value
+    const lines = buf.split("\n")
+    buf = lines.pop()!
+    for (const line of lines) {
+      if (!line.trim()) continue
+      const ev = JSON.parse(line)
+      if (ev.type === "step") onStep(ev.step)
+      else if (ev.type === "done") return ev.reply
+      else if (ev.type === "error") throw new Error(ev.message)
+    }
+  }
+}
+
+type Recognizer = { lang: string; interimResults: boolean; continuous: boolean; start(): void; stop(): void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null }
+
+// Speak instead of type: the browser's own speech recognition (Chrome, Edge,
+// Safari), Filipino or English. Hidden where the browser has none.
+function useVoice(lang: string, onText: (t: string) => void) {
+  const rec = useRef<Recognizer | null>(null)
+  const supported = useSyncExternalStore(
+    () => () => {},
+    () => "SpeechRecognition" in window || "webkitSpeechRecognition" in window,
+    () => false
+  )
+  const [listening, setListening] = useState(false)
+  useEffect(() => () => rec.current?.stop(), [])
+  function toggle() {
+    if (listening) return rec.current?.stop()
+    const w = window as unknown as { SpeechRecognition?: new () => Recognizer; webkitSpeechRecognition?: new () => Recognizer }
+    const R = w.SpeechRecognition ?? w.webkitSpeechRecognition
+    if (!R) return
+    const r = new R()
+    r.lang = lang
+    r.interimResults = true
+    r.continuous = false
+    r.onresult = (e) => onText(Array.from(e.results, (x) => x[0].transcript).join(""))
+    r.onend = () => setListening(false)
+    rec.current = r
+    r.start()
+    setListening(true)
+  }
+  return { supported, listening, toggle }
 }
 
 // Make the exact URLs Kuya Hermit gives tappable.

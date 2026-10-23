@@ -27,6 +27,7 @@ import {
   type ReusableKey,
 } from "./form-memory"
 import type { Box } from "./fill"
+import type { HermitCard, HermitStep } from "./hermit"
 import type { ItemState, Profile, VaultDoc, VaultEvent } from "./types"
 
 // The device is the working copy (instant, works offline on weak signal);
@@ -49,6 +50,9 @@ export type ChatMessage = {
   sources?: { name: string; url: string; lastVerified: string | null; copiedOn?: string }[]
   formIds?: string[]
   packs?: string[] // document packets Kuya Hermit prepared
+  steps?: HermitStep[] // what Kuya Hermit did, as a timeline
+  cards?: HermitCard[] // interactive cards drawn under the answer
+  ms?: number
   at: string
 }
 

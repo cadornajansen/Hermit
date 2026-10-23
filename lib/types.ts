@@ -51,7 +51,11 @@ export type Profile = {
   reminders: ("sms" | "push")[]
   // Legacy / vault metadata. Never treated as consented reusable form answers.
   extra: Record<string, string>
+  // Facts the owner told Kuya Hermit to keep (Memory page); editable and deletable.
+  memory?: MemoryFact[]
 }
+
+export type MemoryFact = { id: string; text: string; source: "chat" | "owner"; at: string }
 
 export type Tri = boolean | "maybe"
 
