@@ -93,11 +93,11 @@ pnpm dev
 
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You can explore the landing page and try the [local onboarding flow](http://localhost:3000/onboarding) without service credentials. Account sign-up, sync, payments, maps, and eGov services require their respective configuration: copy [`.env.example`](.env.example) to `.env.local` and add the credentials you have access to. Without Supabase, owner data uses device storage and server-backed features are unavailable.
+Either open the link https://hermit-eight.vercel.app/ or Install the repo Open [http://localhost:3000](http://localhost:3000). You can explore the landing page and try the [local onboarding flow](http://localhost:3000/onboarding) without service credentials. Account sign-up, sync, payments, maps, and eGov services require their respective configuration: copy [`.env.example`](.env.example) to `.env.local` and add the credentials you have access to. Without Supabase, owner data uses device storage and server-backed features are unavailable. 
 
 For a populated showcase, open [`/demo`](http://localhost:3000/demo) **after configuring Supabase and its migrations**. This resets a shared fictional Taguig business on every visit; it is a legacy sample, while new onboarding is Manila-only. Its documents, payments, and filings are sample data, not government records or real transactions.
 
-**Suggested judge tour:** onboarding → roadmap → Kuya Hermit → forms and document vault → payment and filing hub → eGov integration status in Profile.
+**Suggested judge tour:** try a demo business  → onboarding → roadmap → Kuya Hermit → forms and document vault → payment and filing hub → eGov integration status in Profile.
 
 ## Built today, building toward tomorrow
 
