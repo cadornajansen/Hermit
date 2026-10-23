@@ -1,451 +1,1050 @@
 "use client"
 
-import { BadgeCheck, Briefcase, Package, Store, UtensilsCrossed } from "lucide-react"
+import {
+  ArrowLeft,
+  ArrowRight,
+  BriefcaseBusiness,
+  Droplets,
+  Factory,
+  Info,
+  Scissors,
+  UserRound,
+  Mail,
+  MapPin,
+  Building2,
+  Users,
+  Wallet,
+  ChartNoAxesCombined,
+  FileText,
+  Store,
+  UtensilsCrossed,
+  Wrench,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState } from "react"
 
-import { classifyBusiness } from "@/app/actions"
-import { EgovLogin, NationalIdCheck } from "@/components/egov-auth"
-import { LocationFields } from "@/components/location-fields"
-import { OwnerStatus } from "@/components/owner-status"
+import {
+  BirthDateField,
+  ChoiceField,
+  SelectField,
+  TextField,
+} from "@/components/onboarding-controls"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { buildChecklist, diffChecklists, EMPTY_PROFILE } from "@/lib/engine"
-import { PILOT_CITY } from "@/lib/offices"
-import { restoreLocation } from "@/lib/locations"
-import { update, useHermit } from "@/lib/store"
-import type { Flag, Profile } from "@/lib/types"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
+import { Progress } from "@/components/ui/progress"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  ACTIVITY_LABELS,
+  activitySummary,
+  getActivities,
+  normalizeProfile,
+} from "@/lib/activities"
+import { diffChecklists, EMPTY_PROFILE } from "@/lib/engine"
+import {
+  getDetailOptions,
+  getDocumentOptions,
+  getReviewFollowUp,
+  type DocumentGroup,
+  type DocumentOption,
+} from "@/lib/onboarding-options"
+import { currentStorageKey, update, useHermit } from "@/lib/store"
+import type { Activity, Flag, Profile } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 export type IdentityPrefill = Pick<
   Profile,
-  "ownerName" | "birthDate" | "homeAddress" | "mobile" | "email" | "barangay" | "city" | "identityVerified"
+  | "ownerName"
+  | "birthDate"
+  | "homeAddress"
+  | "mobile"
+  | "email"
+  | "barangay"
+  | "city"
+  | "identityVerified"
 >
 
-// Every label here maps 1:1 to a value the engine reads (PRD §4: nothing is
-// asked that does not change the checklist).
 export const LABELS = {
   category: {
-    retail: "Sari-sari store / maliit na tindahan",
-    food_service: "Carinderia, restaurant, café, food cart",
-    packaged_food: "Gumagawa o nagre-repack ng pagkain para ibenta sa tindahan",
-    other: "Iba pa · Something else",
+    retail: "Retail",
+    food_service: "Food service",
+    packaged_food: "Packaged-food manufacturing",
+    other: "Other",
   },
   stage: {
-    planning: "Nagpaplano pa lang · Planning to start",
-    operating_unregistered: "Tumatakbo na pero hindi pa rehistrado · Operating, not registered",
-    registered: "Rehistrado na, gusto lang manatiling compliant · Registered",
+    planning: "Planning to open",
+    operating_unregistered: "Operating, not yet registered",
+    registered: "Already registered",
   },
   structure: {
-    sole: "Ako lang · Sole proprietorship",
-    partnership: "May kasosyo · Partnership",
-    corporation: "Corporation / One Person Corporation",
-    cooperative: "Kooperatiba · Cooperative",
+    sole: "Sole proprietorship",
+    partnership: "Partnership",
+    corporation: "Corporation / OPC",
+    cooperative: "Cooperative",
   },
-  premises: { home: "Sa bahay · Home-based", rented: "Nirerentahan · Rented", owned: "Sariling puwesto · Own property" },
+  premises: {
+    home: "Home-based",
+    rented: "Rented premises",
+    owned: "Owned premises",
+  },
   channel: {
-    physical: "Pisikal na tindahan · Physical store",
-    online: "Online lang · Online only",
-    both: "Pareho · Both",
-    mobile: "Delivery / mobile",
+    physical: "Physical location",
+    online: "Online only",
+    both: "Online and in person",
+    mobile: "Mobile / delivery",
   },
-  assets: { under_3m: "Wala pang ₱3M", "3m_15m": "₱3M – ₱15M", "15m_100m": "₱15M – ₱100M" },
-  sales: { under_500k: "Wala pang ₱500K kada taon", "500k_3m": "₱500K – ₱3M", over_3m: "Higit ₱3M (VAT)" },
-  taxOption: { "8pct": "8% flat tax", graduated: "Graduated rates" },
-  employees: { none: "Wala, ako lang", "1_9": "1 – 9", "10_99": "10 – 99", "100_plus": "100+" },
+  assets: {
+    under_3m: "Under ₱3 million",
+    "3m_15m": "₱3–15 million",
+    "15m_100m": "₱15–100 million",
+  },
+  sales: {
+    under_500k: "Under ₱500,000",
+    "500k_3m": "₱500,000–3 million",
+    over_3m: "Over ₱3 million",
+  },
+  taxOption: { "8pct": "8% option", graduated: "Graduated rates" },
+  employees: {
+    none: "Just me",
+    "1_9": "1–9 employees",
+    "10_99": "10–99 employees",
+    "100_plus": "100+ employees",
+  },
 } as const
 
 export const FLAG_LABELS: Record<Flag, string> = {
-  food: "Pagkain o inumin · Food or drinks",
-  fda: "Gamot, cosmetics, supplements, medical devices",
-  alcohol: "Alak o sigarilyo · Alcohol or tobacco",
-  fuel: "Gasolina / LPG",
-  security: "Baril, security services",
-  lending: "Pautang, remittance, pawnshop",
-  import_export: "Import / export",
-  transport: "Transport / delivery service",
+  food: "Sell food or drinks",
+  fda: "Drugs, cosmetics or medical products",
+  alcohol: "Alcohol or tobacco",
+  fuel: "Fuel or LPG",
+  security: "Firearms or security services",
+  lending: "Lending, remittance or pawnshop",
+  import_export: "Import or export",
+  transport: "Transport or delivery services",
   construction: "Construction",
-  professional: "Professional services (PRC-licensed)",
+  professional: "PRC-licensed professional work",
 }
-
-// Only the flags a category suggests (PRD §4 step 9).
-const FLAGS_FOR: Record<string, Flag[]> = {
-  retail: ["food", "alcohol", "fda", "fuel"],
-  food_service: ["alcohol"],
-  packaged_food: ["alcohol", "import_export"],
+const ACTIVITY_ICONS = {
+  retail: Store,
+  food_service: UtensilsCrossed,
+  water_refilling: Droplets,
+  manufacturing: Factory,
+  professional_services: BriefcaseBusiness,
+  personal_services: Scissors,
+  repair: Wrench,
+  other: Store,
 }
-
-const STEPS = ["identity", "business", "stage", "structure", "where", "channel", "size", "people", "flags", "have", "prefs", "review"] as const
+const STEPS = [
+  "business",
+  "setup",
+  "location",
+  "operations",
+  "details",
+  "documents",
+  "review",
+] as const
 type Step = (typeof STEPS)[number]
+type DocumentsChoice = "" | "none" | "some"
+type ReviewEdit = {
+  before: Profile
+  reviewed: Partial<Record<Step, Profile>>
+}
+const TITLES: Record<Step, string> = {
+  business: "Add your business",
+  setup: "Registration",
+  location: "Business location",
+  operations: "Business operations",
+  details: "Activity details",
+  documents: "Your documents",
+  review: "Review your business",
+}
 
-const input = "h-11 w-full rounded-xl border bg-background px-3 text-base"
-
-export function Onboarding({ identity, sso, authError }: { identity: IdentityPrefill | null; sso: boolean; authError?: string }) {
-  const { ready, synced, profile, scopeError } = useHermit()
-  if (scopeError) return <OwnerStatus />
-  if (!ready || !synced) return null
-  return <Wizard saved={profile} identity={identity} sso={sso} authError={authError} />
+export function Onboarding({
+  identity,
+  authError,
+}: {
+  identity: IdentityPrefill | null
+  authError?: string
+}) {
+  const { ready, synced, ownerId, scopeError, profile } = useHermit()
+  if (scopeError) return <p role="alert" className="py-24 text-center text-sm text-destructive">{scopeError}</p>
+  if (!ready || !synced || !ownerId)
+    return (
+      <p
+        className="py-24 text-center text-sm text-muted-foreground"
+        role="status"
+      >
+        Loading your saved details…
+      </p>
+    )
+  return <Wizard saved={profile} identity={identity} authError={authError} />
 }
 
 function Wizard({
   saved,
   identity,
-  sso,
   authError,
 }: {
   saved: Profile | null
   identity: IdentityPrefill | null
-  sso: boolean
   authError?: string
 }) {
   const router = useRouter()
   const [p, setP] = useState<Profile>(() => {
-    const base = saved ?? { ...EMPTY_PROFILE, city: PILOT_CITY }
-    if (!identity) return restoreLocation(base)
-    return restoreLocation({
-      ...base,
-      ...identity,
-      barangay: base.barangay || identity.barangay,
-      city: (saved && base.city) || identity.city || base.city,
-    })
+    const base = saved
+      ? normalizeProfile(saved)
+      : {
+          ...EMPTY_PROFILE,
+          city: "Manila",
+          lang: "en" as const,
+          reminders: [],
+          activities: [],
+          flags: Object.fromEntries(
+            Object.keys(FLAG_LABELS).map((key) => [key, "unknown"])
+          ) as Profile["flags"],
+        }
+    return identity
+      ? {
+          ...base,
+          ...identity,
+          ownerName: base.ownerName || identity.ownerName,
+          email: base.email || identity.email,
+          birthDate: base.birthDate || identity.birthDate,
+          homeAddress: base.homeAddress || identity.homeAddress,
+          mobile: base.mobile || identity.mobile,
+          barangay: base.barangay || identity.barangay,
+          city: (saved && base.city) || "Manila",
+        }
+      : base
   })
-  const [step, setStep] = useState<Step>(saved && !(sso && !saved.identityVerified) ? "review" : "identity")
-  const [guess, setGuess] = useState<string>()
-  const [classifying, startClassify] = useTransition()
-  const set = (patch: Partial<Profile>) => setP((prev) => ({ ...prev, ...patch }))
-  const i = STEPS.indexOf(step)
-  const go = (d: number) => setStep(STEPS[Math.min(STEPS.length - 1, Math.max(0, i + d))])
+  const [step, setStep] = useState<Step>(saved ? "review" : "business")
+  const [error, setError] = useState("")
+  const [saveError, setSaveError] = useState("")
+  const [reviewEdit, setReviewEdit] = useState<ReviewEdit | null>(null)
+  const [documentsChoice, setDocumentsChoice] = useState<DocumentsChoice>(
+    saved?.have.length ? "some" : ""
+  )
+  const heading = useRef<HTMLHeadingElement>(null)
+  const questions = useRef<HTMLDivElement>(null)
+  const firstRender = useRef(true)
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
+    questions.current?.scrollTo({ top: 0 })
+    heading.current?.focus({ preventScroll: true })
+  }, [step])
+  const set = (patch: Partial<Profile>) =>
+    setP((previous) => ({ ...previous, ...patch }))
+  const index = STEPS.indexOf(step)
+  const activities = getActivities(p)
+  const detailOptions = getDetailOptions(p)
+  const compactCard =
+    (step === "details" &&
+      detailOptions.groups.length === 0 &&
+      !detailOptions.packagedFood) ||
+    (step === "documents" && documentsChoice !== "some")
+  const editingSection = reviewEdit !== null && step !== "review"
+  const hasFollowUp =
+    reviewEdit !== null &&
+    getReviewFollowUp(reviewEdit.before, p, [step], reviewEdit.reviewed) !== null
+  const goTo = (next: Step) => {
+    setError("")
+    setSaveError("")
+    setStep(next)
+  }
+  const editSection = (next: Step) => {
+    setReviewEdit((current) => current ?? { before: p, reviewed: {} })
+    goTo(next)
+  }
 
-  function save() {
-    const profile = restoreLocation(p)
-    update(() => ({ profile, lastDiff: saved ? diffChecklists(saved, profile) : null }))
+  function continueForm(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (
+      (step === "location" || step === "review") &&
+      p.city.trim().toLowerCase() !== "manila"
+    ) {
+      if (step === "review") goTo("location")
+      setError("Business intake is currently limited to the City of Manila.")
+      return
+    }
+    if (
+      (step === "business" || step === "review") &&
+      (activities === "unknown" || activities.length === 0)
+    ) {
+      if (step === "review") goTo("business")
+      setError(
+        "Choose at least one activity. Select Other if yours isn’t listed."
+      )
+      document.getElementById("activity-error")?.focus()
+      return
+    }
+    if (reviewEdit) {
+      const reviewed = { ...reviewEdit.reviewed, [step]: p }
+      const followUp = getReviewFollowUp(reviewEdit.before, p, [step], reviewed)
+      setReviewEdit(followUp ? { ...reviewEdit, reviewed } : null)
+      if (followUp || step !== "review") {
+        goTo(followUp ?? "review")
+        return
+      }
+    }
+    if (step !== "review") {
+      goTo(STEPS[index + 1])
+      return
+    }
+    const profile = normalizeProfile({
+      ...p,
+      ownerName: p.ownerName.trim(),
+      businessName: p.businessName.trim(),
+    })
+    update(() => ({
+      profile,
+      lastDiff: saved ? diffChecklists(saved, profile) : null,
+    }))
+    try {
+      const persisted = JSON.parse(
+        localStorage.getItem(currentStorageKey()) ?? "null"
+      ) as { profile?: Profile } | null
+      if (JSON.stringify(persisted?.profile) !== JSON.stringify(profile)) {
+        setSaveError(
+          "Your browser could not save these details. Free some storage or allow site storage, then try again. Your answers remain here."
+        )
+        return
+      }
+    } catch {
+      setSaveError(
+        "Your browser blocked saving. Allow site storage and try again. Your answers remain here."
+      )
+      return
+    }
     router.push("/dashboard")
   }
 
-  const startItems = buildChecklist(p, {}).filter((r) => r.group === "start")
-  const flags = p.category in FLAGS_FOR ? FLAGS_FOR[p.category] : (Object.keys(FLAG_LABELS) as Flag[])
-
   const screens: Record<Step, React.ReactNode> = {
-    identity: (
-      <Screen title="Sino ka? · Who are you?" help="Kinukuha namin ang pangalan, birthday at address mo sa National ID para hindi mo na i-type ulit sa bawat form.">
-        {authError && <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{authError}</p>}
-        {p.identityVerified ? (
-          <div className="flex gap-3 rounded-xl border border-primary/40 bg-primary/5 p-4">
-            <BadgeCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-            <div className="text-sm">
-              <p className="font-medium">Verified sa National ID{sso ? " · naka-sign in sa eGovPH" : ""}</p>
-              <p>{p.ownerName}</p>
-              <p className="text-muted-foreground">
-                {p.birthDate} · {p.homeAddress}
-              </p>
-            </div>
-          </div>
-        ) : sso ? (
-          <>
-            <div className="rounded-xl border p-4 text-sm">
-              <p className="font-medium">Naka-sign in gamit ang eGovPH</p>
-              <p>{p.ownerName}</p>
-              <p className="text-muted-foreground">
-                {p.birthDate} · {p.homeAddress}
-              </p>
-            </div>
-            <NationalIdCheck profile={p} sso onVerified={(patch) => set(patch)} />
-          </>
-        ) : (
-          <>
-            <EgovLogin />
-            <p className="text-center text-xs text-muted-foreground">o kaya, i-type at i-verify gamit ang National ID</p>
-            <Field label="Buong pangalan · Full name (as on your ID)">
-              <input className={input} value={p.ownerName} onChange={(e) => set({ ownerName: e.target.value })} autoComplete="name" />
-            </Field>
-            <Field label="Kaarawan · Birthday">
-              <input type="date" className={input} value={p.birthDate} onChange={(e) => set({ birthDate: e.target.value })} />
-            </Field>
-            <NationalIdCheck profile={p} sso={false} onVerified={(patch) => set(patch)} />
-            <Field label="Tirahan · Home address">
-              <input className={input} value={p.homeAddress} onChange={(e) => set({ homeAddress: e.target.value })} autoComplete="street-address" />
-            </Field>
-            <Field label="Email (optional)">
-              <input type="email" className={input} value={p.email} onChange={(e) => set({ email: e.target.value })} autoComplete="email" />
-            </Field>
-            <p className="text-xs text-muted-foreground">
-              Paalala: dapat pareho ang pangalan mo sa DTI, BIR at permits — kung hindi, puwedeng ma-reject ang filing. Puwede
-              kang magpatuloy kahit hindi pa verified.
-            </p>
-          </>
-        )}
-      </Screen>
-    ),
     business: (
-      <Screen title="Ano ang negosyo mo? · What does your business do?">
-        <Field label="Pangalan ng negosyo (kung meron na) · Business name">
-          <input className={input} value={p.businessName} onChange={(e) => set({ businessName: e.target.value })} />
-        </Field>
-        <Field label='Ikuwento sa sariling salita, hal. "nagtitinda ako ng lutong ulam"'>
-          <textarea className={cn(input, "h-24 py-2")} value={p.description} onChange={(e) => set({ description: e.target.value })} />
-        </Field>
-        <Button
-          variant="secondary"
-          disabled={!p.description.trim() || classifying}
-          onClick={() =>
-            startClassify(async () => {
-              const c = await classifyBusiness(p.description)
-              if (!c) return
-              set({ category: c.category, psic: c.psic })
-              setGuess(`${c.label}${c.psic ? ` (PSIC ${c.psic})` : ""}`)
-            })
-          }
-        >
-          {classifying ? "Sandali…" : "Hulaan ang category · Suggest a category"}
-        </Button>
-        {guess && <p className="text-sm">Mukhang: <strong>{guess}</strong>. Tama ba? Piliin sa baba.</p>}
-        <Choice
-          value={p.category}
-          onChange={(category) => set({ category })}
-          options={LABELS.category}
-          icons={{ retail: Store, food_service: UtensilsCrossed, packaged_food: Package, other: Briefcase }}
-        />
-      </Screen>
+      <BusinessStep p={p} set={set} error={error} setError={setError} />
     ),
-    stage: (
-      <Screen title="Nasaan ka na? · Where are you now?">
-        <Choice value={p.stage} onChange={(stage) => set({ stage })} options={LABELS.stage} />
-      </Screen>
+    setup: <SetupStep p={p} set={set} />,
+    location: <LocationStep p={p} set={set} error={error} setError={setError} />,
+    operations: <OperationsStep p={p} set={set} />,
+    details: <DetailsStep p={p} set={set} />,
+    documents: (
+      <DocumentsStep
+        p={p}
+        set={set}
+        choice={documentsChoice}
+        onChoiceChange={setDocumentsChoice}
+      />
     ),
-    structure: (
-      <Screen title="Sino ang may-ari? · Who owns it?" help="Ito ang nagsasabi kung sa DTI (sole proprietor), SEC (partnership/corporation) o CDA (kooperatiba) ka magrerehistro.">
-        <Choice value={p.structure} onChange={(structure) => set({ structure })} options={LABELS.structure} />
-      </Screen>
-    ),
-    where: (
-      <Screen title="Saan ang negosyo? · Where is it?" help="Ang address ang nagsasabi kung aling barangay, city hall at BIR RDO (Revenue District Office) ang may hawak sa iyo.">
-        <Field label="Address ng negosyo · Business address">
-          <input className={input} value={p.businessAddress} onChange={(e) => set({ businessAddress: e.target.value })} />
-        </Field>
-        <LocationFields value={p} onChange={set} />
-        <Field label="Barangay">
-          <input className={input} value={p.barangay} onChange={(e) => set({ barangay: e.target.value })} />
-        </Field>
-        <p className="text-sm font-medium">Ang puwesto ay… · The place is…</p>
-        <Choice value={p.premises} onChange={(premises) => set({ premises })} options={LABELS.premises} />
-      </Screen>
-    ),
-    channel: (
-      <Screen title="Paano ka nagbebenta? · How do you sell?" help="Kahit online lang o home-based, kailangan pa rin ng Mayor's Permit at BIR registration.">
-        <Choice value={p.channel} onChange={(channel) => set({ channel })} options={LABELS.channel} />
-      </Screen>
-    ),
-    size: (
-      <Screen title="Gaano kalaki? · How big?" help="Assets decide BMBE eligibility (₱3M pababa, hindi kasama ang lupa). Sales decide 8% vs graduated tax and VAT vs non-VAT.">
-        <p className="text-sm font-medium">Kabuuang assets (hindi kasama ang lupa)</p>
-        <Choice value={p.assets} onChange={(assets) => set({ assets })} options={LABELS.assets} />
-        <p className="text-sm font-medium">Tantiyang benta kada taon · Yearly sales</p>
-        <Choice value={p.sales} onChange={(sales) => set({ sales })} options={LABELS.sales} />
-        {p.structure === "sole" && p.sales !== "over_3m" && (
-          <>
-            <p className="text-sm font-medium">Income tax option (kung alam mo na)</p>
-            <Choice value={p.taxOption} onChange={(taxOption) => set({ taxOption })} options={LABELS.taxOption} />
-          </>
-        )}
-      </Screen>
-    ),
-    people: (
-      <Screen title="May empleyado ka ba? · Do you have employees?" help="Kahit isang helper ay nagdadagdag ng SSS, PhilHealth, Pag-IBIG at DOLE.">
-        <Choice value={p.employees} onChange={(employees) => set({ employees })} options={LABELS.employees} />
-      </Screen>
-    ),
-    flags: (
-      <Screen title="Alin dito ang ginagawa mo? · Any of these?" help="Ang mga ito ay may dagdag na permit mula sa ibang ahensya.">
-        {flags.map((f) => (
-          <div key={f} className="flex flex-col gap-2">
-            <p className="text-sm">{FLAG_LABELS[f]}</p>
-            <Choice
-              value={p.flags[f] === undefined ? "" : String(p.flags[f])}
-              onChange={(v) => set({ flags: { ...p.flags, [f]: v === "unknown" ? "unknown" : v === "true" } })}
-              options={{ true: "Oo", false: "Hindi" }}
-              row
-            />
-          </div>
-        ))}
-      </Screen>
-    ),
-    have: (
-      <Screen title="Ano na ang hawak mo? · What do you already have?" help="Lagyan ng check ang mga dokumentong meron ka na.">
-        {startItems.map((r) => (
-          <label key={r.id} className="flex items-center gap-3 rounded-xl border p-3 text-sm has-checked:border-primary">
-            <input
-              type="checkbox"
-              className="size-5 accent-(--primary)"
-              checked={p.have.includes(r.id)}
-              onChange={(e) =>
-                set({ have: e.target.checked ? [...p.have, r.id] : p.have.filter((h) => h !== r.id) })
-              }
-            />
-            {r.name}
-          </label>
-        ))}
-      </Screen>
-    ),
-    prefs: (
-      <Screen title="Paalala at wika · Reminders and language">
-        <Choice value={p.lang} onChange={(lang) => set({ lang: lang as Profile["lang"] })} options={{ fil: "Filipino / Taglish", en: "English" }} unknown={false} row />
-        {(["sms", "push"] as const).map((r) => (
-          <label key={r} className="flex items-center gap-3 rounded-xl border p-3 text-sm">
-            <input
-              type="checkbox"
-              className="size-5 accent-(--primary)"
-              checked={p.reminders.includes(r)}
-              onChange={(e) =>
-                set({ reminders: e.target.checked ? [...p.reminders, r] : p.reminders.filter((x) => x !== r) })
-              }
-            />
-            {r === "sms" ? "SMS (gumagana kahit walang data)" : "Push notifications"}
-          </label>
-        ))}
-        <Field label="Mobile number para sa SMS">
-          <input type="tel" className={input} placeholder="+639171234567" value={p.mobile} onChange={(e) => set({ mobile: e.target.value })} autoComplete="tel" />
-        </Field>
-      </Screen>
-    ),
-    review: (
-      <Screen title="Tama ba ito? · Is this right?">
-        <p className="rounded-xl bg-muted p-4 text-base">{summary(p)}</p>
-        <ul className="flex flex-col divide-y rounded-xl border">
-          {(
-            [
-              ["identity", "Owner", p.ownerName || "—"],
-              ["business", "Negosyo", `${p.businessName || "—"} · ${label("category", p.category)}`],
-              ["stage", "Stage", label("stage", p.stage)],
-              ["structure", "Ownership", label("structure", p.structure)],
-              ["where", "Lugar", [p.businessAddress, p.barangay && `Brgy. ${p.barangay}`, p.city, p.province, p.region].filter(Boolean).join(", ") || "—"],
-              ["channel", "Pagbebenta", label("channel", p.channel)],
-              ["size", "Laki", `${label("assets", p.assets)} · ${label("sales", p.sales)}`],
-              ["people", "Empleyado", label("employees", p.employees)],
-              ["have", "Hawak na", `${p.have.length} dokumento`],
-            ] as [Step, string, string][]
-          ).map(([s, k, v]) => (
-            <li key={s} className="flex items-center justify-between gap-3 p-3 text-sm">
-              <span>
-                <span className="block text-xs text-muted-foreground">{k}</span>
-                {v}
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => setStep(s)}>
-                I-edit
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </Screen>
-    ),
+    review: <ReviewStep p={p} set={set} goTo={editSection} />,
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="font-semibold text-foreground">HERMIT</span>
-        <span>
-          Hakbang {i + 1} sa {STEPS.length}
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${((i + 1) / STEPS.length) * 100}%` }} />
-      </div>
-      {screens[step]}
-      <div className="sticky bottom-0 flex gap-2 bg-background py-3">
-        {i > 0 && (
-          <Button variant="outline" size="lg" className="flex-1" onClick={() => go(-1)}>
-            Bumalik
-          </Button>
+    <div className="flex h-full max-h-[800px] w-full max-w-lg flex-col gap-4 [@media(max-height:600px)]:gap-2">
+      <nav aria-label="Business setup progress" className="shrink-0 px-2">
+        <div className="mb-2 flex h-9 items-center justify-between text-sm text-muted-foreground [@media(max-height:600px)]:mb-1 [@media(max-height:600px)]:h-8">
+          {index > 0 || editingSection ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => goTo(editingSection ? "review" : STEPS[index - 1])}
+              className="-ml-2 h-9 px-2"
+            >
+              <ArrowLeft data-icon="inline-start" />
+              {editingSection ? "Back to review" : "Back"}
+            </Button>
+          ) : (
+            <span>Business setup</span>
+          )}
+          <span aria-live="polite">
+            Step {index + 1} of {STEPS.length}
+          </span>
+        </div>
+        <Progress
+          value={((index + 1) / STEPS.length) * 100}
+          aria-label="Setup progress"
+          className="[&_[data-slot=progress-track]]:h-1"
+        />
+      </nav>
+      <div
+        className={cn(
+          "flex min-h-0 flex-col overflow-hidden rounded-[32px] border border-border/50 bg-card shadow-lg shadow-foreground/5 sm:rounded-[40px]",
+          compactCard ? "flex-initial" : "flex-1"
         )}
-        {step === "review" ? (
-          <Button size="lg" className="flex-1" onClick={save}>
-            I-save · Build my checklist
-          </Button>
-        ) : (
-          <Button size="lg" className="flex-1" onClick={() => go(1)} disabled={step === "identity" && !p.ownerName.trim()}>
-            Susunod · Next
-          </Button>
-        )}
+      >
+        <div className="shrink-0 px-5 pt-6 pb-6 sm:px-8 sm:pt-8 [@media(max-height:600px)]:pt-4 [@media(max-height:600px)]:pb-3">
+          <h1
+            ref={heading}
+            tabIndex={-1}
+            className="text-2xl font-medium tracking-[-0.045em] outline-none [@media(max-height:600px)]:text-xl"
+          >
+            {TITLES[step]}
+          </h1>
+        </div>
+        <form onSubmit={continueForm} className="flex min-h-0 flex-1 flex-col">
+          <div
+            ref={questions}
+            className="min-h-0 flex-1 [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent] overflow-y-auto overscroll-contain px-5 pb-6 sm:px-8 [&_[data-slot=field-group]]:gap-6 [&_[data-slot=field-legend]]:mb-2 [&_[data-slot=field-set]]:gap-3 [&_[data-slot=field]]:gap-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-button]:hidden [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent"
+          >
+            {authError && (
+              <Alert variant="destructive" className="mb-3">
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            )}
+            {screens[step]}
+            {saveError && (
+              <p role="alert" className="mt-3 text-sm text-destructive">
+                {saveError}
+              </p>
+            )}
+          </div>
+          <div className="shrink-0 border-t border-border/60 px-5 pt-4 pb-5 sm:px-8 sm:pb-6 [@media(max-height:600px)]:py-3">
+            <Button type="submit" size="lg" className="w-full">
+              {step === "review"
+                ? "Build my roadmap"
+                : editingSection && !hasFollowUp
+                  ? "Review changes"
+                  : "Continue"}
+              <ArrowRight data-icon="inline-end" />
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   )
 }
 
-type LabelKey = keyof typeof LABELS
-export function label(key: LabelKey, v: string) {
-  return v === "unknown" ? "Hindi alam" : ((LABELS[key] as Record<string, string>)[v] ?? "—")
-}
+type ProfileStepProps = { p: Profile; set: (patch: Partial<Profile>) => void }
 
-function summary(p: Profile) {
-  const who = p.structure === "unknown" ? "Negosyo" : label("structure", p.structure).split(" · ").pop()
-  const where = [p.barangay && `Brgy. ${p.barangay}`, p.city].filter(Boolean).join(", ")
-  const people = p.employees === "none" ? "walang empleyado" : p.employees === "unknown" ? "" : `${label("employees", p.employees)} empleyado`
-  const kind = p.category === "unknown" ? "business" : label("category", p.category).split(",")[0].toLowerCase()
-  return [`${who}, ${p.premises === "home" ? "home-based " : ""}${kind}`, where && `sa ${where}`, people].filter(Boolean).join(" · ")
-}
-
-function Screen({ title, help, children }: { title: string; help?: string; children: React.ReactNode }) {
+function OwnerDetails({ p, set }: ProfileStepProps) {
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight text-balance">{title}</h1>
-      {help && (
-        <details className="text-sm text-muted-foreground">
-          <summary className="cursor-pointer text-primary">Bakit tinatanong ito? · Why we ask</summary>
-          <p className="mt-1">{help}</p>
+    <FieldGroup>
+      <TextField
+        icon={UserRound}
+        label="Full name"
+        value={p.ownerName}
+        onChange={(event) => set({ ownerName: event.target.value })}
+        autoComplete="name"
+      />
+      <TextField
+        icon={Mail}
+        label="Email address"
+        type="email"
+        value={p.email}
+        onChange={(event) => set({ email: event.target.value })}
+        autoComplete="email"
+      />
+      <BirthDateField
+        value={p.birthDate}
+        onChange={(birthDate) => set({ birthDate })}
+      />
+      <TextField
+        icon={MapPin}
+        label="Home address"
+        value={p.homeAddress}
+        onChange={(event) => set({ homeAddress: event.target.value })}
+        autoComplete="street-address"
+      />
+      <TextField
+        label="Mobile number"
+        type="tel"
+        value={p.mobile}
+        onChange={(event) => set({ mobile: event.target.value })}
+        autoComplete="tel"
+      />
+    </FieldGroup>
+  )
+}
+
+function BusinessStep({
+  p,
+  set,
+  error,
+  setError,
+}: ProfileStepProps & { error: string; setError: (error: string) => void }) {
+  const activities = getActivities(p)
+  const selected = activities === "unknown" ? [] : activities
+  function chooseActivity(activity: Activity, checked: boolean) {
+    set({
+      activities: checked
+        ? [...new Set([...selected, activity])]
+        : selected.filter((item) => item !== activity),
+    })
+    setError("")
+  }
+  return (
+    <FieldGroup>
+      <TextField
+        icon={Store}
+        label="Business name (optional)"
+        placeholder="e.g. Ana’s Store"
+        value={p.businessName}
+        onChange={(event) => set({ businessName: event.target.value })}
+        maxLength={200}
+      />
+      <FieldSet
+        aria-describedby="activity-hint activity-error"
+        data-invalid={Boolean(error)}
+      >
+        <FieldLegend variant="label">Activities</FieldLegend>
+        <FieldDescription id="activity-hint">
+          Select all that apply.
+        </FieldDescription>
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+          {(Object.entries(ACTIVITY_LABELS) as [Activity, string][]).map(
+            ([activity, title]) => {
+              const Icon = ACTIVITY_ICONS[activity]
+              return (
+                <FieldLabel
+                  key={activity}
+                  htmlFor={`activity-${activity}`}
+                  className={cn(
+                    "min-h-16 w-full cursor-pointer items-center gap-1.5 rounded-2xl border px-2.5 py-3 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/30 sm:gap-2 sm:px-3",
+                    selected.includes(activity)
+                      ? "border-primary bg-accent"
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <Icon
+                    className="size-4 shrink-0 text-primary sm:size-5"
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-medium wrap-break-word sm:text-sm">
+                      {title}
+                    </span>
+                  </span>
+                  <Checkbox
+                    className="size-3.5 sm:size-4"
+                    id={`activity-${activity}`}
+                    checked={selected.includes(activity)}
+                    onCheckedChange={(checked) =>
+                      chooseActivity(activity, checked)
+                    }
+                    aria-invalid={Boolean(error)}
+                  />
+                </FieldLabel>
+              )
+            }
+          )}
+        </div>
+        <p
+          id="activity-error"
+          tabIndex={-1}
+          role={error ? "alert" : undefined}
+          className="text-sm text-destructive"
+        >
+          {error}
+        </p>
+      </FieldSet>
+      {selected.includes("other") && (
+        <Field>
+          <FieldLabel htmlFor="business-description">
+            What does your business do? (optional)
+          </FieldLabel>
+          <Textarea
+            id="business-description"
+            placeholder="Describe the goods or services you offer."
+            value={p.description}
+            onChange={(event) => set({ description: event.target.value })}
+          />
+        </Field>
+      )}
+    </FieldGroup>
+  )
+}
+
+function SetupStep({ p, set }: ProfileStepProps) {
+  return (
+    <FieldGroup>
+      <ChoiceField
+        icon={FileText}
+        label="Registration status"
+        value={p.stage}
+        options={LABELS.stage}
+        onChange={(value) => set({ stage: value as Profile["stage"] })}
+      />
+      <SelectField
+        icon={Building2}
+        label="Legal form"
+        value={p.structure}
+        options={LABELS.structure}
+        onChange={(value) => set({ structure: value as Profile["structure"] })}
+      />
+    </FieldGroup>
+  )
+}
+
+function LocationStep({
+  p,
+  set,
+  error,
+  setError,
+}: ProfileStepProps & { error: string; setError: (error: string) => void }) {
+  return (
+    <FieldGroup>
+      <TextField
+        icon={MapPin}
+        label="Business address"
+        value={p.businessAddress}
+        onChange={(event) => set({ businessAddress: event.target.value })}
+        placeholder="Street, building or unit"
+      />
+      <div className="grid gap-5 sm:grid-cols-2">
+        <TextField
+          icon={MapPin}
+          label="Barangay"
+          value={p.barangay}
+          onChange={(event) => set({ barangay: event.target.value })}
+          placeholder="e.g. Barangay 100"
+        />
+        <TextField
+          icon={Building2}
+          label="City / municipality"
+          value={p.city}
+          onChange={(event) => {
+            set({ city: event.target.value })
+            setError("")
+          }}
+        />
+      </div>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <ChoiceField
+        icon={Building2}
+        label="Premises"
+        value={p.premises}
+        options={LABELS.premises}
+        onChange={(value) => set({ premises: value as Profile["premises"] })}
+      />
+      {p.city.trim().toLowerCase() !== "manila" && (
+        <FieldDescription>
+          Local guidance is limited to the City of Manila.
+        </FieldDescription>
+      )}
+    </FieldGroup>
+  )
+}
+
+function OperationsStep({ p, set }: ProfileStepProps) {
+  return (
+    <FieldGroup>
+      <SelectField
+        icon={Store}
+        label="Sales channel"
+        value={p.channel}
+        options={LABELS.channel}
+        onChange={(value) => set({ channel: value as Profile["channel"] })}
+      />
+      <SelectField
+        icon={Users}
+        label="Employees"
+        value={p.employees}
+        options={LABELS.employees}
+        onChange={(value) => set({ employees: value as Profile["employees"] })}
+      />
+      <details className="rounded-2xl border p-4">
+        <summary className="cursor-pointer text-sm font-medium">
+          Business size & tax details
+        </summary>
+        <FieldGroup className="mt-5">
+          <SelectField
+            icon={Wallet}
+            label="Estimated assets, excluding land"
+            value={p.assets}
+            options={LABELS.assets}
+            onChange={(value) => set({ assets: value as Profile["assets"] })}
+          />
+          <SelectField
+            icon={ChartNoAxesCombined}
+            label="Estimated annual sales"
+            value={p.sales}
+            options={LABELS.sales}
+            onChange={(value) => set({ sales: value as Profile["sales"] })}
+          />
+          {p.structure === "sole" && p.sales !== "over_3m" && (
+            <SelectField
+              icon={FileText}
+              label="Existing income tax choice"
+              value={p.taxOption}
+              options={LABELS.taxOption}
+              onChange={(value) =>
+                set({ taxOption: value as Profile["taxOption"] })
+              }
+            />
+          )}
+        </FieldGroup>
+      </details>
+    </FieldGroup>
+  )
+}
+
+function DetailsStep({ p, set }: ProfileStepProps) {
+  const options = getDetailOptions(p)
+  return (
+    <FieldGroup>
+      {options.packagedFood && (
+        <ChoiceField
+          icon={Factory}
+          label="Do you make or repack food products?"
+          value={String(p.packagedFood ?? "unknown")}
+          options={{ true: "Yes", false: "No" }}
+          unknownLabel="Not sure"
+          layout="inline"
+          onChange={(value) =>
+            set({
+              packagedFood: value === "unknown" ? "unknown" : value === "true",
+            })
+          }
+        />
+      )}
+      {options.groups.map((group, index) =>
+        options.grouped ? (
+          <details
+            key={group.title}
+            className="rounded-2xl border p-4"
+            open={index === 0}
+          >
+            <summary className="cursor-pointer text-sm font-medium">
+              {group.title}
+            </summary>
+            <div className="pt-5">
+              <ActivityQuestions p={p} set={set} flags={group.flags} />
+            </div>
+          </details>
+        ) : (
+          <ActivityQuestions
+            key="relevant-questions"
+            p={p}
+            set={set}
+            flags={group.flags}
+          />
+        )
+      )}
+      {options.groups.length === 0 && !options.packagedFood && (
+        <FieldDescription>
+          No follow-up questions. Continue, or check other activities below.
+        </FieldDescription>
+      )}
+      {options.remainingGroups.length > 0 && (
+        <details className="rounded-2xl border p-4">
+          <summary className="cursor-pointer text-sm font-medium">
+            Other regulated activities
+          </summary>
+          <FieldGroup className="mt-5">
+            {options.remainingGroups.map((group) => (
+              <FieldSet key={group.title}>
+                <FieldLegend variant="label" className="text-muted-foreground">
+                  {group.title}
+                </FieldLegend>
+                <ActivityQuestions p={p} set={set} flags={group.flags} />
+              </FieldSet>
+            ))}
+          </FieldGroup>
         </details>
       )}
-      {children}
-    </section>
+    </FieldGroup>
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function ActivityQuestions({
+  p,
+  set,
+  flags,
+}: ProfileStepProps & { flags: Flag[] }) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
-      {label}
-      {children}
-    </label>
+    <FieldGroup>
+      {flags.map((flag) => (
+        <ChoiceField
+          key={flag}
+          label={FLAG_LABELS[flag]}
+          value={String(p.flags[flag] ?? "unknown")}
+          options={{ true: "Yes", false: "No" }}
+          unknownLabel="Not sure"
+          layout="inline"
+          onChange={(value) =>
+            set({
+              flags: {
+                ...p.flags,
+                [flag]: value === "unknown" ? "unknown" : value === "true",
+              },
+            })
+          }
+        />
+      ))}
+    </FieldGroup>
   )
 }
 
-function Choice<T extends string>({
-  value,
-  onChange,
-  options,
-  icons,
-  unknown = true,
-  row = false,
-}: {
-  value: string
-  onChange: (v: T | "unknown") => void
-  options: Readonly<Record<T, string>>
-  icons?: Partial<Record<string, React.ComponentType<{ className?: string }>>>
-  unknown?: boolean
-  row?: boolean
+function DocumentsStep({
+  p,
+  set,
+  choice,
+  onChoiceChange,
+}: ProfileStepProps & {
+  choice: DocumentsChoice
+  onChoiceChange: (choice: DocumentsChoice) => void
 }) {
-  const all = { ...options, ...(unknown ? { unknown: "Hindi ko alam · I don't know" } : {}) }
+  const options = getDocumentOptions(p)
   return (
-    <div role="radiogroup" className={cn("flex gap-2", row ? "flex-wrap" : "flex-col")}>
-      {Object.entries(all).map(([v, text]) => {
-        const Icon = icons?.[v]
-        return (
-          <button
-            key={v}
-            type="button"
-            role="radio"
-            aria-checked={value === v}
-            onClick={() => onChange(v as T | "unknown")}
-            className={cn(
-              "flex min-h-12 items-center gap-3 rounded-xl border px-4 py-2 text-left text-sm transition-colors",
-              row && "flex-1 justify-center",
-              value === v ? "border-primary bg-primary/10 font-medium" : "hover:bg-muted",
-              v === "unknown" && "text-muted-foreground"
-            )}
-          >
-            {Icon && <Icon className="size-5 shrink-0 text-primary" />}
-            {text}
-          </button>
-        )
-      })}
+    <FieldGroup>
+      <ChoiceField
+        icon={FileText}
+        label="Already have registrations or permits? (optional)"
+        value={choice}
+        options={{ none: "None yet", some: "I have some" }}
+        unknown={false}
+        onChange={(value) => {
+          onChoiceChange(value as DocumentsChoice)
+          if (value === "none") set({ have: [] })
+        }}
+      />
+      {choice === "some" && (
+        <>
+          <FieldDescription>
+            Select the documents you already have.
+          </FieldDescription>
+          <DocumentGroups p={p} set={set} groups={options.matched} />
+          {options.possible.length > 0 && (
+            <details className="rounded-2xl border p-4">
+              <summary className="cursor-pointer text-sm font-medium">
+                May apply—confirm first
+              </summary>
+              <div className="pt-5">
+                <DocumentGroups p={p} set={set} groups={options.possible} />
+              </div>
+            </details>
+          )}
+          {options.previous.length > 0 && (
+            <FieldSet>
+              <FieldLegend variant="label">Previously selected</FieldLegend>
+              <FieldDescription>
+                These no longer match your current answers.
+              </FieldDescription>
+              <DocumentRows p={p} set={set} items={options.previous} />
+            </FieldSet>
+          )}
+        </>
+      )}
+    </FieldGroup>
+  )
+}
+
+function DocumentGroups({
+  p,
+  set,
+  groups,
+}: ProfileStepProps & { groups: DocumentGroup[] }) {
+  return (
+    <FieldGroup>
+      {groups.map((group) => (
+        <FieldSet key={group.title}>
+          <FieldLegend variant="label" className="text-muted-foreground">
+            {group.title}
+          </FieldLegend>
+          <DocumentRows p={p} set={set} items={group.items} />
+        </FieldSet>
+      ))}
+    </FieldGroup>
+  )
+}
+
+function DocumentRows({
+  p,
+  set,
+  items,
+}: ProfileStepProps & { items: DocumentOption[] }) {
+  return (
+    <div className="divide-y overflow-hidden rounded-2xl border">
+      {items.map((item) => (
+        <FieldLabel
+          key={item.id}
+          htmlFor={`have-${item.id}`}
+          className={cn(
+            "min-h-16 w-full cursor-pointer items-start gap-3 px-4 py-3 text-sm transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring has-focus-visible:ring-inset has-data-checked:bg-accent",
+            p.have.includes(item.id) ? "bg-accent" : "hover:bg-muted"
+          )}
+        >
+          <Checkbox
+            id={`have-${item.id}`}
+            className="mt-0.5"
+            checked={p.have.includes(item.id)}
+            onCheckedChange={(checked) =>
+              set({
+                have: checked
+                  ? [...new Set([...p.have, item.id])]
+                  : p.have.filter((id) => id !== item.id),
+              })
+            }
+          />
+          <span className="min-w-0 leading-snug">
+            {item.name}
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {item.agency}
+            </span>
+          </span>
+        </FieldLabel>
+      ))}
     </div>
+  )
+}
+
+function ReviewStep({
+  p,
+  set,
+  goTo,
+}: ProfileStepProps & { goTo: (step: Step) => void }) {
+  return (
+    <FieldGroup>
+      <div className="rounded-2xl bg-accent p-5">
+        <p className="font-medium">{p.businessName || "Your business"}</p>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          {activitySummary(p)}
+        </p>
+      </div>
+      <dl className="divide-y">
+        {(
+          [
+            ["business", "Business activities", activitySummary(p)],
+            [
+              "setup",
+              "Registration & legal form",
+              `${label("stage", p.stage)} · ${label("structure", p.structure)}`,
+            ],
+            [
+              "location",
+              "Location",
+              [p.businessAddress, p.barangay, p.city]
+                .filter(Boolean)
+                .join(", ") || "Not decided",
+            ],
+            [
+              "operations",
+              "Operations",
+              `${label("channel", p.channel)} · ${label("employees", p.employees)}`,
+            ],
+            [
+              "details",
+              "Activity details",
+              `${Object.values(p.flags).filter((value) => value === true).length} selected, ${Object.values(p.flags).filter((value) => value === "unknown").length} uncertain`,
+            ],
+            ["documents", "Documents held", `${p.have.length} self-reported`],
+          ] as [Step, string, string][]
+        ).map(([target, title, value]) => (
+          <div
+            key={target}
+            className="flex items-start justify-between gap-3 py-4"
+          >
+            <div>
+              <dt className="text-xs text-muted-foreground">{title}</dt>
+              <dd className="mt-1 text-sm leading-relaxed">{value}</dd>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => goTo(target)}
+              aria-label={`Edit ${title.toLowerCase()}`}
+            >
+              Edit
+            </Button>
+          </div>
+        ))}
+      </dl>
+      <details className="rounded-xl border p-3">
+        <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+          <UserRound className="size-4" aria-hidden="true" />
+          Owner details (optional)
+        </summary>
+        <FieldGroup className="mt-4">
+          <OwnerDetails p={p} set={set} />
+        </FieldGroup>
+      </details>
+      <CoverageNotice />
+      <details className="rounded-2xl border p-4">
+        <summary className="cursor-pointer text-sm font-medium">
+          Language & reminders
+        </summary>
+        <FieldGroup className="mt-5">
+          <SelectField
+            label="Assistant language preference"
+            value={p.lang}
+            options={{ en: "English", fil: "Filipino / Taglish" }}
+            unknown={false}
+            onChange={(value) => set({ lang: value as Profile["lang"] })}
+          />
+          {(["sms", "push"] as const).map((kind) => (
+            <FieldLabel
+              htmlFor={`pref-${kind}`}
+              key={kind}
+              className="items-center text-sm"
+            >
+              <Checkbox
+                id={`pref-${kind}`}
+                checked={p.reminders.includes(kind)}
+                onCheckedChange={(checked) =>
+                  set({
+                    reminders: checked
+                      ? [...new Set([...p.reminders, kind])]
+                      : p.reminders.filter((item) => item !== kind),
+                  })
+                }
+              />
+              {kind === "sms" ? "SMS preference" : "Push preference"}
+            </FieldLabel>
+          ))}
+          <TextField
+            label="Mobile number"
+            type="tel"
+            value={p.mobile}
+            onChange={(event) => set({ mobile: event.target.value })}
+            autoComplete="tel"
+          />
+        </FieldGroup>
+      </details>
+    </FieldGroup>
+  )
+}
+
+export function label(key: keyof typeof LABELS, value: string) {
+  return value === "unknown"
+    ? "Not sure yet"
+    : ((LABELS[key] as Record<string, string>)[value] ?? "Not provided")
+}
+
+function CoverageNotice() {
+  return (
+    <Dialog>
+      <DialogTrigger render={<Button variant="link" size="sm" />}>
+        <Info data-icon="inline-start" />
+        Coverage & sources
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Coverage & sources</DialogTitle>
+          <DialogDescription>
+            Requirements and local guidance need confirmation with the issuing
+            office. Current rules have not completed source review.
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
   )
 }

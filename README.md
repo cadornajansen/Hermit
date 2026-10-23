@@ -3,51 +3,43 @@
 **Your business, remembered.** A compliance home base for Philippine MSME owners: one checklist of the permits,
 registrations and tax filings a business needs, what's done, what's due, and an assistant that pre-fills the forms.
 
-This is the early-phase build of the PRD MVP: a Next.js app on Vercel with a Supabase backend, and **Kuya Hermit**, an
-AI assistant (AssemblyAI LLM Gateway) with guardrails, Filipino/English, and form pre-fill. Every eGov API is wired behind
-an adapter and runs on a mock until its credentials are set, then switches to the real
-[egov.js](https://github.com/omsimos/egov.js) client on its own.
+The current branch combines the main branch's landing page, account screens, Manila onboarding, dashboard,
+roadmap and workspace design with the early-phase forms, vault, payments, office locator and **Kuya Hermit**
+workflows. The assistant uses the AssemblyAI LLM Gateway when configured, with keyword fallbacks otherwise.
+Government APIs use mock adapters until their credentials are supplied, then use the
+[egov.js](https://github.com/omsimos/egov.js) client. [Current implementation details](docs/IMPLEMENTATION.md)
+are separate from the [approved target MVP](docs/PRD.md); an existing feature is not necessarily approved guidance.
 
 ```bash
 pnpm install
-npx vercel link && npx vercel env pull   # Supabase + Kuya Hermit keys into .env.local
+cp .env.example .env.local             # configure available services as needed
 pnpm dev     # http://localhost:3000
-pnpm test    # engine, calendar, vault, forms and location checks
+pnpm test    # engine, accounts, sync, vault, forms, payments and location checks
+pnpm typecheck && pnpm lint && pnpm build
 ```
 
 Without `.env.local` the app still runs: device-only storage and keyword answers instead of Kuya Hermit.
 
-## Profile locations
+## Location coverage
 
-Onboarding and profile editing use searchable **Region → City / Municipality** dropdowns.
-Type in either control to filter; use the arrow keys and Enter to choose, Escape to close,
-or the labelled clear button to remove a selection. City choices include province names
-to distinguish places with the same name; a separate province step is unnecessary.
-Changing a region clears an incompatible city, its province context and barangay;
-changing a city clears the previous barangay. Typing a search does not change saved data.
+The current onboarding accepts businesses in the **City of Manila**. It starts with Manila selected and
+stops before saving a roadmap if another city is entered. An older profile outside Manila keeps its saved
+location; to complete onboarding again, the owner must update it to Manila. The earlier searchable
+region/city controls and offline `lib/locations.json` catalog remain in the repository for legacy flows,
+but they are not the current onboarding interface. The catalog's source and license are recorded in
+`lib/locations.LICENSE` and `lib/locations.test.ts`.
 
-Selections save canonical `region`, `city` and `province` names through the existing
-profile save flow. `region` and `province` are optional for older profiles. A unique
-saved city (including names such as `Taguig` / `Taguig City`) restores its canonical
-name and region. Unmatched or ambiguous saved text stays visible with an explanation
-until the owner replaces or clears it; no city is guessed from an ambiguous name.
-
-`lib/locations.json` bundles 18 regions and 1,643 cities/municipalities, including
-province context, for use offline. It is derived from the **2026-10-12 PSGC masterlist**
-in [barangay, revision 16ce5315](https://github.com/bendlikeabamboo/barangay/blob/16ce5315dad13cf3df80d43edc15053646ae61a5/barangay/data/barangay_flat.json).
-The snapshot retains region records and municipality/component-city/independent-city/
-highly-urbanized-city records, follows each city's parent chain to its region, and
-retains its province parent when present; barangays and Manila submunicipalities are
-excluded. Update the snapshot and source revision together when refreshing the list.
-The source's MIT notice is preserved in `lib/locations.LICENSE`.
-`lib/locations.test.ts` covers filtering, dependent choices, resets, restoration,
-duplicate names and compatibility with Taguig's pilot office list.
+The former Taguig office and official-form data still exist for legacy matching, but new intake is limited
+to Manila. A nearby office or a form available for another city does not establish Manila jurisdiction.
 
 ## Backend (Supabase)
 
 `supabase/migrations/` holds the schema: `owners` (profile + checklist), `documents`, append-only `vault_events`,
-`chat_messages`, and a private `documents` storage bucket. Only the Next.js server reaches the database, with the secret
-key, always scoped to the owner id in a signed httpOnly cookie. Owners start anonymous; signing in with eGovPH binds their `uniqid`, so the same data opens on any device.
+`chat_messages`, and a private `documents` storage bucket. Only the Next.js server reaches those tables with its secret
+key. Anonymous/eGov owners use a signed httpOnly owner cookie; the eGovPH SSO exchange maps its returned `uniqid` to that owner row.
+Supabase email/password accounts use their Supabase user ID as a separate owner ID. Email and eGov business data
+are **not linked or merged** by sign-in, matching names, or matching email addresses. Switching methods closes the
+previous session and changes the client data scope. Explicit account linking is not implemented.
 RLS is on with no public policies, so the publishable key reads nothing. The device keeps a working copy (offline,
 weak signal) and mirrors every change through `app/sync.ts`; a new device restores from the server.
 Ordinary loading keeps an existing device working copy and does not write it over the server merely because it was
@@ -111,7 +103,7 @@ the same origin receives changes through the storage event. Deletion does not ed
 downloaded file. Account details can still pre-fill forms and are edited through the existing profile wizard.
 
 **Storage and isolation:** reusable answers are device-local, with no cloud mirror or database migration. They
-survive reloads for the same signed owner cookie, but do not travel to a new device or survive cleared browser
+survive reloads for the same resolved owner ID, but do not travel to a new device or survive cleared browser
 storage/cookies. The signed server owner must be resolved before displaying persisted account information; saving,
 editing and deletion recheck that owner. Existing account/checklist/vault server sync stays separate. Local account
 snapshots now use `hermit:owner:v2:<owner>`; stale server writes are rejected if the cookie's owner has changed.
@@ -199,11 +191,12 @@ Jurisdiction stays visible in packet covers, dashboard guidance and Offices. Cur
 
 | PRD module | Where |
 | --- | --- |
-| Onboarding (≤12 questions, "Hindi ko alam" everywhere, review + edit diff) | `app/onboarding`, `components/onboarding.tsx` |
-| Requirements engine: rules table, universal + employer path + 4 MVP business types | `lib/engine.ts` |
-| F1 Compliance dashboard: health score, Start / Operate / Hire / Renew, statuses, expiries | `app/(app)/dashboard` |
+| Seven-step Manila onboarding with multiple activities, uncertainty, and review | `app/onboarding`, `components/onboarding.tsx` |
+| Requirements engine: shared tasks plus activity and employer branches | `lib/engine.ts` |
+| Main's dashboard and roadmap UI with status and expiry tracking | `app/(app)/dashboard`, `app/(app)/roadmap` |
+| Email/password and eGov sign-in with separate owner scopes | `app/register`, `app/egovph/sso`, `lib/session.ts` |
 | F2 Kuya Hermit: AI assistant with tools, guardrails, Filipino/English, form pre-fill | `lib/hermit.ts`, `app/(app)/assistant`, `app/(app)/forms` |
-| F3 Office locator (pilot city: Taguig) + eReport red-tape reports | `app/(app)/offices`, `lib/offices.ts` |
+| F3 Office locator and eReport red-tape reports (legacy Taguig data remains) | `app/(app)/offices`, `lib/offices.ts` |
 | F4 Calendar: generated deadlines, weekend shift, 14/3/0-day reminders, SMS, Google Calendar | `app/(app)/calendar` |
 | F5 Document vault: upload, AI read, rule-based verification, per-requirement tracking, activity log | `app/(app)/vault`, `components/vault.tsx`, `lib/vault.ts` |
 | "What Hermit knows": view, export, delete everything | `app/(app)/profile` |

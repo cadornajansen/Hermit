@@ -1,39 +1,69 @@
 "use client"
 
-import { CalendarDays, FileCheck2, LayoutList, MapPin, MessageCircle } from "lucide-react"
+import { CalendarDays, FileCheck2, FileText, LayoutDashboard, ListChecks, MapPin, MessageCircle, UserRound, Wallet } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 
-const TABS = [
-  { href: "/dashboard", label: "Checklist", icon: LayoutList },
-  { href: "/vault", label: "Dokumento", icon: FileCheck2 },
-  { href: "/calendar", label: "Kalendaryo", icon: CalendarDays },
-  { href: "/assistant", label: "Kuya Hermit", icon: MessageCircle },
-  { href: "/offices", label: "Opisina", icon: MapPin },
-]
+export const WORKSPACE_PAGES = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/roadmap", label: "Roadmap", icon: ListChecks },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/vault", label: "Documents", icon: FileCheck2 },
+  { href: "/forms", label: "Forms", icon: FileText },
+  { href: "/pay", label: "Payments", icon: Wallet },
+  { href: "/offices", label: "Office Locator", icon: MapPin },
+] as const
 
-export function Nav() {
-  const path = usePathname()
+export const ACCOUNT_PAGES = [
+  { href: "/assistant", label: "Ask Hermit", icon: MessageCircle },
+  { href: "/profile", label: "Profile", icon: UserRound },
+] as const
+
+type NavProps = {
+  collapsed?: boolean
+  section?: "workspace" | "account"
+  onNavigate?: () => void
+}
+
+export function Nav({ collapsed = false, section = "workspace", onNavigate }: NavProps) {
+  const pathname = usePathname()
+  const reduceMotion = useReducedMotion()
+  const pages = section === "workspace" ? WORKSPACE_PAGES : ACCOUNT_PAGES
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 border-t bg-background/95 backdrop-blur print:hidden">
-      <ul className="mx-auto flex max-w-xl justify-around">
-        {TABS.map(({ href, label, icon: Icon }) => (
-          <li key={href}>
-            <Link
-              href={href}
-              aria-current={path.startsWith(href) ? "page" : undefined}
-              className={cn(
-                "flex min-w-14 flex-col items-center gap-1 px-1.5 py-2.5 text-[11px] text-muted-foreground",
-                path.startsWith(href) && "font-medium text-primary"
-              )}
-            >
-              <Icon className="size-5" aria-hidden />
-              {label}
-            </Link>
-          </li>
-        ))}
+    <nav aria-label={section === "workspace" ? "Workspace" : "Account and help"}>
+      <ul className="flex flex-col gap-1">
+        {pages.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || pathname.startsWith(`${href}/`)
+          return (
+            <li key={href}>
+              <Link
+                href={href}
+                onClick={onNavigate}
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                title={collapsed ? label : undefined}
+                className={cn(
+                  "flex h-11 min-w-11 items-center gap-3 overflow-hidden rounded-lg px-3 text-sm whitespace-nowrap transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                  active ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="size-[18px] shrink-0" aria-hidden="true" />
+                <motion.span
+                  initial={false}
+                  animate={{ opacity: collapsed ? 0 : 1 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.12, delay: collapsed || reduceMotion ? 0 : 0.08 }}
+                  aria-hidden={collapsed}
+                  className="shrink-0"
+                >
+                  {label}
+                </motion.span>
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </nav>
   )

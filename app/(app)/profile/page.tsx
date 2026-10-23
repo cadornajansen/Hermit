@@ -5,18 +5,21 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import { integrationStatus } from "@/app/actions"
+import { signOut } from "@/app/register/actions"
 import { deleteAllData } from "@/app/sync"
 import { NationalIdCheck } from "@/components/egov-auth"
 import { SavedFormInfo } from "@/components/saved-form-info"
 import { label } from "@/components/onboarding"
+import { activitySummary } from "@/lib/activities"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { clearAll, update, useProfile } from "@/lib/store"
+import { clearAll, flushSync, update, useProfile } from "@/lib/store"
 
 // "What Hermit knows": every remembered fact is visible, editable, deletable.
 export default function ProfilePage() {
   const s = useProfile()
   const router = useRouter()
   const [modes, setModes] = useState<Record<string, string>>()
+  const [signOutError, setSignOutError] = useState("")
   useEffect(() => {
     integrationStatus().then(setModes)
   }, [])
@@ -30,11 +33,23 @@ export default function ProfilePage() {
     URL.revokeObjectURL(url)
   }
 
+  async function leaveAccount() {
+    try {
+      await flushSync()
+      await signOut()
+      router.push("/register")
+      router.refresh()
+    } catch {
+      setSignOutError("Could not sign out. Please try again.")
+    }
+  }
+
   async function deleteEverything() {
     if (!confirm("Burahin lahat ng data mo sa HERMIT? Hindi na ito maibabalik.")) return
     try {
       await deleteAllData(s.ownerId!)
       clearAll()
+      await signOut()
       router.push("/")
     } catch {
       update(() => ({ scopeError: "Could not delete data. Reload to verify your account and try again." }))
@@ -47,7 +62,7 @@ export default function ProfilePage() {
     ["Mobile", p.mobile || "—"],
     ["Negosyo", p.businessName || "—"],
     ["Ginagawa", p.description || "—"],
-    ["Category", `${label("category", p.category)}${p.psic ? ` · PSIC ${p.psic}` : ""}`],
+    ["Activities", `${activitySummary(p)}${p.psic ? ` · PSIC ${p.psic}` : ""}`],
     ["Ownership", label("structure", p.structure)],
     ["Lugar", [p.businessAddress, p.barangay, p.city, p.province, p.region].filter(Boolean).join(", ") || "—"],
     ["Empleyado", label("employees", p.employees)],
@@ -83,7 +98,9 @@ export default function ProfilePage() {
         <Button variant="outline" onClick={exportData}>
           Export my data
         </Button>
+        <Button variant="outline" onClick={leaveAccount}>Sign out</Button>
       </div>
+      {signOutError && <p role="alert" className="text-sm text-destructive">{signOutError}</p>}
 
       <SavedFormInfo />
 

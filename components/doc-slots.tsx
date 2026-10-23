@@ -20,24 +20,24 @@ export function DocSlots({ requirementId, docs }: { requirementId: string; docs:
   if (!c) return null
   const slots = [...c.needs, ...(c.issued ? [c.issued] : [])]
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-xs text-muted-foreground">Sa vault mo · In your vault</p>
-      <ul className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-medium text-muted-foreground">Your documents</p>
+      <ul className="divide-y divide-border/60">
         {slots.map((slot, i) => {
           const state = slot.doc?.verdict ?? "missing"
           const issued = slot === c.issued
           return (
-            <li key={i} className="flex items-center justify-between gap-2">
-              <span className={cn("text-sm", TONE[state])}>
+            <li key={i} className="flex min-h-11 items-center justify-between gap-3 py-1.5">
+              <span className={cn("min-w-0 text-sm leading-5", TONE[state])}>
                 {MARK[state]} {slot.types.map(docName).join(" / ")}
-                {issued && <span className="text-xs text-muted-foreground"> (ibibigay sa iyo)</span>}
+                {issued && <span className="block text-xs text-muted-foreground">Issued by the office</span>}
               </span>
               {state !== "verified" && (
                 <Link
                   href={`/vault?req=${requirementId}${slot.types.length === 1 ? `&type=${slot.types[0]}` : ""}`}
-                  className="shrink-0 text-xs text-primary"
+                  className="inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                  {state === "missing" ? "I-upload" : "Ayusin"}
+                  {state === "missing" ? "Upload" : "Review"}
                 </Link>
               )}
             </li>

@@ -87,6 +87,17 @@ const SERVER: Saved = {
 }
 const listeners = new Set<() => void>()
 let cache: Saved | null = null
+let configuredOwner: string | null | undefined
+
+export const currentStorageKey = () => cache?.ownerId ? ownerStateKey(cache.ownerId) : ""
+export const getConfiguredOwner = () => configuredOwner
+
+export function configureOwner(owner: string | null) {
+  if (configuredOwner === owner) return
+  configuredOwner = owner
+  if (cache?.ownerId && cache.ownerId !== owner) cache = null
+  listeners.forEach((listener) => listener())
+}
 
 function read(): Saved {
   if (cache) return cache
@@ -354,12 +365,12 @@ export function clearAll() {
   commit({ ...SERVER, ready: true, synced: true })
 }
 
-function subscribe(l: () => void) {
+export function subscribeStore(l: () => void) {
   listeners.add(l)
   return () => listeners.delete(l)
 }
 
-export const useHermit = () => useSyncExternalStore(subscribe, read, () => SERVER)
+export const useHermit = () => useSyncExternalStore(subscribeStore, read, () => SERVER)
 
 // For pages that need a finished profile: sends first-timers to onboarding
 // (after checking the server, so a returning owner on a new device isn't).

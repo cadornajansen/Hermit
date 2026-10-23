@@ -25,7 +25,7 @@ async function loadModule(path: string, imports: Record<string, string>) {
         jsx: ts.JsxEmit.ReactJSX,
       },
     }
-  ).outputText
+  ).outputText.replace(/import ["']server-only["'];?/g, "")
   const code = source.replace(
     /from (["'])([^"']+)\1/g,
     (original, _quote, specifier) => {
@@ -187,12 +187,13 @@ test("PDF transitions do not write a previous file's draft or reveal a previous 
 })
 
 test("SSO never binds a different citizen to the previous owner's row or local scope", async () => {
-  const fixture = { owner: "owner-A", previousIdentity: "citizen-A", identity: "citizen-B", backend: false, existing: null as { id: string; profile: object } | null, inserted: [] as { id: string; egov_uniqid: string }[] }
+  const fixture = { owner: "owner-A", previousIdentity: "citizen-A", identity: "citizen-B", backend: false, accountSignedIn: false, signOuts: 0, existing: null as { id: string; profile: object } | null, inserted: [] as { id: string; egov_uniqid: string }[] }
   Object.assign(globalThis, { __hermitSsoTest: fixture })
   const sso = await loadModule("../app/egovph/sso/route.ts", {
     "next/navigation": dataModule("export const redirect = path => { throw Error('redirect:' + path); };"),
     "@/lib/egov": dataModule("export const egov = () => ({ exchange: async () => ({ uniqid: globalThis.__hermitSsoTest.identity }) });"),
     "@/lib/session": dataModule(`const f = globalThis.__hermitSsoTest; export const ownerId = async () => f.owner; export const readSession = async () => ({ identity: { uniqid: f.previousIdentity } }); export const setOwner = async id => { f.owner = id; }; export const writeSession = async session => { f.previousIdentity = session.identity.uniqid; };`),
+    "@/lib/supabase": dataModule(`const f = globalThis.__hermitSsoTest; export const getAccountUser = async () => f.accountSignedIn ? { id: 'email-account' } : null; export const createSupabaseServerClient = async () => ({ auth: { signOut: async () => { f.signOuts++; f.accountSignedIn = false; return { error: null }; } } });`),
     "@/lib/db": dataModule(`const f = globalThis.__hermitSsoTest; export const db = () => !f.backend ? null : ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: f.existing, error: null }) }) }), insert: async row => { f.inserted.push(row); return { error: null }; } }) });`),
   })
   const request = new Request("https://hermit.test/egovph/sso?exchange_code=synthetic")
@@ -213,6 +214,25 @@ test("SSO never binds a different citizen to the previous owner's row or local s
   await assert.rejects(sso.GET(request), /redirect:\/dashboard\?restore=1/)
   assert.equal(fixture.owner, "owner-B-existing")
   assert.equal(fixture.inserted.length, 1, "returning identity uses only its existing mapping")
+  fixture.accountSignedIn = true
+  await assert.rejects(sso.GET(request), /redirect:/)
+  assert.equal(fixture.signOuts, 1, "eGov sign-in closes a previous email session")
+})
+
+test("email and eGov sign-ins use separate owner IDs", async () => {
+  const fixture = { accountId: null as string | null, values: new Map<string, string>() }
+  Object.assign(globalThis, { __hermitOwnerTest: fixture })
+  const session = await loadModule("../lib/session.ts", {
+    "server-only": dataModule("export default null;"),
+    "next/headers": dataModule("const f = globalThis.__hermitOwnerTest; export const cookies = async () => ({ get: name => ({ value: f.values.get(name) }), set: (name, value) => f.values.set(name, value), delete: name => f.values.delete(name) });"),
+    "@/lib/supabase": dataModule("export const getAccountUser = async () => globalThis.__hermitOwnerTest.accountId ? { id: globalThis.__hermitOwnerTest.accountId } : null;"),
+  })
+  await session.setOwner("egov-owner")
+  assert.equal(await session.ownerId(), "egov-owner")
+  fixture.accountId = "email-owner"
+  assert.equal(await session.ownerId(), "email-owner")
+  fixture.accountId = null
+  assert.equal(await session.ownerId(), "egov-owner")
 })
 
 test("real store: no blur retention, explicit consent, reload, deletion, owner switch and stale-write rejection", async () => {
