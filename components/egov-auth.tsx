@@ -138,7 +138,7 @@ export function NationalIdCheck({
       <p className="text-sm">
         I-verify ang pagkakakilanlan mo gamit ang National ID: kukunan ka ng selfie (face liveness) at itutugma sa PhilSys.
       </p>
-      <Button onClick={run} disabled={busy || !ready} variant="secondary">
+      <Button type="button" onClick={run} disabled={busy || !ready} variant="secondary">
         <ScanFace /> {busy ? "Vine-verify…" : "I-verify gamit ang National ID"}
       </Button>
       {!ready && <p className="text-xs text-muted-foreground">Ilagay muna ang buong pangalan at kaarawan na nasa National ID mo.</p>}
