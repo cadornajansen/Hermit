@@ -29,6 +29,10 @@ export type Profile = {
   mobile: string
   email: string
   identityVerified: boolean
+  // Registration numbers (account details: fill every form; Kuya Hermit can change them when asked).
+  tin?: string
+  rdoCode?: string
+  dtiNo?: string
 
   businessName: string
   description: string

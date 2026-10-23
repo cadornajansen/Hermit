@@ -7,13 +7,16 @@ import { useEffect, useState } from "react"
 import { reportProblem } from "@/app/actions"
 import { paymentStatus, startServicePayment, type PaymentView } from "@/app/pay"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { agencyRecord, SERVICES, type Agency, type ServiceId, type Slot } from "@/lib/agencies"
+import { agencyRecord, appointmentSlots, SERVICES, type Agency, type ServiceId, type Slot } from "@/lib/agencies"
+import { cityCenter, nearestBranches, type BranchAgency } from "@/lib/branches"
+import { TileMap } from "@/components/tile-map"
 import { buildCalendar, buildChecklist, getRequirement } from "@/lib/engine"
 import { formsFor } from "@/lib/forms"
 import type { HermitCard, HermitStep } from "@/lib/hermit"
 import { mapsLink, officesFor } from "@/lib/offices"
 import { PAYABLES, peso } from "@/lib/payments"
 import { processFor } from "@/lib/processes"
+import { setChanges, type ProfileChange } from "@/lib/profile-edit"
 import { update, useProfile } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import { coverage, DOC_TYPES } from "@/lib/vault"
@@ -64,7 +67,11 @@ export function StepTimeline({ steps, live, ms, en }: { steps: HermitStep[]; liv
 
 export function HermitCards({ cards, onAsk, photo }: { cards: HermitCard[]; onAsk: (q: string) => void; photo?: string }) {
   return cards.map((c, i) =>
-    c.kind === "agency" ? (
+    c.kind === "nearby" ? (
+      <NearbyCard key={i} agency={c.agency} purpose={c.purpose} />
+    ) : c.kind === "changes" ? (
+      <ChangesCard key={i} changes={c.changes} />
+    ) : c.kind === "agency" ? (
       <AgencyCard key={i} agency={c.agency} />
     ) : c.kind === "booking" ? (
       <BookingCard key={i} office={c.office} purpose={c.purpose} slots={c.slots} />
@@ -79,6 +86,95 @@ export function HermitCards({ cards, onAsk, photo }: { cards: HermitCard[]; onAs
     ) : (
       <ReportCard key={i} office={c.office} message={c.message} photo={photo} />
     )
+  )
+}
+
+// What Kuya Hermit changed in the owner's details, with Undo / Redo.
+function ChangesCard({ changes }: { changes: ProfileChange[] }) {
+  const { profile } = useProfile()
+  if (!profile) return null
+  const en = profile.lang === "en"
+  const now = (c: ProfileChange) => String((profile as unknown as Record<string, unknown>)[c.field] ?? "")
+  const undone = changes.every((c) => now(c) === c.from)
+  const shown = changes.filter((c) => c.field !== "province" && c.field !== "region")
+  return (
+    <div className={card}>
+      <p className="text-sm font-medium">{undone ? (en ? "Change undone" : "Ibinalik sa dati") : en ? "Updated your details" : "Na-update ang detalye mo"}</p>
+      <ul className="flex flex-col gap-1">
+        {shown.map((c) => (
+          <li key={c.field}>
+            <span className="text-muted-foreground">{c.label}:</span>{" "}
+            {c.field === "identityVerified" ? (
+              en ? "turned off (re-verify on Profile)" : "naka-off (i-verify ulit sa Profile)"
+            ) : (
+              <>
+                <span className="line-through opacity-60">{c.from || "—"}</span> → <span className="font-medium">{c.to || "—"}</span>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+      <Button
+        size="sm"
+        variant="outline"
+        className="self-start"
+        onClick={() => update((s) => ({ profile: s.profile && setChanges(s.profile, changes, undone ? "to" : "from") }))}
+      >
+        {undone ? (en ? "Redo" : "Ibalik ang pagbabago") : en ? "Undo" : "I-undo"}
+      </Button>
+    </div>
+  )
+}
+
+// Map of the nearest branches; pick one, then book a slot (goes on the calendar).
+function NearbyCard({ agency, purpose }: { agency: BranchAgency; purpose: string }) {
+  const { profile } = useProfile()
+  const [picked, setPicked] = useState<string>()
+  if (!profile) return null
+  const en = profile.lang === "en"
+  const branches = nearestBranches(agency, profile.city)
+  const center = cityCenter(profile.city)
+  const sel = branches.find((b) => b.id === picked) ?? branches[0]
+  const booked = profile.appointments ?? []
+  // Slots for a branch ignore the owner's own booking there, so it stays visible as booked.
+  const slotsFor = (office: string) => appointmentSlots(office, booked.filter((a) => a.office !== office))
+  return (
+    <div className={card}>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">{en ? "Nearest branches" : "Pinakamalapit na branch"}</p>
+        <DemoBadge en={en} />
+      </div>
+      <TileMap
+        pins={[{ id: "you", lat: center.lat, lng: center.lng, label: en ? "You" : "Ikaw", kind: "you" }, ...branches.map((b, i) => ({ id: b.id, lat: b.lat, lng: b.lng, label: `${i + 1}. ${b.name}` }))]}
+        selected={sel.id}
+        onSelect={setPicked}
+      />
+      <ul className="flex flex-col divide-y">
+        {branches.map((b, i) => {
+          const first = slotsFor(b.name)[0]
+          const mine = booked.find((a) => a.office === b.name)
+          return (
+            <li key={b.id}>
+              <button type="button" onClick={() => setPicked(b.id)} className={cn("flex w-full items-center gap-2 py-1.5 text-left", b.id === sel.id && "font-medium")}>
+                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] text-white", b.id === sel.id ? "bg-red-600" : "bg-slate-700")}>{i + 1}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{b.name}</span>
+                  <span className="block truncate font-normal text-muted-foreground">{b.address}</span>
+                </span>
+                <span className="shrink-0 text-right font-normal text-muted-foreground">
+                  {b.km} km
+                  <span className="block">{mine ? (en ? "✓ booked" : "✓ naka-book") : first ? when(first.at, en) : "—"}</span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      <BookingCard office={sel.name} purpose={purpose} slots={slotsFor(sel.name)} />
+      <Link href="/calendar" className="text-primary">
+        {en ? "Open calendar →" : "Buksan ang kalendaryo →"}
+      </Link>
+    </div>
   )
 }
 

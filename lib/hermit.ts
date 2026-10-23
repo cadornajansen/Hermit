@@ -7,7 +7,9 @@ import { fillForm, FIELDS, fitsProfile, formForLocation, FORMS, formsFor, getFor
 import { libraryFiles } from "@/lib/library"
 import { officesFor } from "@/lib/offices"
 import { agencyRecord, appointmentSlots, SERVICES, type Agency, type ServiceId, type Slot } from "@/lib/agencies"
+import { BRANCH_AGENCIES, nearestBranches, type BranchAgency } from "@/lib/branches"
 import { memorable } from "@/lib/memory"
+import { applyProfileChanges, EDITABLE, ENUM_VALUES, type ProfileChange } from "@/lib/profile-edit"
 import { packetPlan, slotName, usable } from "@/lib/pack"
 import { processFor } from "@/lib/processes"
 import type { Category, DocType, Extracted, ItemState, Profile } from "@/lib/types"
@@ -126,6 +128,7 @@ export type HermitReply = {
   packs?: string[] // requirement ids the owner said yes to a filled document packet for
   cards?: HermitCard[] // interactive cards the app draws under the answer
   remembered?: string[] // facts the owner told Kuya Hermit to keep for next time
+  profileChanges?: ProfileChange[] // details Kuya Hermit changed; the app applies them with Undo
   steps?: HermitStep[] // what Kuya Hermit actually did, shown as a timeline
   ms?: number
 }
@@ -138,6 +141,8 @@ export type HermitCard =
   | { kind: "agency"; agency: Agency }
   | { kind: "booking"; office: string; purpose: string; slots: Slot[] }
   | { kind: "service"; service: ServiceId; purpose: string }
+  | { kind: "changes"; changes: ProfileChange[] }
+  | { kind: "nearby"; agency: BranchAgency; purpose: string }
 
 export type HermitStep = { id?: string; tool: string; label: string; source: string; detail?: string; ok?: boolean; done?: boolean }
 
@@ -188,6 +193,11 @@ GUARDRAILS
 CARDS AND STEPS
 - The app draws interactive cards from your tools: get_requirement → a requirement card (documents with vault status, fee, forms, start link), get_deadlines → a deadlines card with pay buttons, get_offices → an offices card with directions. The owner also sees a timeline of the tools you used. So keep your text short: the key point and next step, not every row of the card.
 
+CHANGING THE OWNER'S DETAILS
+- You can change the owner's details yourself: name, birth date, addresses, mobile, email, business name and description, barangay, city, TIN, RDO code, DTI/SEC/CDA number, and business answers (category, structure, stage, premises, channel, employees, assets, sales, tax option, language). When the owner asks you to change, correct or set one ("palitan ang TIN ko", "lumipat na kami sa Makati", "8% na ako"), call update_profile right away; don't send them to the Profile page. The app applies it immediately and shows an Undo button.
+- Then confirm in one or two lines exactly what changed (old → new) and what it affects (e.g. their checklist, every form that uses it). If a value was rejected, say why and ask for the right one (e.g. TIN has 9–14 digits, RDO code is 3 digits like 044).
+- Only change what they asked for. If they mention a detail in passing without asking to change it, ask first. Changing the name or birth date turns off their National ID check; say so.
+
 MEMORY
 - When the owner tells you something about their business or preferences that will matter later (plans to hire, rents from a relative, prefers SMS, busy until a date, wants answers in English), call remember with short third-person facts. Never remember ID or account numbers, amounts, passwords, health details or other people's personal details. Say briefly that you'll remember it; they can see and delete it on the Memory page.
 - "THINGS THE OWNER TOLD YOU BEFORE" below are their own past statements: use them so they don't have to repeat themselves, but the profile and tools win if they conflict.
@@ -197,6 +207,7 @@ EREPORT
 
 AGENCY CONNECTORS (PROTOTYPE, SAMPLE DATA)
 - check_agency_record shows the owner's SSS, PhilHealth or Pag-IBIG record. HERMIT is not connected to these agencies yet, so the records are SAMPLE data (demo:true). Use them, but say once, briefly, that it's sample data for this prototype. The app shows a card, so keep text to the summary.
+- find_nearest_office shows a map of the nearest branches of an agency (SSS, PhilHealth, Pag-IBIG, BIR RDO, DTI, NBI, DFA passport, PSA, LTO) around the owner's city, with distances and the earliest slot; the owner picks a branch and books a date, which goes on their HERMIT calendar. Locations are SAMPLE sites for the prototype; say so once. Use it whenever they ask where the nearest office/branch is or want to book a visit to one of these agencies.
 - find_appointment offers open slots at an office (sample); the owner taps one to book it in HERMIT (a demo booking, not at the agency yet). Mention if a slot avoids their existing appointments listed below.
 - start_service (nbi_clearance) shows the checklist, fee and an eGovPay checkout (test mode) when the owner wants an NBI clearance. Never say a payment went through: the card shows the real status from eGovPay.
 - A line like "[Photo attached: …]" is added by the app: the photo stays on the owner's device and you cannot see it. Use their description and the time/GPS in that line (e.g. for an eReport draft), and don't claim to see what's in the photo.
@@ -261,7 +272,7 @@ const TOOLS = [
   },
   {
     name: "save_form_values",
-    description: "Stage values the owner just gave for the current form only, using the field keys from prefill_form. Return a form link for review. This tool does not save reusable information or grant consent; the user must opt in on the field sheet. Profile facts are edited in Profile.",
+    description: "Stage values the owner just gave for the current form only, using the field keys from prefill_form. Return a form link for review. This tool does not save reusable information or grant consent; the user must opt in on the field sheet. For the owner's own details (name, address, TIN, RDO, DTI number, business answers) use update_profile instead.",
     parameters: {
       type: "object",
       properties: {
@@ -295,9 +306,35 @@ const TOOLS = [
     },
   },
   {
+    name: "update_profile",
+    description: "Change the owner's own details in HERMIT when they ask. Applied at once with Undo. Values: dates YYYY-MM-DD; enums as listed.",
+    parameters: {
+      type: "object",
+      properties: {
+        changes: {
+          type: "object",
+          properties: Object.fromEntries(
+            Object.entries(EDITABLE).map(([k, [label]]) => [k, ENUM_VALUES[k] ? { type: "string", enum: [...ENUM_VALUES[k]] } : { type: "string", description: label }])
+          ),
+          additionalProperties: false,
+        },
+      },
+      required: ["changes"],
+    },
+  },
+  {
     name: "check_agency_record",
     description: "The owner's record at SSS, PhilHealth or Pag-IBIG (contributions / premiums / savings). Prototype: returns sample data.",
     parameters: { type: "object", properties: { agency: { type: "string", enum: ["sss", "philhealth", "pagibig"] } }, required: ["agency"] },
+  },
+  {
+    name: "find_nearest_office",
+    description: "Map of the nearest branches of a government agency (prototype sample locations) with distance and earliest open slot; the owner books from the card.",
+    parameters: {
+      type: "object",
+      properties: { agency: { type: "string", enum: Object.keys(BRANCH_AGENCIES) }, purpose: { type: "string", description: "What the visit is for" } },
+      required: ["agency", "purpose"],
+    },
   },
   {
     name: "find_appointment",
@@ -333,7 +370,9 @@ const STEP: Record<string, { fil: string; en: string; source: string }> = {
   prepare_documents: { fil: "Inihahanda ang document packet", en: "Preparing your document packet", source: "Packet" },
   remember: { fil: "Tinatandaan para sa susunod", en: "Remembering this for next time", source: "Memory" },
   prepare_report: { fil: "Ginagawa ang draft ng eReport", en: "Drafting your eReport", source: "eReport" },
+  update_profile: { fil: "Ina-update ang detalye mo", en: "Updating your details", source: "Profile" },
   check_agency_record: { fil: "Kinukuha ang record mo", en: "Getting your member record", source: "Agency" },
+  find_nearest_office: { fil: "Hinahanap ang pinakamalapit na branch", en: "Finding the nearest branches", source: "Map" },
   find_appointment: { fil: "Naghahanap ng bakanteng schedule", en: "Finding an open slot", source: "Appointments" },
   start_service: { fil: "Inihahanda ang application at bayad", en: "Preparing the application and payment", source: "eGovPay" },
 }
@@ -488,11 +527,34 @@ function runTool(name: string, args: Record<string, unknown>, ctx: HermitContext
       addCard(out, { kind: "report", office, message })
       return { drafted: true, note: "The app shows the draft for the owner to edit and submit to eReport. You did not submit it." }
     }
+    case "update_profile": {
+      const r = applyProfileChanges(p, (args.changes ?? {}) as Record<string, unknown>)
+      if (r.applied.length) {
+        // Later tools in this answer see the new values too.
+        Object.assign(p, r.profile)
+        out.profileChanges = [...(out.profileChanges ?? []), ...r.applied]
+        addCard(out, { kind: "changes", changes: r.applied })
+      }
+      return { changed: r.applied.map(({ label, from, to }) => ({ label, from: from || "(blank)", to: to || "(blank)" })), rejected: r.rejected, note: "Applied in the app now; the owner can Undo." }
+    }
     case "check_agency_record": {
       const agency = String(args.agency) as Agency
       if (!["sss", "philhealth", "pagibig"].includes(agency)) return { error: "agency must be sss, philhealth or pagibig" }
       addCard(out, { kind: "agency", agency })
       return { ...agencyRecord(agency, p), note: "SAMPLE data: HERMIT is not connected to this agency yet. Say so once." }
+    }
+    case "find_nearest_office": {
+      const agency = String(args.agency) as BranchAgency
+      if (!BRANCH_AGENCIES[agency]) return { error: `agency must be one of ${Object.keys(BRANCH_AGENCIES).join(", ")}` }
+      const purpose = String(args.purpose ?? "").trim().slice(0, 120) || BRANCH_AGENCIES[agency]
+      addCard(out, { kind: "nearby", agency, purpose })
+      const booked = p.appointments ?? []
+      return {
+        near: p.city || "Taguig (default)",
+        branches: nearestBranches(agency, p.city).map((b) => ({ name: b.name, km: b.km, earliestSlot: appointmentSlots(b.name, booked)[0]?.at ?? null })),
+        existingAppointments: booked.map((a) => `${a.at} ${a.office}`),
+        note: "SAMPLE locations and slots (prototype). The card shows the map; the owner taps a branch and a slot to book.",
+      }
     }
     case "find_appointment": {
       const office = String(args.office ?? "").trim().slice(0, 120)

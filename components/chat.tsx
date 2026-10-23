@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { readExif } from "@/lib/exif"
 import { getFile } from "@/lib/files"
 import { getForm } from "@/lib/forms"
+import { setChanges } from "@/lib/profile-edit"
 import type { HermitReply, HermitStep } from "@/lib/hermit"
 import { buildPacket, packetPlan, slotAvailability, slotName, usable } from "@/lib/pack"
 import { update, useProfile, type ChatMessage } from "@/lib/store"
@@ -78,38 +79,27 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
       const answer: ChatMessage = r
         ? { role: "hermit", text: r.answer, sources: r.sources, formIds: r.formIds, packs: r.packs, steps: r.steps, cards: r.cards, ms: r.ms, at: new Date().toISOString() }
         : { role: "hermit", text: "Pasensya, hindi kita ma-reach ngayon. Subukan ulit mamaya. · Sorry, I can't connect right now.", at: new Date().toISOString() }
-      update((s) =>
-        s.ownerId !== ownerId
-          ? {}
-          : {
-              chat: [...s.chat, answer],
-              // Facts the owner asked Kuya Hermit to keep (Memory page).
-              profile:
-                r?.remembered?.length && s.profile
-                  ? {
-                      ...s.profile,
-                      memory: [
-                        ...(s.profile.memory ?? []),
-                        ...r.remembered
-                          .filter((t) => !s.profile!.memory?.some((m) => m.text === t))
-                          .map((text) => ({ id: crypto.randomUUID(), text, source: "chat" as const, at: new Date().toISOString() })),
-                      ].slice(-50),
-                    }
-                  : s.profile,
-              // Chat suggestions are current-form edits, never consent for reuse.
-              formEdits: r
-                ? {
-                    ...s.formEdits,
-                    ...Object.fromEntries(
-                      r.formIds.map((id) => [
-                        id,
-                        { ...r.saved, ...s.formEdits[id] },
-                      ])
-                    ),
-                  }
-                : s.formEdits,
-            }
-      )
+      update((s) => {
+        if (s.ownerId !== ownerId) return {}
+        // Details Kuya Hermit changed (Undo on the card), then facts it was asked to keep.
+        let prof = r?.profileChanges?.length && s.profile ? setChanges(s.profile, r.profileChanges, "to") : s.profile
+        if (r?.remembered?.length && prof)
+          prof = {
+            ...prof,
+            memory: [
+              ...(prof.memory ?? []),
+              ...r.remembered
+                .filter((t) => !prof!.memory?.some((m) => m.text === t))
+                .map((text) => ({ id: crypto.randomUUID(), text, source: "chat" as const, at: new Date().toISOString() })),
+            ].slice(-50),
+          }
+        return {
+          chat: [...s.chat, answer],
+          profile: prof,
+          // Chat suggestions are current-form edits, never consent for reuse.
+          formEdits: r ? { ...s.formEdits, ...Object.fromEntries(r.formIds.map((id) => [id, { ...r.saved, ...s.formEdits[id] }])) } : s.formEdits,
+        }
+      })
     }
   }
 
