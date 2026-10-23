@@ -1,5 +1,7 @@
 # [HERMIT](https://hermit-eight.vercel.app/)
 
+![Hermit: business compliance, one clear step at a time](docs/hermit-banner.png)
+
 ### Your business, remembered. Your next step, explained.
 
 **One calm place to navigate the paperwork of running a business in the Philippines.**
@@ -31,9 +33,34 @@ When a form asks for details the owner has already provided, Hermit can help fil
 | “Where do I start?” | Guided onboarding and a business-specific roadmap with prerequisites and progress tracking. |
 | “What does this requirement mean?” | Kuya Hermit explains the task using Hermit's available requirement and form information, with source links where available. |
 | “Didn't I already give you this information?” | Editable form sheets and supported official PDFs can start with known details; the owner reviews every answer. Reusing saved form answers requires an explicit opt-in. |
+| “Which form do I need, and where do I get it?” | A library of **404 business-related government forms** from 11 agencies, plus a guided catalog of 46 forms where **31 fill themselves** onto the official PDF for the owner to review, sign, and download. |
 | “Where did I put that permit?” | A document vault, review checks, important dates, and packet preparation keep the work organized. |
 | “When is this due, and where do I go?” | A calendar, deadline views, official starting points, and an office locator help the owner plan the next step. |
 | “How do I pay or report a problem?” | eGovPay can power a payment flow in test mode; eReport is wired for reporting red tape when configured. |
+
+## Every form, in one place
+
+Hermit keeps copies of the government forms a business actually runs into, so the owner never has to hunt across agency websites for the right PDF.
+
+* **404 business-related forms** in Hermit's forms library, searchable by name or agency, each one a click away as a PDF. Most (363) include their text, so Kuya Hermit can find a form, explain what it asks for, and attach it to its answer.
+* **46 forms in the guided catalog**, tied to the roadmap. Official copies are stored for 33 of them, and **31 fill themselves**: Hermit places the owner's details on the real form, ready to review, sign, and download from the chat or the form editor.
+
+| Agency | Forms in the library |
+| --- | ---: |
+| FDA | 82 |
+| BIR | 81 |
+| SSS | 54 |
+| CDA | 51 |
+| SEC | 49 |
+| Pag-IBIG Fund | 23 |
+| DOLE (incl. BWC and BLE) | 19 |
+| DTI | 16 |
+| PhilHealth | 12 |
+| IPOPHL | 9 |
+| Bureau of Customs | 8 |
+| **Total** | **404** |
+
+Forms are copied from agency websites and from the public aggregator [formsphilippines.com](https://formsphilippines.com/). They are blank official forms for reference and preparation; owners should confirm they are using the agency's current version before filing.
 
 ## Powered by eGov, connected to the bigger picture
 
@@ -66,7 +93,7 @@ pnpm dev
 
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You can explore the landing page and try the [local onboarding flow](http://localhost:3000/onboarding) without service credentials. Account sign-up, sync, payments, maps, and eGov services require their respective configuration: copy [`.env.example`](https://www.google.com/search?q=.env.example) to `.env.local` and add the credentials you have access to. Without Supabase, owner data uses device storage and server-backed features are unavailable.
+Open [http://localhost:3000](http://localhost:3000). You can explore the landing page and try the [local onboarding flow](http://localhost:3000/onboarding) without service credentials. Account sign-up, sync, payments, maps, and eGov services require their respective configuration: copy [`.env.example`](.env.example) to `.env.local` and add the credentials you have access to. Without Supabase, owner data uses device storage and server-backed features are unavailable.
 
 For a populated showcase, open [`/demo`](http://localhost:3000/demo) **after configuring Supabase and its migrations**. This resets a shared fictional Taguig business on every visit; it is a legacy sample, while new onboarding is Manila-only. Its documents, payments, and filings are sample data, not government records or real transactions.
 
@@ -90,7 +117,7 @@ pnpm build
 
 ```
 
-Read the [current implementation inventory](https://www.google.com/search?q=docs/IMPLEMENTATION.md), [target MVP](https://www.google.com/search?q=docs/PRD.md), [scope and known gaps](https://www.google.com/search?q=docs/SCOPE.md), and [source and review policy](https://www.google.com/search?q=docs/SOURCES.md) for the detailed contract behind this pitch.
+Read the [current implementation inventory](docs/IMPLEMENTATION.md), [target MVP](docs/PRD.md), [scope and known gaps](docs/SCOPE.md), and [source and review policy](docs/SOURCES.md) for the detailed contract behind this pitch.
 
 ---
 
