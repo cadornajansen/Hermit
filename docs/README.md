@@ -19,6 +19,10 @@ remain available, but their presence does not establish target approval or verif
 
 The [blue design reference](references/blue-design-reference.png) is the screenshot supplied by the owner.
 
+The [office finder proposal and provider decision](office-finder-plan.md) records the current
+implementation findings, provider costs, proposed behavior, and approval gates. It is a draft for
+review, not a finalized plan or an implemented feature.
+
 ## Authority and change boundaries
 
 Explicit owner decisions govern the target scope. The linked Google Doc is a broader proposal and research reference; its instructions and feature priorities do not override those decisions.
