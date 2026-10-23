@@ -59,13 +59,13 @@ export default function FormsPage(): ReactElement | null {
             />
           </div>
           <p role="status" className="text-sm text-muted-foreground tabular-nums">
-            {matchingForms.length} {matchingForms.length === 1 ? "form" : "forms"}{query.trim() ? ` found of ${FORMS.length}` : " in the library"}
+            {matchingForms.length} guided {matchingForms.length === 1 ? "form" : "forms"}{query.trim() ? ` found of ${FORMS.length}` : ""}
           </p>
         </div>
       </header>
       {matchingForms.length === 0 && (
         <div className="flex flex-col items-start gap-3 rounded-2xl border bg-card p-6">
-          <h2 className="font-semibold">No forms found</h2>
+          <h2 className="font-semibold">No matching guided forms</h2>
           <p className="text-sm text-muted-foreground">Try an agency name such as DTI, or a form number such as 1901.</p>
           <Button variant="outline" onClick={() => setQuery("")}>Clear search</Button>
         </div>

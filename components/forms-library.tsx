@@ -19,9 +19,9 @@ export function FormsLibrary({ query }: { query: string }) {
   return (
     <section className="flex flex-col gap-3">
       <div>
-        <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">All official forms · {FORMS_LIBRARY.length}</h2>
+        <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">Additional form library · {FORMS_LIBRARY.length}</h2>
         <p className="text-xs text-muted-foreground">
-          Blank government forms for running a business, stored in HERMIT. Search above or pick an agency.
+          Copies from Forms Philippines, stored in Hermit. Confirm the current version with the issuing agency. Search above or pick an agency.
         </p>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -53,7 +53,7 @@ export function FormsLibrary({ query }: { query: string }) {
               <Link
                 href={`/assistant?q=${encodeURIComponent(`Tulungan mo akong punan ang ${f.title} (${f.agency})`)}`}
                 className={buttonVariants({ size: "icon-sm", variant: "ghost" })}
-                aria-label={`Ask Kuya Hermit about ${f.title}`}
+                aria-label={`Ask Hermit about ${f.title}`}
               >
                 <MessageCircle />
               </Link>
