@@ -64,3 +64,33 @@ test("calendar: 8% sole proprietor has no 2551Q; employers get monthly 1601-C", 
   assert.ok(forms({ ...nena, taxOption: "graduated" }).includes("BIR 2551Q"))
   assert.equal(forms({ ...nena, employees: "1_9" }).filter((f) => f === "BIR 1601-C").length, 12)
 })
+
+test("multiple activities combine their branches without duplicate shared requirements", () => {
+  const retail: Profile = { ...nena, activities: ["retail"], flags: {} }
+  const food: Profile = { ...retail, activities: ["food_service"] }
+  const combined = ids({ ...retail, activities: ["retail", "food_service"] })
+  assert.deepEqual(new Set(combined), new Set([...ids(retail), ...ids(food)]))
+  assert.equal(combined.length, new Set(combined).size)
+  assert.ok(combined.includes("health_certs"))
+  assert.equal(combined.filter((id) => id === "dti_bn").length, 1)
+})
+
+test("non-food manufacturing does not inherit packaged-food requirements", () => {
+  const manufacturing: Profile = {
+    ...nena,
+    activities: ["manufacturing"],
+    packagedFood: false,
+    flags: {},
+  }
+  for (const id of ["fda_lto", "fda_cpr", "health_certs", "sanitary_permit"]) {
+    assert.ok(!ids(manufacturing).includes(id), id)
+  }
+  assert.ok(ids({ ...manufacturing, packagedFood: true }).includes("fda_lto"))
+  const uncertain = buildChecklist({ ...manufacturing, packagedFood: "unknown" }, {}).find((item) => item.id === "fda_lto")
+  assert.equal(uncertain?.applies, "maybe")
+})
+
+test("explicit activity uncertainty overrides a legacy retail answer", () => {
+  const food = buildChecklist({ ...nena, activities: "unknown", flags: {} }, {}).find((item) => item.id === "health_certs")
+  assert.equal(food?.applies, "maybe")
+})

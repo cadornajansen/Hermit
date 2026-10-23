@@ -1,20 +1,18 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'})
-
-const fontMono = Geist_Mono({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-mono",
+  display: "swap",
+  variable: "--font-geist",
 })
 
 export const metadata: Metadata = {
-  title: "HERMIT",
-  description: "Your business, remembered. One compliance checklist for Philippine MSME owners.",
+  title: "Hermit — Business compliance, one clear step at a time",
+  description: "Find the permits, registrations and filings your Philippine business needs, see what comes next, and let Kuya Hermit prepare the forms.",
 }
 
 export default function RootLayout({
@@ -23,13 +21,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
-    >
+    <html lang="en" suppressHydrationWarning className={`${geist.variable} font-sans antialiased`}>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider defaultTheme="light" enableSystem={false}>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

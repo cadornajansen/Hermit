@@ -207,20 +207,20 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
         </div>
       )}
       <form
-        className="sticky bottom-20 flex gap-2 bg-background py-2"
+        className="sticky bottom-0 flex gap-2 bg-canvas py-3"
         onSubmit={(e) => {
           e.preventDefault()
           ask(q)
         }}
       >
         <input
-          className="h-11 flex-1 rounded-xl border bg-background px-3 text-base"
+          className="h-11 min-w-0 flex-1 rounded-xl border bg-background px-3 text-base"
           placeholder={profile.lang === "en" ? "Ask anything…" : "Magtanong…"}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           aria-label="Your question"
         />
-        <label className={cn(buttonVariants({ size: "icon-lg", variant: "outline" }), "cursor-pointer")} aria-label={en ? "Attach a photo" : "Maglakip ng litrato"}>
+        <label className={cn(buttonVariants({ size: "icon", variant: "outline" }), "cursor-pointer")} aria-label={en ? "Attach a photo" : "Maglakip ng litrato"}>
           <ImagePlus />
           <input
             type="file"
@@ -236,7 +236,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
         {voice.supported && (
           <Button
             type="button"
-            size="icon-lg"
+            size="icon"
             variant={voice.listening ? "default" : "outline"}
             onClick={voice.toggle}
             aria-label={voice.listening ? "Stop listening" : en ? "Speak your question" : "Sabihin ang tanong"}
@@ -245,7 +245,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
             <Mic className={cn(voice.listening && "animate-pulse")} />
           </Button>
         )}
-        <Button type="submit" size="icon-lg" disabled={pending || !q.trim()} aria-label="Send">
+        <Button type="submit" size="icon" disabled={pending || !q.trim()} aria-label="Send">
           <Send />
         </Button>
       </form>

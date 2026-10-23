@@ -1,19 +1,26 @@
 "use client"
 
 import * as React from "react"
+import { usePathname } from "next/navigation"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
 function ThemeProvider({
   children,
+  forcedTheme,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
+  const pathname = usePathname()
+  const isPublicPage =
+    pathname === "/" || pathname === "/register" || pathname === "/onboarding"
+
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      defaultTheme="light"
+      enableSystem={false}
       disableTransitionOnChange
       {...props}
+      forcedTheme={isPublicPage ? "light" : forcedTheme}
     >
       <ThemeHotkey />
       {children}
@@ -35,9 +42,13 @@ function isTypingTarget(target: EventTarget | null) {
 }
 
 function ThemeHotkey() {
-  const { resolvedTheme, setTheme } = useTheme()
+  const { forcedTheme, resolvedTheme, setTheme } = useTheme()
 
   React.useEffect(() => {
+    if (forcedTheme) {
+      return
+    }
+
     function onKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented || event.repeat) {
         return
@@ -63,7 +74,7 @@ function ThemeHotkey() {
     return () => {
       window.removeEventListener("keydown", onKeyDown)
     }
-  }, [resolvedTheme, setTheme])
+  }, [forcedTheme, resolvedTheme, setTheme])
 
   return null
 }

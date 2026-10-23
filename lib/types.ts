@@ -9,6 +9,16 @@ export type Category =
   | "packaged_food" // makes or repacks food to sell in stores
   | "other"
 
+export type Activity =
+  | "retail"
+  | "food_service"
+  | "water_refilling"
+  | "manufacturing"
+  | "professional_services"
+  | "personal_services"
+  | "repair"
+  | "other"
+
 export type Flag =
   | "food"
   | "fda" // drugs, cosmetics, supplements, medical devices
@@ -36,6 +46,9 @@ export type Profile = {
 
   businessName: string
   description: string
+  // Optional while older browser-local profiles still use a single category.
+  activities?: Activity[] | Unknown
+  packagedFood?: boolean | Unknown
   category: Category | Unknown
   psic: string
   stage: "planning" | "operating_unregistered" | "registered" | Unknown
@@ -138,11 +151,11 @@ export type Deadline = {
 }
 
 export const STATUS_LABEL: Record<Status, string> = {
-  not_started: "Hindi pa nasisimulan · Not started",
-  in_progress: "Ginagawa · In progress",
-  submitted: "Naipasa · Submitted",
-  approved: "Aprubado · Approved",
-  expiring: "Malapit nang mag-expire · Expiring",
+  not_started: "Not started",
+  in_progress: "In progress",
+  submitted: "Submitted",
+  approved: "Approved",
+  expiring: "Expiring",
   expired: "Expired",
 }
 
