@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 import { documentUrl } from "@/app/sync"
+import { AssistantMemory } from "@/components/assistant-memory"
 import { HermitCards, StepTimeline } from "@/components/chat-cards"
 import { FormFile } from "@/components/form-file"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -31,7 +32,7 @@ const SUGGESTIONS = {
   ],
 }
 
-export function Chat({ initialQuestion }: { initialQuestion: string }) {
+export function Chat({ initialQuestion, view = "chat" }: { initialQuestion: string; view?: "chat" | "memory" }) {
   const { profile, chat, items, docs, ownerId } = useProfile()
   const [q, setQ] = useState(initialQuestion)
   const [pending, setPending] = useState(false)
@@ -41,10 +42,15 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
   // Follow the conversation and Kuya Hermit's live steps.
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    end.current?.scrollIntoView({ block: "end", behavior: "smooth" })
-  }, [chat.length, live.length, pending])
+    if (view === "chat") end.current?.scrollIntoView({ block: "end", behavior: "smooth" })
+  }, [chat.length, live.length, pending, view])
   if (!profile) return null
   const en = profile.lang === "en"
+  const chatQuery = new URLSearchParams(initialQuestion ? { q: initialQuestion } : {})
+  const chatHref = `/assistant${chatQuery.size ? `?${chatQuery}` : ""}`
+  const memoryQuery = new URLSearchParams(chatQuery)
+  memoryQuery.set("view", "memory")
+  const memoryHref = `/assistant?${memoryQuery}`
 
   async function ask(question: string) {
     if (!question.trim() || pending) return
@@ -105,13 +111,21 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Ask Hermit</h1>
+        <nav aria-label="Ask Hermit sections" className="flex gap-2">
+          <Link href={chatHref} scroll={false} aria-current={view === "chat" ? "page" : undefined} className={buttonVariants({ variant: view === "chat" ? "default" : "outline" })}>
+            Chat
+          </Link>
+          <Link href={memoryHref} scroll={false} aria-current={view === "memory" ? "page" : undefined} className={buttonVariants({ variant: view === "memory" ? "default" : "outline" })}>
+            <Brain aria-hidden /> Memory
+          </Link>
+        </nav>
+      </header>
+      <section aria-label="Chat" hidden={view !== "chat"} className={view === "chat" ? "flex flex-col gap-4" : "hidden"}>
       <div>
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">Kuya Hermit</h1>
-          <Link href="/memory" className="ml-auto flex items-center gap-1 text-xs text-muted-foreground" aria-label="Memory">
-            <Brain className="size-4" aria-hidden /> {en ? "Memory" : "Naaalala"}
-          </Link>
-          <div role="radiogroup" aria-label="Wika · Language" className="flex rounded-full border p-0.5 text-xs">
+          <div role="radiogroup" aria-label="Wika · Language" className="mb-2 ml-auto flex rounded-full border p-0.5 text-xs">
             {(["fil", "en"] as const).map((l) => (
               <button
                 key={l}
@@ -163,7 +177,7 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
             {m.packs?.map((id) => <PacketCard key={id} requirementId={id} />)}
             {m.cards && <HermitCards cards={m.cards} onAsk={ask} photo={chat.slice(0, i).findLast((x) => x.role === "owner")?.photo} />}
             {m.steps?.some((st) => st.tool === "remember" && st.ok) && (
-              <Link href="/memory" className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Link href={memoryHref} scroll={false} className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Brain className="size-3.5" /> {en ? "Saved to memory · view or delete" : "Naitala sa memory · tingnan o burahin"}
               </Link>
             )}
@@ -246,6 +260,10 @@ export function Chat({ initialQuestion }: { initialQuestion: string }) {
           <Send />
         </Button>
       </form>
+      </section>
+      <section aria-label="Memory" hidden={view !== "memory"} className={view === "memory" ? undefined : "hidden"}>
+        <AssistantMemory key={ownerId} active={view === "memory"} />
+      </section>
     </div>
   )
 }

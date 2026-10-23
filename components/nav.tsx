@@ -1,7 +1,6 @@
 "use client"
 
-import { Brain, CalendarDays, FileCheck2, FileText, LayoutDashboard, ListChecks, MapPin, MessageCircle, UserRound, Wallet } from "lucide-react"
-import { motion, useReducedMotion } from "motion/react"
+import { CalendarDays, FileCheck2, FileText, LayoutDashboard, ListChecks, MapPin, MessageCircle, UserRound, Wallet } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -18,8 +17,7 @@ export const WORKSPACE_PAGES = [
 ] as const
 
 export const ACCOUNT_PAGES = [
-  { href: "/assistant", label: "Kuya Hermit", icon: MessageCircle },
-  { href: "/memory", label: "Memory", icon: Brain },
+  { href: "/assistant", label: "Ask Hermit", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: UserRound },
 ] as const
 
@@ -31,11 +29,10 @@ type NavProps = {
 
 export function Nav({ collapsed = false, section = "workspace", onNavigate }: NavProps) {
   const pathname = usePathname()
-  const reduceMotion = useReducedMotion()
   const pages = section === "workspace" ? WORKSPACE_PAGES : ACCOUNT_PAGES
   return (
     <nav aria-label={section === "workspace" ? "Workspace" : "Account and help"}>
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-0.5">
         {pages.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`)
           return (
@@ -48,19 +45,12 @@ export function Nav({ collapsed = false, section = "workspace", onNavigate }: Na
                 title={collapsed ? label : undefined}
                 className={cn(
                   "flex h-11 min-w-11 items-center gap-3 overflow-hidden rounded-lg px-3 text-sm whitespace-nowrap transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                  active ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                  active ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : "text-muted-foreground hover:text-foreground",
+                  collapsed && "mx-auto w-11 justify-center px-0"
                 )}
               >
                 <Icon className="size-[18px] shrink-0" aria-hidden="true" />
-                <motion.span
-                  initial={false}
-                  animate={{ opacity: collapsed ? 0 : 1 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.12, delay: collapsed || reduceMotion ? 0 : 0.08 }}
-                  aria-hidden={collapsed}
-                  className="shrink-0"
-                >
-                  {label}
-                </motion.span>
+                {!collapsed && <span className="truncate">{label}</span>}
               </Link>
             </li>
           )

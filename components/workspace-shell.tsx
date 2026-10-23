@@ -18,14 +18,10 @@ import { cn } from "@/lib/utils"
 import "@/components/workspace.css"
 
 function BusinessLink({ name, collapsed = false, onNavigate }: { name: string; collapsed?: boolean; onNavigate?: () => void }) {
-  const reduceMotion = useReducedMotion()
   return (
-    <Link href="/profile" onClick={onNavigate} title={collapsed ? name : undefined} aria-label={`${name}: business details`} className="relative flex min-h-11 min-w-11 items-center gap-2 overflow-hidden rounded-lg border border-border bg-background px-2.5 text-sm whitespace-nowrap outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+    <Link href="/profile" onClick={onNavigate} title={collapsed ? name : undefined} aria-label={`${name}: business details`} className={cn("relative flex h-11 min-w-11 shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-2.5 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", collapsed && "mx-auto w-11 justify-center border-transparent px-0")}>
       <span aria-hidden="true" className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-accent-foreground">{name.slice(0, 1).toUpperCase()}</span>
-      <motion.span initial={false} animate={{ opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.12, delay: collapsed || reduceMotion ? 0 : 0.08 }} aria-hidden={collapsed} className="min-w-0 flex-1 truncate">{name}</motion.span>
-      <motion.span initial={false} animate={{ opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.12 }} aria-hidden="true" className="shrink-0">
-        <ArrowUpRight className="size-3.5 text-muted-foreground" />
-      </motion.span>
+      {!collapsed && <><span className="min-w-0 flex-1 truncate">{name}</span><ArrowUpRight aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" /></>}
     </Link>
   )
 }
@@ -37,34 +33,26 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const reduceMotion = useReducedMotion()
   const businessName = profile?.businessName.trim() || "Your business"
-  const wide = ["/dashboard", "/roadmap", "/calendar", "/forms", "/offices", "/business"].includes(pathname)
+  const wide = ["/dashboard", "/roadmap", "/calendar", "/vault", "/forms", "/offices", "/business"].includes(pathname)
   const sidebarTransition = { duration: reduceMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] as const }
 
   return (
     <div data-workspace className="min-h-svh bg-canvas text-foreground lg:flex print:block print:bg-background">
       <a href="#workspace-content" className="sr-only fixed top-3 left-3 z-50 rounded-lg bg-background px-4 py-3 text-sm shadow-lg focus:not-sr-only">Skip to content</a>
-      <motion.aside initial={false} animate={{ width: collapsed ? 72 : 247 }} transition={sidebarTransition} className="sticky top-0 hidden h-svh shrink-0 flex-col border-r border-border bg-background p-3 lg:flex print:hidden" aria-label="Workspace sidebar">
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden [scrollbar-width:thin]">
-          <BusinessLink name={businessName} collapsed={collapsed} />
-          <motion.div initial={false} animate={{ height: collapsed ? 88 : 44 }} transition={sidebarTransition} className="relative shrink-0">
-            <motion.div initial={false} animate={{ width: collapsed ? 44 : 140 }} transition={sidebarTransition} className="absolute top-0 left-0 overflow-hidden">
-              <Brand className="min-h-11 min-w-11 px-1.5 whitespace-nowrap [&>span]:shrink-0" />
-            </motion.div>
-            <motion.div initial={false} animate={{ y: collapsed ? 44 : 0 }} transition={sidebarTransition} className="absolute top-0 right-0">
-              <Button variant="ghost" size="icon" className="rounded-lg bg-transparent aria-expanded:bg-transparent" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => setCollapsed((value) => !value)}>
-                {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
-              </Button>
-            </motion.div>
-          </motion.div>
-          <div className="shrink-0"><WorkspaceSearch compact={collapsed} /></div>
-          <div className="flex flex-col gap-2">
-            <motion.p initial={false} animate={{ opacity: collapsed ? 0 : 1 }} transition={{ duration: reduceMotion ? 0 : 0.12 }} aria-hidden={collapsed} className="px-3 text-xs whitespace-nowrap text-muted-foreground">Workspace</motion.p>
-            <Nav collapsed={collapsed} />
-          </div>
-          <div className="mt-auto flex flex-col gap-3 pt-6">
-            <Separator />
-            <Nav collapsed={collapsed} section="account" />
-          </div>
+      <motion.aside initial={false} animate={{ width: collapsed ? 68 : 224 }} transition={sidebarTransition} className="sticky top-0 hidden h-svh shrink-0 flex-col gap-2 border-r border-border bg-background p-2 lg:flex print:hidden" aria-label="Workspace sidebar">
+        <div className={cn("flex h-11 shrink-0 items-center justify-between", collapsed && "justify-center")}>
+          <Brand compact={collapsed} className={cn("min-w-11 px-1.5 whitespace-nowrap", collapsed && "w-11 justify-center px-0")} />
+          {!collapsed && <Button variant="ghost" size="icon" className="rounded-lg" aria-label="Collapse sidebar" title="Collapse sidebar" aria-expanded onClick={() => setCollapsed(true)}><PanelLeftClose aria-hidden="true" /></Button>}
+        </div>
+        <BusinessLink name={businessName} collapsed={collapsed} />
+        <div className="workspace-scroll flex min-h-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto">
+          <div className={cn("shrink-0", collapsed && "flex justify-center")}><WorkspaceSearch compact={collapsed} /></div>
+          <Nav collapsed={collapsed} />
+        </div>
+        <div className="flex shrink-0 flex-col gap-2">
+          <Separator />
+          {collapsed && <Button variant="ghost" size="icon" className="mx-auto rounded-lg" aria-label="Expand sidebar" title="Expand sidebar" aria-expanded={false} onClick={() => setCollapsed(false)}><PanelLeftOpen aria-hidden="true" /></Button>}
+          <Nav collapsed={collapsed} section="account" />
         </div>
       </motion.aside>
 

@@ -1,31 +1,32 @@
 import Image from "next/image"
 import Link from "next/link"
+import type { ReactElement } from "react"
 
 import { cn } from "@/lib/utils"
 
-export function Brand({ className }: { className?: string }) {
+export function Brand({ className, compact = false }: { className?: string; compact?: boolean }): ReactElement {
   return (
     <Link
       href="/"
       aria-label="Hermit home"
       className={cn(
-        "inline-flex items-center gap-1.5 text-xl font-medium tracking-[-0.05em]",
+        "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-sm text-lg font-medium tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring sm:text-xl",
         className
       )}
     >
       <span
-        className="relative block size-8 overflow-hidden"
+        className="block size-8 shrink-0"
         aria-hidden="true"
       >
         <Image
-          src="/brand/logo-sheet.png"
+          src="/brand/hermit-logo.svg"
           alt=""
-          width={1024}
-          height={1024}
-          className="absolute top-[-139.49%] left-[-15.84%] size-[378.26%] max-w-none"
+          width={36}
+          height={36}
+          className="size-full"
         />
       </span>
-      Hermit
+      {!compact && "Hermit"}
     </Link>
   )
 }

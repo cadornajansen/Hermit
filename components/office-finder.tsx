@@ -9,6 +9,7 @@ import { LocationFields } from "@/components/location-fields"
 import { OfficeMap } from "@/components/office-map"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { buildChecklist, REQUIREMENTS } from "@/lib/engine"
 import type { GeocodeCandidate } from "@/lib/google-geocoding"
 import { jurisdictionLabel, resolveLocation, type LocationValue } from "@/lib/locations"
@@ -23,6 +24,11 @@ import { useProfile } from "@/lib/store"
 import type { ItemState, Profile } from "@/lib/types"
 
 export type SearchOrigin = { point: Point; label: string; source: "device" | "search"; accuracy?: number }
+
+const SERVICE_OPTIONS = [
+  { value: null, label: "Choose a document or service" },
+  ...REQUIREMENTS.map((entry) => ({ value: entry.id, label: entry.name })),
+]
 
 export function OfficeFinder({ initialService, enabled, canGeocode, demo = false }: { initialService: string; enabled: boolean; canGeocode: boolean; demo?: boolean }) {
   const { profile, items, ownerId } = useProfile()
@@ -42,6 +48,10 @@ export function OfficeFinderPanel({ profile, items, initialService = "", enabled
   const registry = demo ? [...OFFICE_REGISTRY, ...DEMO_OFFICES] : OFFICE_REGISTRY
   const result = confirmed ? eligibleOffices(confirmed.service, confirmed.area, confirmed.assignment, registry) : null
   const assignments = service ? eligibleOffices(service, area, "", registry).assignments : []
+  const assignmentOptions = [
+    { value: null, label: "Confirm your assigned branch with the agency" },
+    ...assignments.map((entry) => ({ value: entry.id, label: `${entry.name} (${entry.id})` })),
+  ]
   const requirement = REQUIREMENTS.find((entry) => entry.id === confirmed?.service)
   const process = confirmed && processFor(confirmed.service, confirmed.area)
   const manilaBarangay = confirmed && resolveLocation(confirmed.area).city?.code === "1380600000"
@@ -66,10 +76,14 @@ export function OfficeFinderPanel({ profile, items, initialService = "", enabled
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-2">
             <label htmlFor="office-service" className="text-sm font-medium">Document or service</label>
-            <select id="office-service" required value={service} onChange={(event) => { setService(event.target.value); setAssignment("") }} className="min-h-11 w-full rounded-xl border bg-background px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring">
-              <option value="">Choose a document or service</option>
-              {REQUIREMENTS.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
-            </select>
+            <Select required items={SERVICE_OPTIONS} value={service || null} onValueChange={(value) => { setService(value ?? ""); setAssignment("") }}>
+              <SelectTrigger id="office-service" className="w-full min-w-0"><SelectValue /></SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false} className="max-h-[min(20rem,var(--available-height))]">
+                <SelectGroup>
+                  {SERVICE_OPTIONS.map((option) => <SelectItem key={option.value ?? "placeholder"} value={option.value}>{option.label}</SelectItem>)}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Business jurisdiction</span>
@@ -90,10 +104,14 @@ export function OfficeFinderPanel({ profile, items, initialService = "", enabled
               </>}
               {assignments.length > 0 && <>
                 <label htmlFor="office-assignment">Agency-assigned branch</label>
-                <select id="office-assignment" value={assignment} onChange={(event) => setAssignment(event.target.value)} aria-describedby="office-assignment-help" className="min-h-11 rounded-xl border bg-background px-3 focus-visible:ring-2 focus-visible:ring-ring">
-                  <option value="">Confirm your assigned branch with the agency</option>
-                  {assignments.map((entry) => <option key={entry.id} value={entry.id}>{entry.name} ({entry.id})</option>)}
-                </select>
+                <Select items={assignmentOptions} value={assignment || null} onValueChange={(value) => setAssignment(value ?? "")}>
+                  <SelectTrigger id="office-assignment" aria-describedby="office-assignment-help" className="w-full min-w-0"><SelectValue /></SelectTrigger>
+                  <SelectContent align="start" alignItemWithTrigger={false} className="max-h-[min(20rem,var(--available-height))]">
+                    <SelectGroup>
+                      {assignmentOptions.map((option) => <SelectItem key={option.value ?? "placeholder"} value={option.value}>{option.label}</SelectItem>)}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </>}
               <p id="office-assignment-help" className="text-xs text-muted-foreground">If branch assignment is required, select a branch only after agency confirmation. These area changes apply to this search, not your saved business profile.</p>
             </div>
