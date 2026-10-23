@@ -2,6 +2,9 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { eligibleOffices, rankOffices, distanceLabel, currentEvidence } from "./office-finder.ts"
 import { cities } from "./locations.ts"
+import { findManilaBarangay, MANILA_BARANGAYS } from "./manila-barangays.ts"
+import { mapsSearchUrl } from "./nearby.ts"
+import { DEMO_OFFICES } from "./office-demo.ts"
 import { OFFICE_REGISTRY, type OfficeEvidence, type OfficeRecord } from "./office-registry.ts"
 
 const city = cities.find((entry) => entry.name === "City of Manila")!
@@ -75,7 +78,42 @@ test("distance ties are stable and origin changes never change eligibility", () 
   assert.deepEqual(rankOffices(matches, { lat: 0, lng: 0 }).map((entry) => entry.office.id), ["a", "b"])
   assert.deepEqual(rankOffices(matches).map((entry) => entry.km), [undefined, undefined])
   assert.deepEqual(rankOffices(matches, { lat: 40, lng: 140 }).map((entry) => entry.office.id), ["a", "b"])
-  assert.deepEqual(OFFICE_REGISTRY, [], "unverified seeds must not be promoted to production records")
+})
+
+test("Manila seed lists only source-backed permit handlers; branch assignment and map coordinates stay explicit", () => {
+  const permit = eligibleOffices("mayors_permit", area, "", OFFICE_REGISTRY, today).offices
+  assert.deepEqual(permit.map((entry) => entry.office.id), ["manila-bureau-of-permits"])
+  assert.equal(permit[0].point, undefined)
+  assert.equal(eligibleOffices("mayors_permit", { city: "Quezon City" }, "", OFFICE_REGISTRY, today).offices.length, 0)
+  assert.deepEqual(eligibleOffices("health_certs", area, "", OFFICE_REGISTRY, today).offices.map((entry) => entry.office.id), ["manila-health-department"])
+  assert.deepEqual(eligibleOffices("brgy_clearance", area, "", OFFICE_REGISTRY, today).offices.map((entry) => entry.office.id), ["manila-bureau-of-permits"])
+  assert.equal(eligibleOffices("dti_bn", area, "", OFFICE_REGISTRY, today).offices[0].office.physicalCityCode, "1380300000")
+  assert.equal(eligibleOffices("cda_reg", area, "", OFFICE_REGISTRY, today).offices[0].office.physicalCityCode, "1381300000")
+  const bir = eligibleOffices("bir_cor", area, "", OFFICE_REGISTRY, today)
+  assert.equal(bir.assignments.length, 6)
+  assert.equal(bir.offices.length, 0)
+  assert.deepEqual(eligibleOffices("bir_cor", area, "bir-rdo-29", OFFICE_REGISTRY, today).offices.map((entry) => entry.office.id), ["bir-rdo-29"])
+  assert.ok(OFFICE_REGISTRY.every((entry) => entry.mode === "online" || (entry.address && entry.addressEvidence && !entry.coordinates)))
+  assert.match(mapsSearchUrl("Manila City Hall"), /maps\/search\/\?api=1&query=Manila%20City%20Hall/)
+  assert.doesNotMatch(mapsSearchUrl("Manila City Hall"), /origin=/)
+})
+
+test("all 897 Manila barangay identities are searchable without implying a verified hall", () => {
+  assert.equal(MANILA_BARANGAYS.length, 897)
+  assert.equal(new Set(MANILA_BARANGAYS.map((entry) => entry.code)).size, 897)
+  assert.equal(new Set(MANILA_BARANGAYS.map((entry) => entry.name)).size, 897)
+  assert.deepEqual(findManilaBarangay("Brgy. 1"), { code: "1380601001", name: "Barangay 1", district: "Tondo I/II" })
+  assert.equal(findManilaBarangay("Unknown hall"), undefined)
+  assert.equal(eligibleOffices("brgy_clearance", area, "", OFFICE_REGISTRY, today).offices.length, 1)
+})
+
+test("local demo records can mix with government records without changing production registry", () => {
+  const production = eligibleOffices("mayors_permit", area, "", OFFICE_REGISTRY, today).offices
+  const local = eligibleOffices("mayors_permit", area, "", [...OFFICE_REGISTRY, ...DEMO_OFFICES], today).offices
+  assert.equal(production.length, 1)
+  assert.equal(local.length, 3)
+  assert.equal(local.filter((entry) => entry.point).length, 2)
+  assert.ok(local.filter((entry) => entry.office.id.startsWith("demo-")).every((entry) => entry.office.website === "https://example.org/"))
 })
 
 test("duplicate branch identities cannot produce a confirmed eligible result", () => {

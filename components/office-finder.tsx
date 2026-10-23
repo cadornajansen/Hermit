@@ -12,22 +12,26 @@ import { Input } from "@/components/ui/input"
 import { buildChecklist, REQUIREMENTS } from "@/lib/engine"
 import type { GeocodeCandidate } from "@/lib/google-geocoding"
 import { jurisdictionLabel, resolveLocation, type LocationValue } from "@/lib/locations"
-import { businessSearchAddress, directionsUrl, type Point } from "@/lib/nearby"
+import { findManilaBarangay, MANILA_BARANGAYS } from "@/lib/manila-barangays"
+import { businessSearchAddress, directionsUrl, mapsSearchUrl, type Point } from "@/lib/nearby"
+import { DEMO_OFFICES } from "@/lib/office-demo"
 import { distanceLabel, eligibleOffices, rankOffices, validPoint, type EligibleOffice } from "@/lib/office-finder"
+import { OFFICE_REGISTRY } from "@/lib/office-registry"
 import { mapsLink, officesFor } from "@/lib/offices"
+import { processFor } from "@/lib/processes"
 import { useProfile } from "@/lib/store"
 import type { ItemState, Profile } from "@/lib/types"
 
 export type SearchOrigin = { point: Point; label: string; source: "device" | "search"; accuracy?: number }
 
-export function OfficeFinder({ initialService, enabled, canGeocode }: { initialService: string; enabled: boolean; canGeocode: boolean }) {
+export function OfficeFinder({ initialService, enabled, canGeocode, demo = false }: { initialService: string; enabled: boolean; canGeocode: boolean; demo?: boolean }) {
   const { profile, items, ownerId } = useProfile()
   if (!profile) return null
-  return <OfficeFinderPanel key={JSON.stringify([ownerId, profile.businessName, profile.businessAddress, profile.city, profile.province, profile.region, profile.barangay, initialService])} profile={profile} items={items} initialService={initialService} enabled={enabled} canGeocode={canGeocode} />
+  return <OfficeFinderPanel key={JSON.stringify([ownerId, profile.businessName, profile.businessAddress, profile.city, profile.province, profile.region, profile.barangay, initialService])} profile={profile} items={items} initialService={initialService} enabled={enabled} canGeocode={canGeocode} demo={demo} />
 }
 
-export function OfficeFinderPanel({ profile, items, initialService = "", enabled, canGeocode }: {
-  profile: Profile; items: Record<string, ItemState>; initialService?: string; enabled: boolean; canGeocode: boolean
+export function OfficeFinderPanel({ profile, items, initialService = "", enabled, canGeocode, demo = false }: {
+  profile: Profile; items: Record<string, ItemState>; initialService?: string; enabled: boolean; canGeocode: boolean; demo?: boolean
 }) {
   const [service, setService] = useState(REQUIREMENTS.some((entry) => entry.id === initialService) ? initialService : "")
   const [area, setArea] = useState<LocationValue>(profile)
@@ -35,11 +39,19 @@ export function OfficeFinderPanel({ profile, items, initialService = "", enabled
   const [confirmed, setConfirmed] = useState<{ service: string; area: LocationValue; assignment: string }>()
   const [origin, setOrigin] = useState<SearchOrigin>()
   const [mapConsent, setMapConsent] = useState(false)
-  const result = confirmed ? eligibleOffices(confirmed.service, confirmed.area, confirmed.assignment) : null
-  const assignments = service ? eligibleOffices(service, area).assignments : []
+  const registry = demo ? [...OFFICE_REGISTRY, ...DEMO_OFFICES] : OFFICE_REGISTRY
+  const result = confirmed ? eligibleOffices(confirmed.service, confirmed.area, confirmed.assignment, registry) : null
+  const assignments = service ? eligibleOffices(service, area, "", registry).assignments : []
   const requirement = REQUIREMENTS.find((entry) => entry.id === confirmed?.service)
+  const process = confirmed && processFor(confirmed.service, confirmed.area)
+  const manilaBarangay = confirmed && resolveLocation(confirmed.area).city?.code === "1380600000"
+    ? findManilaBarangay(confirmed.area.barangay ?? "") : undefined
+  const barangayQuery = (area.barangay ?? "").toLowerCase().trim().replace(/^(?:brgy\.?|barangay)\s+/, "")
+  const barangayChoices = MANILA_BARANGAYS.filter((barangay) =>
+    !barangayQuery || barangay.name.toLowerCase().replace(/^barangay\s+/, "").includes(barangayQuery)).slice(0, 50)
   const checklistItem = buildChecklist(profile, items).find((entry) => entry.id === confirmed?.service)
-  const legacy = requirement ? officesFor(confirmed!.area.city, confirmed!.area.barangay ?? "", new Set([requirement.officeType]), confirmed!.area) : []
+  const legacy = requirement && resolveLocation(confirmed!.area).city?.code !== "1380600000"
+    ? officesFor(confirmed!.area.city, confirmed!.area.barangay ?? "", new Set([requirement.officeType]), confirmed!.area) : []
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,7 +83,11 @@ export function OfficeFinderPanel({ profile, items, initialService = "", enabled
             <LocationFields value={area} onChange={(next) => { setArea(next); setAssignment("") }} />
             <div className="flex flex-col gap-3">
               <label htmlFor="office-barangay">Barangay</label>
-              <Input id="office-barangay" value={area.barangay ?? ""} maxLength={100} onChange={(event) => { setArea({ ...area, barangay: event.target.value }); setAssignment("") }} />
+              <Input id="office-barangay" list={resolveLocation(area).city?.code === "1380600000" ? "manila-barangay-options" : undefined} value={area.barangay ?? ""} maxLength={100} onChange={(event) => { setArea({ ...area, barangay: event.target.value }); setAssignment("") }} />
+              {resolveLocation(area).city?.code === "1380600000" && <>
+                <datalist id="manila-barangay-options">{barangayChoices.map((barangay) => <option key={barangay.code} value={barangay.name} label={barangay.district} />)}</datalist>
+                <p className="text-xs text-muted-foreground">Type your barangay number or name to search Manila&apos;s 897 PSA-listed barangays. These names identify the jurisdiction, not the hall address.</p>
+              </>}
               {assignments.length > 0 && <>
                 <label htmlFor="office-assignment">Agency-assigned branch</label>
                 <select id="office-assignment" value={assignment} onChange={(event) => setAssignment(event.target.value)} aria-describedby="office-assignment-help" className="min-h-11 rounded-xl border bg-background px-3 focus-visible:ring-2 focus-visible:ring-ring">
@@ -94,6 +110,19 @@ export function OfficeFinderPanel({ profile, items, initialService = "", enabled
           {result.needsReview > 0 && <p role="status" className="text-sm">{result.needsReview} matching record(s) need service or coverage review and are excluded from eligible results.</p>}
           {result.needsAssignment > 0 && <p role="status" className="text-sm">{result.needsAssignment} branch record(s) require a confirmed agency assignment. Proximity cannot choose your assigned office.</p>}
         </div>
+        {process && process.links.length > 0 && <div className="rounded-xl border bg-background p-4 text-sm">
+          <h3 className="font-semibold">Online filing option</h3>
+          <ul className="mt-2 flex flex-col gap-2">{process.links.map((link) => <li key={link.url}><a href={link.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 text-primary underline underline-offset-4">{link.label}<ExternalLink className="size-4" aria-hidden /></a></li>)}</ul>
+          {process.note && <p className="mt-2 text-xs text-muted-foreground">{process.note}</p>}
+        </div>}
+        {(confirmed!.service === "brgy_clearance" || confirmed!.service === "brgy_renewal") && resolveLocation(confirmed!.area).city?.code === "1380600000" && <div className="rounded-xl border bg-background p-4 text-sm">
+          <h3 className="font-semibold">Your Manila barangay</h3>
+          {manilaBarangay ? <>
+            <p className="mt-2">{manilaBarangay.name} · {manilaBarangay.district} · PSGC {manilaBarangay.code}</p>
+            <p className="mt-2 text-muted-foreground">Manila integrates barangay business clearance with the Bureau of Permits application. The PSA verifies this barangay&apos;s identity and district; its hall address and separate clearance counter have not been verified. Visit the hall only if the city or barangay directs you there.</p>
+            <a href={mapsSearchUrl(`${manilaBarangay.name} Hall, ${manilaBarangay.district}, City of Manila, Philippines`)} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-2 text-primary underline underline-offset-4">Search for the hall on Google Maps (unverified)<ExternalLink className="size-4" aria-hidden /></a>
+          </> : <p className="mt-2 text-muted-foreground">Enter your barangay&apos;s number or PSA-listed name above to identify its district. A map search cannot verify a hall or clearance counter.</p>}
+        </div>}
         {!result.offices.length && <div role="status" className="rounded-xl border bg-background p-5 text-sm">
           <p className="font-medium">Verified office coverage is not yet available for this service and area.</p>
           <p className="mt-2 text-muted-foreground">This does not mean no offices exist. Confirm the correct branch with the agency; map search results cannot verify that it processes your document.</p>
@@ -238,16 +267,20 @@ export function OfficeResults({ offices, origin, showMap }: { offices: readonly 
             <span className="font-semibold">{entry.office.name}</span>
             <span className="text-sm">{selected?.office.id === entry.office.id ? "Selected · " : ""}{entry.office.mode === "online" ? "Online service" : entry.office.address || "Address needs verification"}</span>
             {entry.km !== undefined && <span className="text-sm">{distanceLabel(entry.km)}</span>}
-            {entry.office.mode !== "online" && !entry.point && <span className="text-sm">Location needs verification · no map pin or distance</span>}
+            {entry.office.mode !== "online" && !entry.point && <span className="text-sm">Map coordinates need verification · no pin or distance</span>}
           </button>
-          <p className="mt-3 text-xs text-muted-foreground">Verified service and area coverage. Office ID: {entry.office.id}. Capability checked {entry.evidence.checkedOn}; coverage checked {entry.coverageEvidence.checkedOn}.</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {entry.point && <a href={directionsUrl(entry.point)} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}><Navigation aria-hidden />Directions in Google Maps</a>}
-            <a href={entry.office.website} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "ghost" })}>Official site <ExternalLink aria-hidden /></a>
-            <a href={entry.evidence.sourceUrl} target="_blank" rel="noreferrer" className="min-h-11 py-3 text-xs text-primary underline underline-offset-4">Service evidence</a>
-            <a href={entry.coverageEvidence.sourceUrl} target="_blank" rel="noreferrer" className="min-h-11 py-3 text-xs text-primary underline underline-offset-4">Coverage evidence</a>
-          </div>
-          <ReportRedTape office={entry.office.name} />
+          {!entry.office.id.startsWith("demo-") && <>
+            <p className="mt-3 text-xs text-muted-foreground">Official-source service and area coverage. Office ID: {entry.office.id}. Capability checked {entry.evidence.checkedOn}; coverage checked {entry.coverageEvidence.checkedOn}. Confirm counter hours and address with the agency before visiting.</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {entry.point && <a href={directionsUrl(entry.point)} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}><Navigation aria-hidden />Directions in Google Maps</a>}
+              {!entry.point && entry.office.mode !== "online" && entry.office.address && <a href={mapsSearchUrl(`${entry.office.name}, ${entry.office.address}`)} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>Search address on Google Maps (unverified)</a>}
+              <a href={entry.office.website} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "ghost" })}>Official site <ExternalLink aria-hidden /></a>
+              {entry.office.addressEvidence && <a href={entry.office.addressEvidence.sourceUrl} target="_blank" rel="noreferrer" className="min-h-11 py-3 text-xs text-primary underline underline-offset-4">Address source</a>}
+              <a href={entry.evidence.sourceUrl} target="_blank" rel="noreferrer" className="min-h-11 py-3 text-xs text-primary underline underline-offset-4">Service evidence</a>
+              <a href={entry.coverageEvidence.sourceUrl} target="_blank" rel="noreferrer" className="min-h-11 py-3 text-xs text-primary underline underline-offset-4">Coverage evidence</a>
+            </div>
+            <ReportRedTape office={entry.office.name} />
+          </>}
         </li>)}
       </ul>
     </section>

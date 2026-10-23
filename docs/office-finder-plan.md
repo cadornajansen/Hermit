@@ -58,17 +58,29 @@ explicitly includes that area. Agency-assigned branches require the owner's conf
 verified branch choices; proximity cannot establish assignment.
 
 When coverage is missing, the UI says verified records are unavailable and links to official guidance.
-It does not claim that no real offices exist or fill the list with Places suggestions. Historical
+It does not claim that no real offices exist or fill the list with Places suggestions. A 23 October 2026
+source review seeded Manila permit handlers and selected NCR registration destinations; see the
+[Manila seed and its limits](office-seed-manila.md). Historical
 Taguig guidance and eReport remain available, clearly marked unverified. Map-name searches on those
 historical records are explicitly external, unverified searches, not directions to a verified branch.
 
 ## Office data ownership and backfill
 
-**The production registry is intentionally empty.** No seed branch was promoted to verified status,
-and no office address, coordinate, capability, or jurisdiction was fabricated. The interface and
-resolver are implemented; real eligible-office results depend on curated records.
+**The production registry now contains 14 source-reviewed Manila and NCR office or online-service
+records.** It is not agency-signed-off. No official office coordinate was invented or copied from
+Google. Source-listed addresses support textual results and user-initiated, unverified Google Maps
+address searches; none supports a Hermit map pin or distance yet. Manila's integrated barangay
+business-clearance intake is at the Bureau of Permits under Ordinance 8754. The 897 PSA barangay
+identities have no verified hall addresses. The [seed inventory](office-seed-manila.md) lists each
+service, source, online alternative and remaining verification work.
 
-The operator must name a curator and reviewer before publishing records. Maintain the versioned
+Two synthetic office records with synthetic coordinates can be combined with the seed in local
+development by setting `OFFICE_FINDER_DEMO=true`. Production builds exclude them even if that
+variable is set. Their synthetic status is documented in the seed inventory; the website does
+not display a demo badge. The fixtures are for local interface testing only.
+
+The operator must name a curator and agency-facing reviewer before treating these research
+records as production-ready or enabling public rollout. Maintain the versioned
 registry through reviewed changes; no office table, spatial database, admin console, or office-data
 migration is introduced. Required fields are defined by `OfficeRecord`:
 
@@ -76,6 +88,7 @@ migration is introduced. Required fields are defined by `OfficeRecord`:
 - Physical address/city where relevant, separate from the areas the office serves.
 - Exact requirement/service IDs, city coverage and any reviewed barangay aliases or assignment rule.
 - Separate capability and coverage evidence: HTTPS source URL, named reviewer, checked date, review due.
+- Source-listed address evidence, separate from independently confirmed entrance coordinates.
 - Optional independently obtained WGS84 coordinates, building/entrance precision, source/license and
   coordinate evidence. Approximate coordinates are retained only as unverified data, not plotted.
 
@@ -91,13 +104,14 @@ this feature does not reopen nationwide onboarding. Additional areas require the
 
 ## Configuration and rollout
 
-The verified textual flow is available independently of Google configuration. Live map/geocoding
-capabilities default off. Update deployment settings only after the data and privacy/operations gates
+The source-backed textual flow is available independently of Google configuration. Live map/geocoding
+capabilities default off. Update deployment settings only after the data review and privacy/operations gates
 are satisfied; no credentials, billing, Cloud resources, or deployments were created by this work.
 
 | Environment variable | Purpose |
 | --- | --- |
 | `OFFICE_FINDER_ENABLED` | Exact value `true` enables live map/address features. Default is off. |
+| `OFFICE_FINDER_DEMO` | Exact value `true` adds synthetic map/list fixtures in local development only. Default is off; production builds ignore it. |
 | `GOOGLE_MAPS_SERVER_KEY` | Server-only key restricted to Geocoding API and applicable server restrictions. Places and Routes are not needed. |
 | `NEXT_PUBLIC_GOOGLE_MAPS_KEY` | Browser key restricted to the deployed site's referrers and Maps JavaScript API. It is intentionally public; restrictions are essential. |
 | `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | Production JavaScript/vector map ID for Advanced Markers. `DEMO_MAP_ID` is only a development fallback. |
@@ -195,8 +209,16 @@ blocked-script case verified that map failure retains the list and allows an exp
 Screenshots were inspected. All provider requests were mocked or intercepted; the temporary route
 was removed before the production build. No browser package was added to repository dependencies.
 
-No live Google API, device location, production database, billing project, or real office record was
-verified. Actual Google basemap rendering and database RPC concurrency under deployed load remain
-deployment acceptance checks. The empty registry, restricted credentials, quotas, public disclosures,
-and verified office evidence remain production release gates. Code/tests alone do not establish
-production readiness or authoritative branch coverage.
+The historical checks above preceded the Manila seed. Focused seed checks are recorded in the
+[Manila inventory](office-seed-manila.md). No live Google API, device location, production database,
+billing project, or agency counter was directly verified. Actual Google basemap rendering and
+database RPC concurrency under deployed load remain deployment acceptance checks. Restricted
+credentials, quotas, public disclosures, current agency counter checks and independent coordinates
+remain production release gates. Code/tests alone do not establish production readiness or
+authoritative branch coverage.
+
+For the 23 October 2026 seed change, `npm test` passed all 23 test files; `npm run typecheck`,
+`npm run lint` and `git diff --check` passed. A production build was attempted with the installed
+Next 16.4.2: Turbopack could not bind its CSS worker port in this environment, including on a
+permission-elevated retry. The documented `--webpack` fallback stopped while parsing TypeScript
+`--showConfig`. A successful production build remains an external verification step.

@@ -8,6 +8,7 @@ import { officesFor } from "./offices.ts"
 
 const cebu = { ...EMPTY_PROFILE, city: "Cebu City", province: "Cebu", region: "Central Visayas (Region VII)", lang: "en" as const, premises: "owned" as const }
 const taguig = { ...EMPTY_PROFILE, city: "Taguig", region: "NCR" }
+const manila = { ...EMPTY_PROFILE, city: "City of Manila", region: "NCR" }
 test("LGU links require a matching canonical jurisdiction and filing task", () => {
   for (const location of [cebu, { ...EMPTY_PROFILE, city: "San Jose" }, { ...taguig, region: "Central Luzon (Region III)" }, { ...taguig, province: "Tarlac" }, EMPTY_PROFILE]) {
     for (const id of ["mayors_permit", "mayors_renewal", "sanitary_permit"]) {
@@ -26,6 +27,11 @@ test("LGU links require a matching canonical jurisdiction and filing task", () =
   assert.match(processFor("mayors_permit", taguig)!.jurisdiction!, /City of Taguig/)
   assert.match(processFor("bir_cor", taguig, "update")!.links[0].label, /update/)
   assert.match(processFor("bir_cor", taguig, "abatement")!.office!, /2121/)
+  assert.match(processFor("mayors_permit", manila)!.links[0].url, /cityofmanila\.ph/)
+  assert.match(processFor("mayors_renewal", manila)!.links[0].label, /renewal/)
+  assert.match(processFor("brgy_clearance", manila)!.office!, /Bureau of Permits/)
+  assert.match(processFor("brgy_renewal", manila)!.note!, /integrated barangay clearance/)
+  assert.doesNotMatch(JSON.stringify(processFor("mayors_permit", cebu)!.links), /cityofmanila/)
 })
 
 test("Cebu packet has local context and general guidance, without Taguig links or forms", async (t) => {

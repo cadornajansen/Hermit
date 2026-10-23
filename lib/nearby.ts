@@ -24,3 +24,8 @@ export function distanceKm(a: Point, b: Point) {
 // Share only a verified destination; the external service requests its own origin.
 export const directionsUrl = (point: Point) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${point.lat},${point.lng}`)}`
+
+// Search a public, source-listed destination by text. Google still has to resolve it;
+// the returned place is not an independently verified Hermit office coordinate.
+export const mapsSearchUrl = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`

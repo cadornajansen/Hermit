@@ -87,13 +87,12 @@ export const PROCESSES: Record<string, Process> = {
   },
   fda_lto: {
     links: [
-      { label: "FDA eServices — create an account", url: "https://eservices.fda.gov.ph/account_registration", steps: ["Register your establishment's account"] },
-      { label: "FDA eServices — apply for a License to Operate", url: "https://eservices.fda.gov.ph/applications", steps: ["Log in", "Choose “License to Operate”"] },
+      { label: "FDA eServices — apply for a License to Operate", url: "https://eservices.fda.gov.ph/applications/license_to_operate/food", steps: ["Choose your food establishment category and application type", "Follow the current portal instructions for your category"] },
     ],
     verifiedOn: CHECKED,
   },
   fda_cpr: {
-    links: [{ label: "FDA eServices — Certificate of Product Registration", url: "https://eservices.fda.gov.ph/applications", steps: ["Log in", "Choose “Certificate of Product Registration”, one application per product"] }],
+    links: [{ label: "FDA eServices — Certificate of Product Registration", url: "https://eservices.fda.gov.ph/applications/certificate_product_registration/foods", steps: ["Choose the food CPR application type", "Follow the current portal instructions for each product"] }],
     verifiedOn: CHECKED,
   },
   sss_er: {
@@ -134,6 +133,32 @@ export const PROCESSES: Record<string, Process> = {
 
 // Local portal entries are keyed by canonical PSGC jurisdiction and filing task.
 const LOCAL_PROCESSES: Record<string, Record<string, Partial<Record<FilingTask, Process>>>> = {
+  "1380600000": {
+    brgy_clearance: { new: {
+      links: [{ label: "Manila GoManila e-BOSS — integrated barangay clearance", url: "https://cityofmanila.ph", steps: ["Start the Manila business permit application", "The city processes the barangay business clearance within that application"] }],
+      office: "Manila Bureau of Permits, City Hall",
+      note: "Manila Ordinance 8754 authorizes integrated barangay clearance processing. Confirm the current portal route before submitting.",
+      verifiedOn: CHECKED,
+    } },
+    brgy_renewal: { renewal: {
+      links: [{ label: "Manila GoManila e-BOSS — permit renewal", url: "https://cityofmanila.ph", steps: ["Start the Manila business permit renewal", "Check the integrated barangay clearance and current fees in the application"] }],
+      office: "Manila Bureau of Permits, City Hall",
+      note: "Manila Ordinance 8754 authorizes integrated barangay clearance processing. Confirm the current portal route before submitting.",
+      verifiedOn: CHECKED,
+    } },
+    mayors_permit: { new: {
+      links: [{ label: "Manila GoManila e-BOSS — business permit", url: "https://cityofmanila.ph", steps: ["Choose the business permit application in GoManila", "Submit the unified application and the requirements requested for your activity"] }],
+      office: "Manila Bureau of Permits, City Hall",
+      note: "The Manila Bureau of Permits charter names this online route; current portal availability could not be independently checked. Confirm on Manila's official site before submitting.",
+      verifiedOn: CHECKED,
+    } },
+    mayors_renewal: { renewal: {
+      links: [{ label: "Manila GoManila e-BOSS — business permit renewal", url: "https://cityofmanila.ph", steps: ["Open GoManila and choose business permit renewal", "Review the current requirements and deadline before payment"] }],
+      office: "Manila Bureau of Permits, City Hall",
+      note: "The Manila Bureau of Permits charter names this online route; current portal availability could not be independently checked.",
+      verifiedOn: CHECKED,
+    } },
+  },
   "1381500000": {
     mayors_permit: { new: {
       links: [

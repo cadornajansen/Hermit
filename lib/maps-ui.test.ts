@@ -167,22 +167,54 @@ test("switching office selection updates map props and accessible list state, wi
   const html = renderToStaticMarkup(output)
   assert.match(html, /Approximate straight-line distance/)
   assert.match(html, /Partial location coverage: 1/)
-  assert.match(html, /Location needs verification/)
+  assert.match(html, /Map coordinates need verification/)
   assert.match(html, /lg:overflow-y-auto/)
   assert.doesNotMatch(html, /destination_place_id|origin=/)
 })
 
-test("unverified production coverage is an honest empty state with official guidance", async (t) => {
+test("Manila permit seed shows its source-listed address and online route without a map pin", async (t) => {
   const h = await harness(t)
   const profile = { ...EMPTY_PROFILE, city: "City of Manila", region: "National Capital Region (NCR)" }
   const render = () => h.render(() => h.ui.OfficeFinderPanel({ profile, items: {}, initialService: "mayors_permit", enabled: false, canGeocode: false }))
   const form = elements(render()).find((entry) => entry.type === "form")!
   ;(form.props.onSubmit as (event: unknown) => void)({ preventDefault() {} })
   const output = renderToStaticMarkup(render())
-  assert.match(output, /Verified office coverage is not yet available/)
-  assert.match(output, /This does not mean no offices exist/)
-  assert.match(output, /Official agency guidance/)
+  assert.match(output, /Manila Bureau of Permits/)
+  assert.match(output, /Room 110/)
+  assert.match(output, /GoManila e-BOSS/)
+  assert.match(output, /Search address on Google Maps \(unverified\)/)
+  assert.match(output, /Map coordinates need verification/)
+  assert.doesNotMatch(output, /Directions in Google Maps/)
   assert.deepEqual(h.fixture.calls, [])
+})
+
+test("Manila barangay clearance names a PSA district and keeps the hall unverified", async (t) => {
+  const h = await harness(t)
+  const profile = { ...EMPTY_PROFILE, city: "City of Manila", region: "National Capital Region (NCR)", barangay: "Barangay 1" }
+  const render = () => h.render(() => h.ui.OfficeFinderPanel({ profile, items: {}, initialService: "brgy_clearance", enabled: false, canGeocode: false }))
+  const form = elements(render()).find((entry) => entry.type === "form")!
+  ;(form.props.onSubmit as (event: unknown) => void)({ preventDefault() {} })
+  const output = renderToStaticMarkup(render())
+  assert.match(output, /Tondo I\/II/)
+  assert.match(output, /PSGC 1380601001/)
+  assert.match(output, /hall address and separate clearance counter have not been verified/)
+  assert.match(output, /Search for the hall on Google Maps \(unverified\)/)
+  assert.doesNotMatch(output, /Directions in Google Maps/)
+  assert.doesNotMatch(output, /Legacy office guidance/)
+})
+
+test("local demo records join the Manila list without exposing fixture links or directions", async (t) => {
+  const h = await harness(t)
+  const profile = { ...EMPTY_PROFILE, city: "City of Manila", region: "National Capital Region (NCR)" }
+  const render = () => h.render(() => h.ui.OfficeFinderPanel({ profile, items: {}, initialService: "mayors_permit", enabled: false, canGeocode: false, demo: true }))
+  const form = elements(render()).find((entry) => entry.type === "form")!
+  ;(form.props.onSubmit as (event: unknown) => void)({ preventDefault() {} })
+  const output = renderToStaticMarkup(render())
+  assert.match(output, /Permit counter A/)
+  assert.match(output, /Permit counter B/)
+  assert.match(output, /Manila Bureau of Permits/)
+  assert.doesNotMatch(output, /example\.org/)
+  assert.doesNotMatch(output, /Directions in Google Maps/)
 })
 
 test("map loader failure has a visible retry and does not require removing the office list", async (t) => {

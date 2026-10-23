@@ -170,8 +170,9 @@ Without a token the terminal says online payment isn't available yet and points 
 
 **Office finder:** choose a document/service and confirm the business jurisdiction before comparing offices.
 Only active, current registry records with evidence of that exact service and area coverage are eligible.
-The maintained registry (`lib/office-registry.ts`) is intentionally empty pending independent verification;
-legacy Taguig seeds remain labelled unverified, not promoted to eligible branches. The assistant and packet
+The maintained registry (`lib/office-registry.ts`) now has source-reviewed Manila permit handlers and
+selected NCR registration destinations. Public counter details and coordinates still need independent
+review. Legacy Taguig seeds remain labelled unverified. The assistant and packet
 branch lookup use the same resolver. Requirement details link directly to the relevant office search.
 
 The approved provider is Google only: Maps JavaScript for display, server-side Geocoding for an explicitly
@@ -181,14 +182,17 @@ confirmation. Distances say “Approximate straight-line distance”; missing/st
 The map and selected office list synchronize, with the scrollable list on the right on desktop and below
 the map on small screens. Textual results remain available when the map fails.
 
-Live map/address features default off (`OFFICE_FINDER_ENABLED=false`). Before enabling, supply independently
-reviewed office records, restricted Google browser/server keys and a production map ID, publish appropriate
+Live map/address features default off (`OFFICE_FINDER_ENABLED=false`). A separate `OFFICE_FINDER_DEMO=true`
+setting adds synthetic offices and coordinates in local development only; production builds ignore it.
+Before enabling public rollout, confirm the seeded office counters and service rules, supply independently
+reviewed coordinates, restricted Google browser/server keys and a production map ID, publish appropriate
 terms/privacy disclosures, and configure provider-side quotas. Geocoding also requires the existing Supabase
 `take_ai_quota` RPC: each upstream attempt reserves owner/IP/project quota and fails closed if unavailable.
 The default rolling project cap is 250 geocodes/day (`GOOGLE_MAPS_GEOCODE_DAILY_LIMIT`); browser map loads
 need separate Google Cloud limits. Precise origins and entered addresses are transient and are not cached
 server-side or saved to the business profile. No billing/resources are enabled by this code.
-See [office finder setup, data review, verification and future staggered scaling](docs/office-finder-plan.md).
+See [office finder setup and future staggered scaling](docs/office-finder-plan.md) and the
+[Manila office seed, source links and demo limits](docs/office-seed-manila.md).
 
 **Start here:** `lib/processes.ts` lists, per requirement and filing task, the page that starts the process (BNRS, ORUS with its
 click path, eSPARC, CDA, Taguig TLC Portal, BFP FSIS, BMBE online, FDA eServices, Business Hub, My.SSS, PhilHealth,
